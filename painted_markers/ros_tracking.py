@@ -8,7 +8,8 @@ from message_filters import ApproximateTimeSynchronizer, Subscriber
 import os
 import sys
 
-module_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+script_path = os.path.dirname(os.path.abspath(__file__))
+module_path = os.path.dirname(script_path)
 if module_path not in sys.path:
     sys.path.append(module_path)
 
@@ -21,9 +22,9 @@ from core.probability_functions import *
 from core.utils import *
 
 # File inputs
-robot_file    = 'journal_dataset/LND.json'
-camera_file   = 'journal_dataset/camera_calibration.yaml'
-hand_eye_file = 'journal_dataset/handeye.yaml'
+robot_file    = script_path + '/journal_dataset/LND.json'
+camera_file   = script_path + '/journal_dataset/camera_calibration.yaml'
+hand_eye_file = script_path + '/journal_dataset/handeye.yaml'
 
 # ROS Topics
 left_camera_topic  = '/stereo/left/image'
@@ -45,15 +46,19 @@ def gotData(l_img_msg, r_img_msg, j_msg, g_msg):
     global cam, new_cb_data, cb_detected_keypoints_l, cb_detected_keypoints_r, cb_left_img, cb_right_img, cb_joint_angles
     
     try:
-        cb_left_img  = np.ndarray(shape=(l_img_msg.height, l_img_msg.width, 3),
+        _cb_left_img  = np.ndarray(shape=(l_img_msg.height, l_img_msg.width, 3),
                                       dtype=np.uint8, buffer=l_img_msg.data)
-        cb_right_img = np.ndarray(shape=(r_img_msg.height, r_img_msg.width, 3),
+        _cb_right_img = np.ndarray(shape=(r_img_msg.height, r_img_msg.width, 3),
                                       dtype=np.uint8, buffer=r_img_msg.data)
-        cb_left_img, cb_right_img = cam.processImage(cb_left_img, cb_right_img)
+        _cb_left_img, _cb_right_img = cam.processImage(_cb_left_img, _cb_right_img)
     except:
         return
-    cb_detected_keypoints_l, cb_left_img  = segmentColorAndGetKeyPoints(cb_left_img,  draw_contours=True)
-    cb_detected_keypoints_r, cb_right_img = segmentColorAndGetKeyPoints(cb_right_img, draw_contours=True)
+    cb_detected_keypoints_l, _cb_left_img  = segmentColorAndGetKeyPoints(_cb_left_img,  draw_contours=True)
+    cb_detected_keypoints_r, _cb_right_img = segmentColorAndGetKeyPoints(_cb_right_img, draw_contours=True)
+
+    cb_right_img = np.copy(_cb_right_img)
+    cb_left_img  = np.copy(_cb_left_img)
+
     cb_joint_angles = np.array(j_msg.position + g_msg.position)
     new_cb_data = True
     
