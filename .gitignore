@@ -1,5 +1,7 @@
-journal_dataset/*
+painted_markers/journal_dataset/*
+aruco/aruco_marker/*
 .vscode/*
+*/.bag
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
