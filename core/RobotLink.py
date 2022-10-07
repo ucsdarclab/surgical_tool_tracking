@@ -2,6 +2,8 @@ import numpy as np
 import json
 from .utils import *
 
+import pdb
+
 class RobotLink:
     # To reduce number of repeated computations, this class updates internal data structures
     # with the updateJointAngles function and then uses "get" functions to access the data
@@ -23,12 +25,19 @@ class RobotLink:
         self.baseToJointT = []
         
         for idx, dh in enumerate(robot_json_library["DH_params"]):
-            self.alpha.append(dh["alpha"])
-            self.theta.append(dh["theta"])
-            self.A.append(dh["A"])
-            self.D.append(dh["D"])
             self.type.append(dh["type"])
-            
+            self.A.append(dh["A"])
+            self.alpha.append(dh["alpha"])
+
+            if dh["type"] == "revolute": 
+                self.theta.append(dh["theta"] + dh["offset"])
+                self.D.append(dh["D"])
+            elif dh["type"] == "prismatic": 
+                self.theta.append(dh["theta"])
+                self.D.append(dh["D"] + dh["offset"])
+            else: 
+                raise ValueError("Type {} is not defined.".format(dh["type"]))
+
             # Pre-generate the Tx matrices
             ca = np.cos(dh["alpha"])
             sa = np.sin(dh["alpha"])
@@ -142,10 +151,10 @@ class RobotLink:
             direction = np.array([shaft["direction"][0], shaft["direction"][1], shaft["direction"][2], 0])
             shaft_features3DDir[idx] = np.dot(self.baseToJointT[int(shaft["link"])-1], direction)[:-1]
         return shaft_features3DPos, shaft_features3DDir
-    
+
     def calculateSkeletonPoints(self):
         skeleton_3DPoints = []
-        
+
         for skeleton in self.skeleton_structure:
             pos1 = np.array([skeleton["position1"][0], skeleton["position1"][1], skeleton["position1"][2], 1])
             pos1 = np.dot(self.baseToJointT[int(skeleton["link1"])-1], pos1)[:-1]
