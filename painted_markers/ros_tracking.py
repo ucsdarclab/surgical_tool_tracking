@@ -21,14 +21,21 @@ from core.ParticleFilter import *
 from core.probability_functions import *
 from core.utils import *
 
+import pdb
+
 # File inputs
 robot_file    = script_path + '/journal_dataset/LND.json'
+#robot_file    = 'parameters/LND.json'
 camera_file   = script_path + '/journal_dataset/camera_calibration.yaml'
+#camera_file   = 'parameters/camera_calibration_fei.yaml'
 hand_eye_file = script_path + '/journal_dataset/handeye.yaml'
+#hand_eye_file = 'parameters/LND_handeye.yaml'
 
 # ROS Topics
 left_camera_topic  = '/stereo/left/image'
+#left_camera_topic  = '/stereo/left/rectified_downscaled_image'
 right_camera_topic = '/stereo/right/image'
+#right_camera_topic  = '/stereo/right/rectified_downscaled_image'
 robot_joint_topic  = '/dvrk/PSM1/state_joint_current'
 robot_gripper_topic = '/dvrk/PSM1/state_jaw_current'
 
@@ -78,7 +85,7 @@ if __name__ == "__main__":
 
 
     robot_arm = RobotLink(robot_file)
-    cam = StereoCamera(camera_file, rectify=True)
+    cam = StereoCamera(camera_file, rectify=False, downscale_factor=1) 
 
     # Load hand-eye transform 
     f = open(hand_eye_file)
@@ -87,7 +94,6 @@ if __name__ == "__main__":
     cam_T_b = np.eye(4)
     cam_T_b[:-1, -1] = np.array(hand_eye_data['PSM1_tvec'])/1000.0
     cam_T_b[:-1, :-1] = axisAngleToRotationMatrix(hand_eye_data['PSM1_rvec'])
-
 
     # Initialize filter
     pf = ParticleFilter(num_states=9, 
@@ -143,8 +149,7 @@ if __name__ == "__main__":
                             "std_j": std_j,
                             "nb": 4
                           }
-            pf.predictionStep(**pred_kwargs)
-            
+            pf.predictionStep(**pred_kwargs) 
             
             # Update Particle Filter
             upd_kwargs = {
@@ -156,7 +161,7 @@ if __name__ == "__main__":
                             "gamma": 0.15
             }
 
-            pf.updateStep(**upd_kwargs)
+            pf.updateStep(**upd_kwargs) 
             prev_joint_angles = new_joint_angles
 
             correction_estimation = pf.getMeanParticle()
@@ -166,15 +171,14 @@ if __name__ == "__main__":
             # Project skeleton
             T = poseToMatrix(correction_estimation[:6])  
             new_joint_angles[-(correction_estimation.shape[0]-6):] += correction_estimation[6:]
-            robot_arm.updateJointAngles(new_joint_angles)
+            robot_arm.updateJointAngles(new_joint_angles) 
 
             img_list = projectSkeleton(robot_arm.getSkeletonPoints(), np.dot(cam_T_b, T),
                                        [new_left_img, new_right_img], cam.projectPoints)
             
-            cv2.imshow("Left Img",  img_list[0])
-            cv2.imshow("Right Img", img_list[1])
+            cv2.imshow("Left Img",  img_list[0][:,:,[2,1,0]])
+            cv2.imshow("Right Img", img_list[1][:,:,[2,1,0]])
             cv2.waitKey(1)
-            
         
         rate.sleep()
 
