@@ -1,9 +1,9 @@
 # Tool Tracking on Taurus #
 
+Dataset: https://drive.google.com/drive/folders/1Twt8h1oPO2eixuUngoWw0zGMWQPZUoa3?usp=sharing
+
 
 ## Documentation ##
-
-Dataset: https://drive.google.com/drive/folders/1Twt8h1oPO2eixuUngoWw0zGMWQPZUoa3?usp=sharing
 
 `taurus_tool_tracking.ipynb`: read data from rosbag and perform tool tracking.
 
