@@ -163,7 +163,7 @@ class StereoCamera():
     # points: Nx3 np array of shaft points in L camera-to-base frame (left is default)
     # directions: Nx3 np array of shaft lines in L camera-to-base frame (left is default)
     # radii: Nx1 np array
-    def projectShaftLines(self, points, directions, radii):
+    def projectShaftLines(self, points, directions, radii, draw_lines = False):
         
         # Check if points / directions exist
         if (points is None) or (directions is None) or (radii is None):

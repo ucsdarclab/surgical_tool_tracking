@@ -124,13 +124,7 @@ def pointFeatureObsRightLumpedError(state, point_detections, robot_arm, joint_an
         
     return prob
 
-    #       1. create a shaftFeatureObs and switch it out for the pointFeatureObs
-    #               - Best place to start is by "copying" the pointFeatureObs function and then modifying:
-    #                       - Switch line 52 to getting "shaftFeatures"
-    #                       - Switch line 53 to transforming the points of the shaft and direction with ONLY rotation (not full 4x4 matrix)
-    #                       - Switch line 55 to "projectShaft" which is a new StereoCamera function that you copy from the C++ project cylinder
-    #                       - Switch line 67 from Equation (30) in paper to Equation (31) https://arxiv.org/pdf/2102.06235.pdf
-def shaftFeatureObs(state, detected_lines_l, detected_lines_r, robot_arm, joint_angle_readings, cam, cam_T_b, gamma_rho, gamma_theta, rho_thresh, theta_thresh):
+def shaftFeatureObs(state, line_detections, robot_arm, joint_angle_readings, cam, cam_T_b, gamma_rho, gamma_theta, rho_thresh, theta_thresh):
     # Get lumped error
     T = poseToMatrix(state[:6])
 
@@ -150,9 +144,37 @@ def shaftFeatureObs(state, detected_lines_l, detected_lines_r, robot_arm, joint_
     d_c = np.transpose(d_c)
     
     # Project shaft lines from L and R camera-to-base frames onto 2D camera image plane
-    projected_lines_l, projected_lines_r = cam.projectShaftLines(p_c, d_c, r)
+    projected_lines = cam.projectShaftLines(p_c, d_c, r, draw_lines = True)
 
-    # Calculate probability of camera-to-base transform 
+        # Raise error if number of cameras doesn't line up
+    if len(line_detections) != len(projected_lines):
+        raise ValueError("Length of projected_lines is {} but length of line_detections is {}.\n".format(len(projected_lines), 
+                                                                                                            len(line_detections)) \
+                        + "Note that these lengths represent the number of cameras being used.")
+    
+    # Make association between detected and projected & compute probability
+    prob = 1
+    # len(projected_points) = # of cameras
+    # each list in projected points (2x for R/L cameras) is also a list of projected points
+    for c_idx, proj_point in enumerate(projected_points):
+        # Use hungarian algorithm to match projected and detected points
+        C = np.linalg.norm(proj_point[:, None, :] - point_detections[c_idx][None, :,  :], axis=2)
+        row_idx, col_idx = optimize.linear_sum_assignment(C)
+        
+        # Use threshold to remove outliers
+        idx_to_keep = C[row_idx, col_idx] < association_threshold
+        row_idx = row_idx[idx_to_keep]
+        col_idx = col_idx[idx_to_keep]
+        
+        # Compute observation probability
+        prob *= np.sum(np.exp(-gamma*C[row_idx, col_idx])) \
+                + (proj_point.shape[0] - len(row_idx))*np.exp(-gamma*association_threshold)
+        
+    return prob
+
+
+    # Calculate probability of camera-to-base transform
+
     prob_l = shaftFeatureObs_SingleCam(detected_lines_l, projected_lines_l, gamma_rho, gamma_theta, rho_thresh, theta_thresh)
     prob_r = shaftFeatureObs_SingleCam(detected_lines_r, projected_lines_r, gamma_rho, gamma_theta, rho_thresh, theta_thresh)
     total_prob = prob_l + prob_r

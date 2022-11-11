@@ -158,9 +158,8 @@ if __name__ == "__main__":
             
             # Update Particle Filter
             upd_kwargs = {
-                            #"point_detections": (new_detected_keypoints_l, new_detected_keypoints_r), 
-                            "detected_lines_l": new_detected_shaftlines_l,
-                            "detected_lines_r": new_detected_shaftlines_r,
+                            #"point_detections": (new_detected_keypoints_l, new_detected_keypoints_r),
+                            "line_detections": (new_detected_shaftlines_l, new_detected_shaftlines_r),
                             "robot_arm": robot_arm, 
                             "cam": cam, 
                             "cam_T_b": cam_T_b,

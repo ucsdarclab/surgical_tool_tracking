@@ -95,7 +95,6 @@ def segmentColorAndGetKeyPoints(img, hsv_min=(90, 40, 40), hsv_max=(120, 255, 25
     return np.array(centroids), img
 
 
-
 def detectShaftLines(img, draw_lines=True, show_canny=False, show_canny_name='canny'):
 
     # pre-processing
@@ -119,7 +118,6 @@ def detectShaftLines(img, draw_lines=True, show_canny=False, show_canny_name='ca
 
     # sort by max votes
     sorted_lines = lines[(-lines[:, 2]).argsort()]
-    '''
     # draw all found lines
     if (draw_lines):
         for i in range(sorted_lines.shape[0]):
@@ -132,7 +130,6 @@ def detectShaftLines(img, draw_lines=True, show_canny=False, show_canny_name='ca
             pt1 = (int(x0 + 2000*(-b)), int(y0 + 2000*(a)))
             pt2 = (int(x0 - 2000*(-b)), int(y0 - 2000*(a)))
             cv2.line(img, pt1, pt2, (0,0,255), 2)
-    '''
 
     # cluster by euclidean distance
     rho_clusters = fclusterdata(sorted_lines[:, 0].reshape(-1, 1), t = 5, criterion = 'distance', method = 'complete')
@@ -166,5 +163,21 @@ def detectShaftLines(img, draw_lines=True, show_canny=False, show_canny_name='ca
             pt1 = (int(x0 + 2000*(-b)), int(y0 + 2000*(a)))
             pt2 = (int(x0 - 2000*(-b)), int(y0 - 2000*(a)))
             cv2.line(img, pt1, pt2, (255,0,0), 2)
+
+    '''
+    for (auto &i : lines) {
+
+        if(i[0] < 0){
+            i[0] = -i[0];
+            i[1] += 3.14159265359;
+        }
+        float rho = i[0], theta = i[1];
+        //TUNE: we might not want lines that are super horizontal or vertical
+        double a = cos(theta), b = sin(theta);
+        double x0 = a * rho, y0 = b * rho;
+        int x1 = int(x0 + 1000*(-b)), y1 = int(y0 + 1000*(a)), x2 = int(x0 - 1000*(-b)), y2 = int(y0 - 1000*(a));
+        cv::line(out_img, cv::Point(x1, y1), cv::Point(x2, y2), m_detected_contour_color, 2);
+    }
+    '''
 
     return best_lines[:, 0:2], img
