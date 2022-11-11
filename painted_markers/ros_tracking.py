@@ -168,7 +168,8 @@ if __name__ == "__main__":
                             "gamma_rho": 5, 
                             "gamma_theta": 0.05, 
                             "rho_thresh": 25.0, 
-                            "theta_thresh": 1.0
+                            "theta_thresh": 1.0,
+                            "imgs": [new_left_img, new_right_img] 
             }
 
             pf.updateStep(**upd_kwargs)

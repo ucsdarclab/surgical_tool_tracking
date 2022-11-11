@@ -124,7 +124,7 @@ def pointFeatureObsRightLumpedError(state, point_detections, robot_arm, joint_an
         
     return prob
 
-def shaftFeatureObs(state, line_detections, robot_arm, joint_angle_readings, cam, cam_T_b, gamma_rho, gamma_theta, rho_thresh, theta_thresh):
+def shaftFeatureObs(state, line_detections, robot_arm, joint_angle_readings, cam, cam_T_b, gamma_rho, gamma_theta, rho_thresh, theta_thresh, imgs):
     # Get lumped error
     T = poseToMatrix(state[:6])
 
@@ -144,10 +144,10 @@ def shaftFeatureObs(state, line_detections, robot_arm, joint_angle_readings, cam
     d_c = np.transpose(d_c)
     
     # Project shaft lines from L and R camera-to-base frames onto 2D camera image plane
-    projected_lines = cam.projectShaftLines(p_c, d_c, r, draw_lines = True)
+    projected_lines, imgs = cam.projectShaftLines(p_c, d_c, r, imgs, draw_lines = True)
 
         # Raise error if number of cameras doesn't line up
-    if len(line_detections) != len(projected_lines):
+    if len(projected_lines) != len(line_detections):
         raise ValueError("Length of projected_lines is {} but length of line_detections is {}.\n".format(len(projected_lines), 
                                                                                                             len(line_detections)) \
                         + "Note that these lengths represent the number of cameras being used.")

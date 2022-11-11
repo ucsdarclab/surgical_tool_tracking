@@ -25,9 +25,6 @@ def projectSkeleton(skeletonPts3D, cam_T_b, img_list, project_point_function):
 
     return img_list
 
-# TODO: draw edges
-# def drawEdges()
-
 def axisAngleToRotationMatrix(axis_angle):
     angle = np.linalg.norm(axis_angle)
     
@@ -94,6 +91,21 @@ def segmentColorAndGetKeyPoints(img, hsv_min=(90, 40, 40), hsv_max=(120, 255, 25
     
     return np.array(centroids), img
 
+# accepts single img and Nx2 [rho, theta] array of line parameters
+# returns altered img
+def drawLines(img, lines):
+    for i in range(lines.shape[0]):
+        rho = lines[i, 0]
+        theta = lines[i, 1]
+        a = math.cos(theta)
+        b = math.sin(theta)
+        x0 = a * rho
+        y0 = b * rho
+        pt1 = (int(x0 + 2000*(-b)), int(y0 + 2000*(a)))
+        pt2 = (int(x0 - 2000*(-b)), int(y0 - 2000*(a)))
+        cv2.line(img, pt1, pt2, (0,0,255), 2)
+    
+    return img
 
 def detectShaftLines(img, draw_lines=True, show_canny=False, show_canny_name='canny'):
 
@@ -101,7 +113,7 @@ def detectShaftLines(img, draw_lines=True, show_canny=False, show_canny_name='ca
     grey = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
     # TODO: switch with bilateral filter
-    blur = cv2.GaussianBlur(grey, ksize=(25,25), sigmaX=0)
+    blur = cv2.GaussianBlur(grey, ksize=(7, 7), sigmaX=0)
     thresh, mask = cv2.threshold(blur, thresh = 150, maxval = 175, type = cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
     edges = cv2.Canny(blur, threshold1 = 200, threshold2 = 255, apertureSize = 5, L2gradient = True)
     edges_and_mask = cv2.bitwise_and(edges, mask)
@@ -110,7 +122,7 @@ def detectShaftLines(img, draw_lines=True, show_canny=False, show_canny_name='ca
         cv2.imshow(show_canny_name, edges_and_mask)
 
     # detect lines
-    lines = cv2.HoughLinesWithAccumulator(edges_and_mask, rho = 5, theta = 0.09, threshold = 150)
+    lines = cv2.HoughLinesWithAccumulator(edges_and_mask, rho = 5, theta = 0.05, threshold = 75)
     if (lines is not None): 
         lines = np.squeeze(lines)
     else:
@@ -118,22 +130,10 @@ def detectShaftLines(img, draw_lines=True, show_canny=False, show_canny_name='ca
 
     # sort by max votes
     sorted_lines = lines[(-lines[:, 2]).argsort()]
-    # draw all found lines
-    if (draw_lines):
-        for i in range(sorted_lines.shape[0]):
-            rho = sorted_lines[i, 0]
-            theta = sorted_lines[i, 1]
-            a = math.cos(theta)
-            b = math.sin(theta)
-            x0 = a * rho
-            y0 = b * rho
-            pt1 = (int(x0 + 2000*(-b)), int(y0 + 2000*(a)))
-            pt2 = (int(x0 - 2000*(-b)), int(y0 - 2000*(a)))
-            cv2.line(img, pt1, pt2, (0,0,255), 2)
 
     # cluster by euclidean distance
-    rho_clusters = fclusterdata(sorted_lines[:, 0].reshape(-1, 1), t = 5, criterion = 'distance', method = 'complete')
-    theta_clusters = fclusterdata(sorted_lines[:, 1].reshape(-1, 1), t = 0.09, criterion = 'distance', method = 'complete')
+    rho_clusters = fclusterdata(sorted_lines[:, 0].reshape(-1, 1), t = 0.5, criterion = 'distance', method = 'complete')
+    theta_clusters = fclusterdata(sorted_lines[:, 1].reshape(-1, 1), t = 0.005, criterion = 'distance', method = 'complete')
 
     best_lines = []
     checked_clusters = []
@@ -146,38 +146,15 @@ def detectShaftLines(img, draw_lines=True, show_canny=False, show_canny_name='ca
         best_lines.append([lines[i, 0], lines[i, 1]])
         checked_clusters.append(cluster)
         
-        # keep all candidate lines
-        #if len(best_lines) >= 2:
-            #break
-
     best_lines = np.asarray(best_lines)
 
+    # check for negative rho, add 2*pi to theta
+    best_lines[:, 1][best_lines[:, 0] < 1] = best_lines[:, 1][best_lines[:, 0] < 1] + 2 * np.pi
+    # replace negative rho with abs(rho)
+    best_lines[:, 0][best_lines[:, 0] < 0] = best_lines[:, 0][best_lines[:, 0] < 1] * -1
+
     if (draw_lines):
-        for i in range(best_lines.shape[0]):
-            rho = best_lines[i, 0]
-            theta = best_lines[i, 1]
-            a = math.cos(theta)
-            b = math.sin(theta)
-            x0 = a * rho
-            y0 = b * rho
-            pt1 = (int(x0 + 2000*(-b)), int(y0 + 2000*(a)))
-            pt2 = (int(x0 - 2000*(-b)), int(y0 - 2000*(a)))
-            cv2.line(img, pt1, pt2, (255,0,0), 2)
+        img = drawLines(img, best_lines)
 
-    '''
-    for (auto &i : lines) {
-
-        if(i[0] < 0){
-            i[0] = -i[0];
-            i[1] += 3.14159265359;
-        }
-        float rho = i[0], theta = i[1];
-        //TUNE: we might not want lines that are super horizontal or vertical
-        double a = cos(theta), b = sin(theta);
-        double x0 = a * rho, y0 = b * rho;
-        int x1 = int(x0 + 1000*(-b)), y1 = int(y0 + 1000*(a)), x2 = int(x0 - 1000*(-b)), y2 = int(y0 - 1000*(a));
-        cv::line(out_img, cv::Point(x1, y1), cv::Point(x2, y2), m_detected_contour_color, 2);
-    }
-    '''
-
+    # returns Nx2 array of # N detected lines x [rho, theta], img
     return best_lines[:, 0:2], img
