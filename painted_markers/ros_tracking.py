@@ -59,8 +59,8 @@ def gotData(l_img_msg, r_img_msg, j_msg, g_msg):
     # TODO: move image processing out of callback so callback only returns raw image
     cb_detected_keypoints_l, _cb_left_img  = segmentColorAndGetKeyPoints(_cb_left_img,  draw_contours=True)
     cb_detected_keypoints_r, _cb_right_img = segmentColorAndGetKeyPoints(_cb_right_img, draw_contours=True)
-    cb_detected_shaftlines_l, _cb_left_img  = detectShaftLines(_cb_left_img,  draw_lines=True, show_canny=True, show_canny_name='left_canny')
-    cb_detected_shaftlines_r, _cb_right_img = detectShaftLines(_cb_right_img,  draw_lines=True, show_canny=True, show_canny_name='right_canny')
+    cb_detected_shaftlines_l, _cb_left_img  = detectShaftLines(_cb_left_img, show_canny=True, show_canny_name='left_canny')
+    cb_detected_shaftlines_r, _cb_right_img = detectShaftLines(_cb_right_img, show_canny=True, show_canny_name='right_canny')
 
     cb_right_img = np.copy(_cb_right_img)
     cb_left_img  = np.copy(_cb_left_img)
@@ -159,17 +159,16 @@ if __name__ == "__main__":
             # Update Particle Filter
             upd_kwargs = {
                             #"point_detections": (new_detected_keypoints_l, new_detected_keypoints_r),
-                            "line_detections": (new_detected_shaftlines_l, new_detected_shaftlines_r),
+                            "detected_lines": (new_detected_shaftlines_l, new_detected_shaftlines_r),
                             "robot_arm": robot_arm, 
                             "cam": cam, 
                             "cam_T_b": cam_T_b,
                             "joint_angle_readings": new_joint_angles,
                             #"gamma": 0.15, 
-                            "gamma_rho": 5, 
-                            "gamma_theta": 0.05, 
-                            "rho_thresh": 25.0, 
-                            "theta_thresh": 1.0,
-                            "imgs": [new_left_img, new_right_img] 
+                            "gamma_rho": 1, 
+                            "gamma_theta": 1, 
+                            "rho_thresh": 2,
+                            "theta_thresh": 2
             }
 
             pf.updateStep(**upd_kwargs)
@@ -179,18 +178,12 @@ if __name__ == "__main__":
 
             rospy.loginfo("Time to predict & update {}".format(time.time() - start_t))
 
-            # Project skeleton
+            # Project and draw skeleton
             T = poseToMatrix(correction_estimation[:6])  
             new_joint_angles[-(correction_estimation.shape[0]-6):] += correction_estimation[6:]
             robot_arm.updateJointAngles(new_joint_angles)
-
-            # rename drawSkeleton
-            img_list = projectSkeleton(robot_arm.getSkeletonPoints(), np.dot(cam_T_b, T),
-                                       [new_left_img, new_right_img], cam.projectPoints)
-            # TODO: draw edges
-            img_list = drawEdges(robot_arm.getShaftFeatures(), np.dot(cam_T_b, T),
-                                       [new_left_img, new_right_img], cam.projectShaftLines)
-            
+            img_list = projectSkeleton(robot_arm.getSkeletonPoints(), np.dot(cam_T_b, T), [new_left_img, new_right_img], cam.projectPoints)
+            img_list = drawShaftLines(robot_arm.getShaftFeatures(), cam, np.dot(cam_T_b, T), img_list)
             cv2.imshow("Left Img",  img_list[0])
             cv2.imshow("Right Img", img_list[1])
             cv2.waitKey(1)

@@ -1,7 +1,6 @@
 import numpy as np
 import yaml
 import cv2
-import utils
 
 class StereoCamera():
     def __init__(self, cal_file_path, rectify = True, downscale_factor = 2, scale_baseline=1e-3):
@@ -72,10 +71,6 @@ class StereoCamera():
         return projected_point_l, projected_point_r
     
     def projectShaftLines_SingleCam(self, points, directions, radii, camera):
-        print('points: {}'.format(points))
-        print('directions: {}'.format(directions))
-        print('radii: {}'.format(radii))
-        print('camera: {}'.format(camera))
         
         # identify L or R camera
         cam_K_matrix = None
@@ -164,8 +159,7 @@ class StereoCamera():
     # points: Nx3 np array of shaft points in L camera-to-base frame (left is default)
     # directions: Nx3 np array of shaft lines in L camera-to-base frame (left is default)
     # radii: Nx1 np array
-    # imgs: img_l, img_r
-    def projectShaftLines(self, points, directions, radii, imgs, draw_lines = False):
+    def projectShaftLines(self, points, directions, radii):
         
         # Check if points / directions exist
         if (points is None) or (directions is None) or (radii is None):
@@ -187,16 +181,7 @@ class StereoCamera():
         directions_r = np.transpose(directions_r) # Nx3
         projected_lines_r = self.projectShaftLines_SingleCam(points_r, directions_r, radii, 'right') # Nx2 [rho, theta]
         
-        # draw projected lines on output image
-        img_l = None
-        img_r = None
-        if (draw_lines):
-            img_l = imgs[0]
-            img_l = utils.draw_Lines(img_l, projected_lines_l)
-            img_r = imgs[1]
-            img_r = utils.draw_Lines(img_r, projected_lines_r)
-
-        return [(projected_lines_l, projected_lines_r), (img_l, img_r)] # Nx2 [rho, theta], Nx2 [rho, theta], img_l, img_r
+        return projected_lines_l, projected_lines_r # Nx2 [rho, theta], Nx2 [rho, theta]
     
 
         

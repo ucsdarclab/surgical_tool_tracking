@@ -103,11 +103,12 @@ def drawLines(img, lines):
         y0 = b * rho
         pt1 = (int(x0 + 2000*(-b)), int(y0 + 2000*(a)))
         pt2 = (int(x0 - 2000*(-b)), int(y0 - 2000*(a)))
+        # RGB (255, 0, 0) = Blue
         cv2.line(img, pt1, pt2, (0,0,255), 2)
     
     return img
 
-def detectShaftLines(img, draw_lines=True, show_canny=False, show_canny_name='canny'):
+def detectShaftLines(img, show_canny=False, show_canny_name='canny'):
 
     # pre-processing
     grey = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
@@ -153,8 +154,26 @@ def detectShaftLines(img, draw_lines=True, show_canny=False, show_canny_name='ca
     # replace negative rho with abs(rho)
     best_lines[:, 0][best_lines[:, 0] < 0] = best_lines[:, 0][best_lines[:, 0] < 1] * -1
 
-    if (draw_lines):
-        img = drawLines(img, best_lines)
+    # returns Nx2 array of # N detected lines x [rho, theta]
+    return best_lines[:, 0:2]
 
-    # returns Nx2 array of # N detected lines x [rho, theta], img
-    return best_lines[:, 0:2], img
+def drawShaftLines(shaftFeatures, cam, cam_T_b, img_list):
+
+    # Project points from base to 2D L/R camera image planes
+    # Get shaft feature points and lines from FK transform in base frame
+    p_b, d_b, _, r = shaftFeatures
+    # Transform shaft featurepoints from base frame to camera-to-base frame
+    p_c = np.dot(cam_T_b, np.transpose(np.concatenate((p_b, np.ones((p_b.shape[0], 1))), axis=1)))
+    p_c = np.transpose(p_c)[:, :-1]
+    
+    # Rotate directions from base to camera frame (no translation)
+    d_c = np.dot(cam_T_b[0:3, 0:3], np.transpose(d_b))
+    d_c = np.transpose(d_c)
+    
+    # Project shaft lines from L and R camera-to-base frames onto 2D camera image plane
+    projected_lines = cam.projectShaftLines(p_c, d_c, r)
+
+    img_l = drawLines(img_list[0], projected_lines[0])
+    img_r = drawLines(img_list[1], projected_lines[1])
+
+    return img_l, img_r

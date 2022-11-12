@@ -85,8 +85,8 @@ def pointFeatureObs(state, point_detections, robot_arm, joint_angle_readings, ca
 # State is: [pos_x, pos_y, pos_z, ori_x, ori_y, ori_z, e_nb, ..., e_n]
 # where pos, ori is position and axis/angle rep of lumped error
 # e_nb+1, ..., e_n are the errors of the tracked joint angles
-def pointFeatureObsRightLumpedError(state, point_detections, robot_arm, joint_angle_readings, cam, 
-                                    cam_T_b, gamma, association_threshold=20):
+def pointFeatureObsRightLumpedError(state, point_detections, robot_arm, cam, 
+                                    cam_T_b, joint_angle_readings, gamma, association_threshold=20):
     # Get lumped error
     T = poseToMatrix(state[:6])
 
@@ -124,7 +124,7 @@ def pointFeatureObsRightLumpedError(state, point_detections, robot_arm, joint_an
         
     return prob
 
-def shaftFeatureObs(state, line_detections, robot_arm, joint_angle_readings, cam, cam_T_b, gamma_rho, gamma_theta, rho_thresh, theta_thresh, imgs):
+def shaftFeatureObs(state, detected_lines, robot_arm, cam, cam_T_b, joint_angle_readings, gamma_rho, gamma_theta, rho_thresh, theta_thresh):
     # Get lumped error
     T = poseToMatrix(state[:6])
 
@@ -144,21 +144,24 @@ def shaftFeatureObs(state, line_detections, robot_arm, joint_angle_readings, cam
     d_c = np.transpose(d_c)
     
     # Project shaft lines from L and R camera-to-base frames onto 2D camera image plane
-    projected_lines, imgs = cam.projectShaftLines(p_c, d_c, r, imgs, draw_lines = True)
+    projected_lines = cam.projectShaftLines(p_c, d_c, r)
 
         # Raise error if number of cameras doesn't line up
-    if len(projected_lines) != len(line_detections):
+    if len(projected_lines) != len(detected_lines):
         raise ValueError("Length of projected_lines is {} but length of line_detections is {}.\n".format(len(projected_lines), 
-                                                                                                            len(line_detections)) \
+                                                                                                            len(detected_lines)) \
                         + "Note that these lengths represent the number of cameras being used.")
     
     # Make association between detected and projected & compute probability
     prob = 1
+    association_threshold = gamma_rho * rho_thresh + gamma_theta * theta_thresh
     # len(projected_points) = # of cameras
     # each list in projected points (2x for R/L cameras) is also a list of projected points
-    for c_idx, proj_point in enumerate(projected_points):
+    for cam_idx, proj_lines in enumerate(projected_lines):
         # Use hungarian algorithm to match projected and detected points
-        C = np.linalg.norm(proj_point[:, None, :] - point_detections[c_idx][None, :,  :], axis=2)
+        C_rho = gamma_rho * scipy.spatial.distance_matrix(proj_lines[:, 0, None], detected_lines[cam_idx][:, 0, None])
+        C_theta = gamma_theta * scipy.spatial.distance_matrix(proj_lines[:, 1, None], detected_lines[cam_idx][:, 1, None])
+        C = C_rho + C_theta
         row_idx, col_idx = optimize.linear_sum_assignment(C)
         
         # Use threshold to remove outliers
@@ -167,20 +170,11 @@ def shaftFeatureObs(state, line_detections, robot_arm, joint_angle_readings, cam
         col_idx = col_idx[idx_to_keep]
         
         # Compute observation probability
-        prob *= np.sum(np.exp(-gamma*C[row_idx, col_idx])) \
-                + (proj_point.shape[0] - len(row_idx))*np.exp(-gamma*association_threshold)
+        prob *= np.sum(np.exp(C[row_idx, col_idx])) + (proj_lines.shape[0] - len(row_idx))*np.exp(-1 * association_threshold)
         
     return prob
 
-
-    # Calculate probability of camera-to-base transform
-
-    prob_l = shaftFeatureObs_SingleCam(detected_lines_l, projected_lines_l, gamma_rho, gamma_theta, rho_thresh, theta_thresh)
-    prob_r = shaftFeatureObs_SingleCam(detected_lines_r, projected_lines_r, gamma_rho, gamma_theta, rho_thresh, theta_thresh)
-    total_prob = prob_l + prob_r
-
-    return total_prob
-
+'''
 def shaftFeatureObs_SingleCam(detected_lines, projected_lines, gamma_rho, gamma_theta, rho_thresh, theta_thresh):
     
     # Maximum association divergence
@@ -227,3 +221,4 @@ def shaftFeatureObs_SingleCam(detected_lines, projected_lines, gamma_rho, gamma_
         prob = (projected_lines.shape[0] - paired_costs.shape[0]) * np.exp(-1 * max_cost) + np.sum(np.exp(paired_costs[:, -1]))
 
     return prob
+'''
