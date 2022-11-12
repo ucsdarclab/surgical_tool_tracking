@@ -1,7 +1,6 @@
 import numpy as np
 import yaml
 import cv2
-# testing
 
 class StereoCamera():
     def __init__(self, cal_file_path, rectify = True, downscale_factor = 2, scale_baseline=1e-3):
