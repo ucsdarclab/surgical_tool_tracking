@@ -114,16 +114,16 @@ def detectShaftLines(img, show_canny=False, show_canny_name='canny'):
     grey = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
     # TODO: switch with bilateral filter
-    blur = cv2.GaussianBlur(grey, ksize=(7, 7), sigmaX=0)
-    thresh, mask = cv2.threshold(blur, thresh = 150, maxval = 175, type = cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    edges = cv2.Canny(blur, threshold1 = 200, threshold2 = 255, apertureSize = 5, L2gradient = True)
+    blur = cv2.GaussianBlur(grey, ksize=(5, 5), sigmaX=0)
+    thresh, mask = cv2.threshold(blur, thresh = 0, maxval = 255, type = cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    edges = cv2.Canny(blur, threshold1 = 3000, threshold2 = 6000, apertureSize = 7, L2gradient = True)
     edges_and_mask = cv2.bitwise_and(edges, mask)
 
     if (show_canny):
         cv2.imshow(show_canny_name, edges_and_mask)
 
     # detect lines
-    lines = cv2.HoughLinesWithAccumulator(edges_and_mask, rho = 5, theta = 0.05, threshold = 75)
+    lines = cv2.HoughLinesWithAccumulator(edges_and_mask, rho = 0.5, theta = 0.005, threshold = 75)
     if (lines is not None): 
         lines = np.squeeze(lines)
     else:
@@ -133,8 +133,8 @@ def detectShaftLines(img, show_canny=False, show_canny_name='canny'):
     sorted_lines = lines[(-lines[:, 2]).argsort()]
 
     # cluster by euclidean distance
-    rho_clusters = fclusterdata(sorted_lines[:, 0].reshape(-1, 1), t = 0.5, criterion = 'distance', method = 'complete')
-    theta_clusters = fclusterdata(sorted_lines[:, 1].reshape(-1, 1), t = 0.005, criterion = 'distance', method = 'complete')
+    rho_clusters = fclusterdata(sorted_lines[:, 0].reshape(-1, 1), t = 5, criterion = 'distance', method = 'complete')
+    theta_clusters = fclusterdata(sorted_lines[:, 1].reshape(-1, 1), t = 0.05, criterion = 'distance', method = 'complete')
 
     best_lines = []
     checked_clusters = []
@@ -154,8 +154,11 @@ def detectShaftLines(img, show_canny=False, show_canny_name='canny'):
     # replace negative rho with abs(rho)
     best_lines[:, 0][best_lines[:, 0] < 0] = best_lines[:, 0][best_lines[:, 0] < 1] * -1
 
+    # draw detected edges
+    img = drawLines(img, best_lines[:, 0:2])
+
     # returns Nx2 array of # N detected lines x [rho, theta]
-    return best_lines[:, 0:2]
+    return img, best_lines[:, 0:2]
 
 def drawShaftLines(shaftFeatures, cam, cam_T_b, img_list):
 

@@ -103,6 +103,7 @@ class StereoCamera():
         gamma2 = np.multiply(b, x0) - np.multiply(a, y0)
 
         A = np.multiply(x0, x0) + np.multiply(y0, y0) + np.multiply(z0, z0) - np.multiply((np.multiply(a, x0) + np.multiply(b, y0) + np.multiply(c, z0)), (np.multiply(a, x0) + np.multiply(b, y0) + np.multiply(c, z0))) - np.multiply(R, R)
+        print(A)
 
         temp = np.divide(R, np.sqrt(A))
 

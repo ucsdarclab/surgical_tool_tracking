@@ -1,6 +1,7 @@
 import numpy as np
 from scipy import optimize
 from scipy.stats import norm
+from scipy.spatial import distance_matrix
 from .utils import *
 
 
@@ -159,8 +160,8 @@ def shaftFeatureObs(state, detected_lines, robot_arm, cam, cam_T_b, joint_angle_
     # each list in projected points (2x for R/L cameras) is also a list of projected points
     for cam_idx, proj_lines in enumerate(projected_lines):
         # Use hungarian algorithm to match projected and detected points
-        C_rho = gamma_rho * scipy.spatial.distance_matrix(proj_lines[:, 0, None], detected_lines[cam_idx][:, 0, None])
-        C_theta = gamma_theta * scipy.spatial.distance_matrix(proj_lines[:, 1, None], detected_lines[cam_idx][:, 1, None])
+        C_rho = gamma_rho * distance_matrix(proj_lines[:, 0, None], detected_lines[cam_idx][:, 0, None])
+        C_theta = gamma_theta * distance_matrix(proj_lines[:, 1, None], detected_lines[cam_idx][:, 1, None])
         C = C_rho + C_theta
         row_idx, col_idx = optimize.linear_sum_assignment(C)
         
