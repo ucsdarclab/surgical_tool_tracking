@@ -158,6 +158,8 @@ def shaftFeatureObs(state, detected_lines, robot_arm, cam, cam_T_b, joint_angle_
     association_threshold = gamma_rho * rho_thresh + gamma_theta * theta_thresh
     # len(projected_points) = # of cameras
     # each list in projected points (2x for R/L cameras) is also a list of projected points
+    print('projected_lines: {}'.format(projected_lines))
+    print('detected_lines: {}'.format(detected_lines))
     for cam_idx, proj_lines in enumerate(projected_lines):
         # Use hungarian algorithm to match projected and detected points
         C_rho = gamma_rho * distance_matrix(proj_lines[:, 0, None], detected_lines[cam_idx][:, 0, None])

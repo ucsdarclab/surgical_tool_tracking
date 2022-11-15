@@ -1,6 +1,7 @@
 import numpy as np
 import yaml
 import cv2
+import math
 
 class StereoCamera():
     def __init__(self, cal_file_path, rectify = True, downscale_factor = 2, scale_baseline=1e-3):
@@ -70,6 +71,7 @@ class StereoCamera():
         
         return projected_point_l, projected_point_r
     
+    # https://github.com/ucsdarclab/dvrk_particle_filter/blob/master/src/stereo_camera.cpp#L252
     def projectShaftLines_SingleCam(self, points, directions, radii, camera):
         
         # identify L or R camera
@@ -77,83 +79,73 @@ class StereoCamera():
         if (camera == 'left'):
             cam_K_matrix = self.K1
         elif (camera == 'right'):
-            cam_K_matrix = self.K2
-        
+            cam_K_matrix = self.K2   
         assert(cam_K_matrix is not None)
 
-        # project lines
+        assert(len(points) == len(directions) == len(radii))
         projected_lines = []
-        
-        x0 = points[:, 0]
-        y0 = points[:, 1]
-        z0 = points[:, 2]
+        for i in range(points.shape[0]):
+            
+            x0 = points[i, 0]
+            y0 = points[i, 1]
+            z0 = points[i, 2]
 
-        a = directions[:, 0]
-        b = directions[:, 1]
-        c = directions[:, 2]
+            a = directions[i, 0]
+            b = directions[i, 1]
+            c = directions[i, 2]
 
-        R = np.asarray(radii) * 1000.0
+            R = radii[i] * 1000.0
 
-        alpha1 = np.multiply((np.multiply(-a, a) + 1), x0) - np.multiply(a, np.multiply(b, y0)) - np.multiply(a, np.multiply(c, z0))
-        beta1  = np.multiply(-a, np.multiply(b, x0)) + np.multiply((np.multiply(-b, b) + 1), y0) - np.multiply(b, np.multiply(c, z0))
-        gamma1 = np.multiply(-a, np.multiply(c, x0)) - np.multiply(b, np.multiply(c, y0)) + np.multiply((np.multiply(-c, c) + 1), z0)
+            alpha1 = (1 - a * a) * x0 - a * b * y0 - a * c * z0
+            beta1  = -a * b * x0 + (1 - b * b) * y0 - b * c * z0
+            gamma1 = -a * c * x0 - b * c * y0 + (1 - c * c) * z0
 
-        alpha2 = np.multiply(c, y0) - np.multiply(b, z0)
-        beta2  = np.multiply(a, z0) - np.multiply(c, x0)
-        gamma2 = np.multiply(b, x0) - np.multiply(a, y0)
+            alpha2 = c * y0 - b * z0
+            beta2  = a * z0 - c * x0
+            gamma2 = b * x0 - a * y0
 
-        A = np.multiply(x0, x0) + np.multiply(y0, y0) + np.multiply(z0, z0) - np.multiply((np.multiply(a, x0) + np.multiply(b, y0) + np.multiply(c, z0)), (np.multiply(a, x0) + np.multiply(b, y0) + np.multiply(c, z0))) - np.multiply(R, R)
-        print(A)
+            A = x0 * x0 + y0 * y0 + z0 * z0 - (a * x0 + b * y0 + c * z0) * (a * x0 + b * y0 + c * z0) - R * R
 
-        temp = np.divide(R, np.sqrt(A))
+            if (A <= 0):
+                continue
 
-        k1   = np.multiply(alpha1, temp) - alpha2
-        k2   = np.multiply(beta1, temp) - beta2
-        k3   = np.multiply(gamma1, temp) - gamma2
+            temp = R / np.sqrt(A)
 
-        F = k1 / cam_K_matrix[0, 0]
-        G = k2 / cam_K_matrix[1, 1]
-        D = -k3 + F * cam_K_matrix[0, 2] + G * cam_K_matrix[1, 2]
+            k1   = (alpha1 * temp - alpha2)
+            k2   = (beta1 * temp - beta2)
+            k3   = (gamma1 * temp - gamma2)
 
-        mask = D < 0
-        D = np.where(mask, -D, D)
-        G = np.where(mask, -G, G)
-        F = np.where(mask, -F, F)
-        
-        rho = np.divide(D, np.sqrt(np.multiply(F, F) + np.multiply(G, G)))
-        theta = np.arctan2(G, F)
-        if (rho is not None) and (theta is not None):
-            out1 = np.vstack((rho, theta)).T
-        else:
-            out1 = np.asarray([np.nan, np.nan])
+            F = k1 / cam_K_matrix[0, 0]
+            G = k2 / cam_K_matrix[1, 1]
+            D = -k3 + F * cam_K_matrix[0, 2] + G * cam_K_matrix[1, 2]
 
-        k1 += 2 * alpha2
-        k2 += 2 * beta2
-        k3 += 2 * gamma2
+            if (D < 0):
+                D *= -1
+                G *= -1
+                F *= -1      
+            
+            rho = D / np.sqrt(F * F + G * G)
+            theta = math.atan2(G, F)
+            projected_lines.append([rho, theta])
 
-        F = k1 / cam_K_matrix[0, 0]
-        G = k2 / cam_K_matrix[1, 1]
-        D = -k3 + F * cam_K_matrix[0, 2] + G * cam_K_matrix[1, 2]
+            k1 += 2 * alpha2
+            k2 += 2 * beta2
+            k3 += 2 * gamma2
 
-        mask = D < 0
-        D = np.where(mask, -D, D)
-        G = np.where(mask, -G, G)
-        F = np.where(mask, -F, F)
-        
-        rho = np.divide(D, np.sqrt(np.multiply(F, F) + np.multiply(G, G)))
-        theta = np.arctan2(G, F)
-        if (rho is not None) and (theta is not None):
-            out2 = np.vstack((rho, theta)).T
-        else:
-            out2 = np.asarray([np.nan, np.nan])
+            F = k1 / cam_K_matrix[0, 0]
+            G = k2 / cam_K_matrix[1, 1]
+            D = -k3 + F * cam_K_matrix[0, 2] + G * cam_K_matrix[1, 2]
 
-        projected_lines = np.vstack((out1, out2)) # Nx2 [rho, theta]
-        projected_lines = projected_lines[~np.isnan(projected_lines).any(axis=1), :] # filter np.nan
-        
-        # Return None if no projected lines possible
-        if (projected_lines.shape[0] == 0) or (projected_lines.shape[1] != 2):
-            return None
-        else:
+            if (D < 0):
+                D *= -1
+                G *= -1
+                F *= -1
+            
+            rho = D / np.sqrt(F * F + G * G)
+            theta = math.atan2(G, F)
+            projected_lines.append([rho, theta])
+            
+            projected_lines = np.asarray(projected_lines)
             return projected_lines # Nx2 [rho, theta]
 
     # Project shaft lines from L/R camera-to-base frames onto 2D camera image plane 
