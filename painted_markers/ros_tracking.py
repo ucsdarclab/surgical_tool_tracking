@@ -155,7 +155,6 @@ if __name__ == "__main__":
                           }
             pf.predictionStep(**pred_kwargs)
             
-            
             # Update Particle Filter
             upd_kwargs = {
                             #"point_detections": (new_detected_keypoints_l, new_detected_keypoints_r),

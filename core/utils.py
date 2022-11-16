@@ -158,7 +158,7 @@ def detectShaftLines(img, show_canny=False, show_canny_name='canny'):
     img = drawLines(img, best_lines[:, 0:2])
 
     # returns Nx2 array of # N detected lines x [rho, theta]
-    return img, best_lines[:, 0:2]
+    return best_lines[:, 0:2], img
 
 def drawShaftLines(shaftFeatures, cam, cam_T_b, img_list):
 
