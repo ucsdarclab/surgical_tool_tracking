@@ -73,6 +73,14 @@ class StereoCamera():
     
     # https://github.com/ucsdarclab/dvrk_particle_filter/blob/master/src/stereo_camera.cpp#L252
     def projectShaftLines_SingleCam(self, points, directions, radii, camera):
+
+        print('in projectShaftLines_SingleCam')
+        print('points: {}'.format(points))
+        print('points.shape: {}'.format(points.shape))
+        print('directions: {}'.format(directions))
+        print('directions.shape: {}'.format(directions.shape))
+        print('radii: {}'.format(radii))
+        print('camera: {}'.format(camera))
         
         # identify L or R camera
         cam_K_matrix = None
@@ -87,14 +95,22 @@ class StereoCamera():
         for i in range(points.shape[0]):
             
             x0 = points[i, 0]
+            print('x0: {}'.format(x0))
             y0 = points[i, 1]
+            print('y0: {}'.format(y0))
             z0 = points[i, 2]
+            print('z0: {}'.format(z0))
 
             a = directions[i, 0]
+            print('a: {}'.format(a))
             b = directions[i, 1]
+            print('b: {}'.format(a))
             c = directions[i, 2]
+            print('c: {}'.format(a))
 
+            # are these units correct? makes A < 0
             R = radii[i] * 1000.0
+            print('R: {}'.format(R))
 
             alpha1 = (1 - a * a) * x0 - a * b * y0 - a * c * z0
             beta1  = -a * b * x0 + (1 - b * b) * y0 - b * c * z0
@@ -105,6 +121,7 @@ class StereoCamera():
             gamma2 = b * x0 - a * y0
 
             A = x0 * x0 + y0 * y0 + z0 * z0 - (a * x0 + b * y0 + c * z0) * (a * x0 + b * y0 + c * z0) - R * R
+            print('A: {}'.format(A))
 
             if (A <= 0):
                 continue
@@ -146,6 +163,7 @@ class StereoCamera():
             projected_lines.append([rho, theta])
             
             projected_lines = np.asarray(projected_lines)
+            print('projected_lines from projectShaftLines_SingleCam: {}'.format(projected_lines))
             return projected_lines # Nx2 [rho, theta]
 
     # Project shaft lines from L/R camera-to-base frames onto 2D camera image plane 
@@ -153,6 +171,13 @@ class StereoCamera():
     # directions: Nx3 np array of shaft lines in L camera-to-base frame (left is default)
     # radii: Nx1 np array
     def projectShaftLines(self, points, directions, radii):
+
+        print('in projectShaftLines')
+        print('points: {}'.format(points))
+        print('points.shape: {}'.format(points.shape))
+        print('directions: {}'.format(directions))
+        print('directions.shape: {}'.format(directions.shape))
+        print('radii: {}'.format(radii))
         
         # Check if points / directions exist
         if (points is None) or (directions is None) or (radii is None):
@@ -160,7 +185,13 @@ class StereoCamera():
 
         # Project lines of 3D cylinder in L camera-to-base frame onto 2D projection on L camera image plane
         points_l = points.copy() #Nx3
+        print('points_l: {}'.format(points_l))
+        print('points_l.shape: {}'.format(points_l.shape))
+
         directions_l = directions.copy() #Nx3
+        print('directions_l: {}'.format(directions_l))
+        print('directions_l.shape: {}'.format(directions_l.shape))
+
         projected_lines_l = self.projectShaftLines_SingleCam(points_l, directions_l, radii, 'left') # Nx2 [rho, theta]
 
         # Transform L camera-to-base frame points to R camera-to-base frame points
@@ -169,11 +200,16 @@ class StereoCamera():
         points_r = np.dot(self.T, points_homogeneous)[:-1, :] # 3xN
         points_r = np.transpose(points_r) # Nx3
 
+        print('points_r.shape: {}'.format(points_r.shape))
+
         # Rotate L camera-to-base frame lines to R camera-to-base frame lines
         directions_r = np.dot(self.T[0:3, 0:3], np.transpose(directions)) # 3xN
         directions_r = np.transpose(directions_r) # Nx3
         projected_lines_r = self.projectShaftLines_SingleCam(points_r, directions_r, radii, 'right') # Nx2 [rho, theta]
         
+        print('returning projected lines from projectShaftLines')
+        print('projected_lines_l: {}'.format(projected_lines_l))
+        print('projected_lines_r: {}'.format(projected_lines_r))
         return projected_lines_l, projected_lines_r # Nx2 [rho, theta], Nx2 [rho, theta]
     
 
