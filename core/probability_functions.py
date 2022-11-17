@@ -178,6 +178,10 @@ def shaftFeatureObs(state, detected_lines, robot_arm, cam, cam_T_b, joint_angle_
     print('entering cost association calculation')
     print('projected_lines: {}'.format(projected_lines))
     print('detected_lines: {}'.format(detected_lines))
+
+    # add some error checking if necessary?
+    # if projected lines is None or detected lines is None?
+    
     for cam_idx, proj_lines in enumerate(projected_lines):
         # Use hungarian algorithm to match projected and detected points
         C_rho = gamma_rho * distance_matrix(proj_lines[:, 0, None], detected_lines[cam_idx][:, 0, None])
