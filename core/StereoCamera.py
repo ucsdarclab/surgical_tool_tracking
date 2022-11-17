@@ -90,6 +90,8 @@ class StereoCamera():
             cam_K_matrix = self.K2   
         assert(cam_K_matrix is not None)
 
+        print('cam_K_matrix: {}'.format(cam_K_matrix))
+
         assert(len(points) == len(directions) == len(radii))
         projected_lines = []
         for i in range(points.shape[0]):
