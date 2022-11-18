@@ -111,7 +111,7 @@ class StereoCamera():
             print('c: {}'.format(c))
 
             # are these units correct? makes A < 0
-            R = radii[i] * 1000.0
+            R = radii[i]
             print('R: {}'.format(R))
 
             alpha1 = (1 - a * a) * x0 - a * b * y0 - a * c * z0
