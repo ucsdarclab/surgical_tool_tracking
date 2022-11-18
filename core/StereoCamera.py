@@ -106,9 +106,9 @@ class StereoCamera():
             a = directions[i, 0]
             print('a: {}'.format(a))
             b = directions[i, 1]
-            print('b: {}'.format(a))
+            print('b: {}'.format(b))
             c = directions[i, 2]
-            print('c: {}'.format(a))
+            print('c: {}'.format(c))
 
             # are these units correct? makes A < 0
             R = radii[i] * 1000.0
