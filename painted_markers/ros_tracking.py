@@ -59,8 +59,8 @@ def gotData(l_img_msg, r_img_msg, j_msg, g_msg):
     # TODO: move image processing out of callback so callback only returns raw image
     cb_detected_keypoints_l, _cb_left_img  = segmentColorAndGetKeyPoints(_cb_left_img,  draw_contours=True)
     cb_detected_keypoints_r, _cb_right_img = segmentColorAndGetKeyPoints(_cb_right_img, draw_contours=True)
-    cb_detected_shaftlines_l, _cb_left_img  = detectShaftLines(_cb_left_img, show_canny=True, show_canny_name='left_canny')
-    cb_detected_shaftlines_r, _cb_right_img = detectShaftLines(_cb_right_img, show_canny=True, show_canny_name='right_canny')
+    cb_detected_shaftlines_l, _cb_left_img  = detectShaftLines(_cb_left_img)
+    cb_detected_shaftlines_r, _cb_right_img = detectShaftLines(_cb_right_img)
 
     cb_right_img = np.copy(_cb_right_img)
     cb_left_img  = np.copy(_cb_left_img)
