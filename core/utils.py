@@ -124,6 +124,8 @@ def detectShaftLines(img):
     lines = np.squeeze(lines)
     # sort by max votes
     sorted_lines = lines[(-lines[:, 2]).argsort()]
+    '''
+    # draw all detected lines
     for i in range(sorted_lines.shape[0]):
         rho = sorted_lines[i, 0]
         theta = sorted_lines[i, 1]
@@ -134,7 +136,7 @@ def detectShaftLines(img):
         pt1 = (int(x0 + 1000*(-b)), int(y0 + 1000*(a)))
         pt2 = (int(x0 - 1000*(-b)), int(y0 - 1000*(a)))
         cv2.line(img, pt1, pt2, (0,0,255), 2)
-
+    '''
     # sort by max votes
     sorted_lines = lines[(-lines[:, 2]).argsort()]
 
@@ -154,6 +156,8 @@ def detectShaftLines(img):
 
     best_lines = np.asarray(best_lines)
 
+    '''
+    # draw all clustered lines
     for i in range(best_lines.shape[0]):
         rho = best_lines[i, 0]
         theta = best_lines[i, 1]
@@ -164,13 +168,26 @@ def detectShaftLines(img):
         pt1 = (int(x0 + 2000*(-b)), int(y0 + 2000*(a)))
         pt2 = (int(x0 - 2000*(-b)), int(y0 - 2000*(a)))
         cv2.line(img, pt1, pt2, (255,0,0), 2)
+    '''
 
     # check for negative rho, add 2*pi to theta
     best_lines[:, 1][best_lines[:, 0] < 1] = best_lines[:, 1][best_lines[:, 0] < 1] + 2 * np.pi
     # replace negative rho with abs(rho)
     best_lines[:, 0][best_lines[:, 0] < 0] = best_lines[:, 0][best_lines[:, 0] < 1] * -1
 
-    # draw detected edges
+    # eliminate vertical lines
+    vertical_line_mask = []
+    for i in range(best_lines.shape[0]):
+        theta = best_lines[i, 1]
+        if (theta > -10 * np.pi / 180) and (theta < 10 * np.pi / 180):
+            vertical_line_mask.append(False)
+        elif (theta > 170 * np.pi / 180) and (theta < 190 * np.pi / 180):
+            vertical_line_mask.append(False)
+        else:
+            vertical_line_mask.append(True)
+    best_lines = best_lines[vertical_line_mask, :]
+
+    # draw all detected and clustered edges
     img = drawLines(img, best_lines[:, 0:2])
 
     # returns Nx2 array of # N detected lines x [rho, theta]
