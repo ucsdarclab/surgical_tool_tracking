@@ -102,7 +102,7 @@ if __name__ == "__main__":
                         #motionModelFunc=additiveGaussianNoise, \
                         motionModelFunc=lumpedErrorMotionModel,
                         #obsModelFunc=pointFeatureObs,
-                        obsModelFunc=shaftFeatureObs,
+                        obsModelFunc=[pointFeatureObs, shaftFeatureObs],
                         num_particles=200)
 
 
@@ -156,21 +156,28 @@ if __name__ == "__main__":
             pf.predictionStep(**pred_kwargs)
             
             # Update Particle Filter
-            upd_kwargs = {
-                            #"point_detections": (new_detected_keypoints_l, new_detected_keypoints_r),
-                            "detected_lines": (new_detected_shaftlines_l, new_detected_shaftlines_r),
+            upd_args = [  
+                            # pointFeatureObs arguments
+                            {"point_detections": (new_detected_keypoints_l, new_detected_keypoints_r),
                             "robot_arm": robot_arm, 
                             "cam": cam, 
                             "cam_T_b": cam_T_b,
                             "joint_angle_readings": new_joint_angles,
-                            #"gamma": 0.15, 
+                            "gamma": 0.15, 
+                            },
+                            #shaftFeatureObs arguments
+                            {"detected_lines": (new_detected_shaftlines_l, new_detected_shaftlines_r),
+                            "robot_arm": robot_arm, 
+                            "cam": cam, 
+                            "cam_T_b": cam_T_b,
+                            "joint_angle_readings": new_joint_angles,
                             "gamma_rho": 1, 
                             "gamma_theta": 1, 
                             "rho_thresh": 2,
-                            "theta_thresh": 2
-            }
+                            "theta_thresh": 2}
+            ]
 
-            pf.updateStep(**upd_kwargs)
+            pf.updateStep(upd_args)
             prev_joint_angles = new_joint_angles
 
             correction_estimation = pf.getMeanParticle()
