@@ -98,7 +98,7 @@ def segmentColorAndGetKeyPoints(img, hsv_min=(90, 40, 40), hsv_max=(120, 255, 25
 # - s/p Florian OK -> push to github with label
 # - start playing with kornia
 # -- use new folder w/jupyter notebook loads 2 images, runs dnn for associating moving lines from video to still image
-def drawLines(img, lines):
+def drawLines(img, lines, color = (0, 0, 255)):
     for i in range(lines.shape[0]):
         rho = lines[i, 0]
         theta = lines[i, 1]
@@ -108,8 +108,8 @@ def drawLines(img, lines):
         y0 = b * rho
         pt1 = (int(x0 + 2000*(-b)), int(y0 + 2000*(a)))
         pt2 = (int(x0 - 2000*(-b)), int(y0 - 2000*(a)))
-        # RGB (255, 0, 0) = Blue
-        cv2.line(img, pt1, pt2, (0,0,255), 2)
+        # BGR (255, 0, 0) = Blue
+        cv2.line(img, pt1, pt2, color, 2)
     
     return img
 
@@ -193,7 +193,7 @@ def detectShaftLines(img):
     best_lines = best_lines[vertical_line_mask, :]
 
     # draw all detected and clustered edges
-    img = drawLines(img, best_lines[:, 0:2])
+    img = drawLines(img, best_lines[:, 0:2], color = (0, 0, 255))
 
     # returns Nx2 array of # N detected lines x [rho, theta]
     return best_lines[:, 0:2], img
@@ -214,7 +214,7 @@ def drawShaftLines(shaftFeatures, cam, cam_T_b, img_list):
     # Project shaft lines from L and R camera-to-base frames onto 2D camera image plane
     projected_lines = cam.projectShaftLines(p_c, d_c, r)
 
-    img_l = drawLines(img_list[0], projected_lines[0])
-    img_r = drawLines(img_list[1], projected_lines[1])
+    img_l = drawLines(img_list[0], projected_lines[0], (0, 255, 0))
+    img_r = drawLines(img_list[1], projected_lines[1], (0, 255, 0))
 
     return img_l, img_r
