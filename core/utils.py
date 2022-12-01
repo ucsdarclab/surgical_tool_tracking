@@ -93,6 +93,11 @@ def segmentColorAndGetKeyPoints(img, hsv_min=(90, 40, 40), hsv_max=(120, 255, 25
 
 # accepts single img and Nx2 [rho, theta] array of line parameters
 # returns altered img
+# TODO: add color as input to distinguish projected shaft lines vs. drawn lines
+# after colors, send videos to Florian (feature vs. shaft vs. feature + shaft)
+# - s/p Florian OK -> push to github with label
+# - start playing with kornia
+# -- use new folder w/jupyter notebook loads 2 images, runs dnn for associating moving lines from video to still image
 def drawLines(img, lines):
     for i in range(lines.shape[0]):
         rho = lines[i, 0]

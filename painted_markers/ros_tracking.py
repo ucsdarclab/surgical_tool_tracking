@@ -83,31 +83,34 @@ if __name__ == "__main__":
     ats.registerCallback(gotData)
 
 
-    robot_arm = RobotLink(robot_file, use_dh_offset=False)
+    robot_arm = RobotLink(robot_file, use_dh_offset=False) # position / orientation in Meters
     cam = StereoCamera(camera_file, rectify=True)
 
     # Load hand-eye transform 
+    # originally in M
     f = open(hand_eye_file)
     hand_eye_data = yaml.load(f, Loader=yaml.FullLoader)
 
     cam_T_b = np.eye(4)
-    cam_T_b[:-1, -1] = np.array(hand_eye_data['PSM1_tvec'])/1000.0
+    cam_T_b[:-1, -1] = np.array(hand_eye_data['PSM1_tvec'])/1000.0 # convert to mm
     cam_T_b[:-1, :-1] = axisAngleToRotationMatrix(hand_eye_data['PSM1_rvec'])
 
 
     # Initialize filter
-    # TODO: list of observation features point and shaft
     pf = ParticleFilter(num_states=9, 
                         initialDistributionFunc=sampleNormalDistribution,
                         #motionModelFunc=additiveGaussianNoise, \
                         motionModelFunc=lumpedErrorMotionModel,
                         #obsModelFunc=pointFeatureObs,
-                        obsModelFunc=[pointFeatureObs, shaftFeatureObs],
+                        obsModelFunc=[
+                                    pointFeatureObs, 
+                                    shaftFeatureObs
+                                    ],
                         num_particles=200)
 
 
     init_kwargs = {
-                    "std": np.array([1.0e-3, 1.0e-3, 1.0e-3, # pos
+                    "std": np.array([1.0e-3, 1.0e-3, 1.0e-3, # pos # in M i.e. 1x10^-3 M
                                     1.0e-2, 1.0e-2, 1.0e-2, # ori
                                     #5.0e-3, 5.0e-3, 0.02
                                     0.0, 0.0, 0.0])   # joints
@@ -147,7 +150,7 @@ if __name__ == "__main__":
             std_j[-3:] = 0.0
 
             pred_kwargs = {
-                            "std_pos": 2.5e-5, 
+                            "std_pos": 2.5e-5, # in Meters
                             "std_ori": 1.0e-4,
                             "robot_arm": robot_arm, 
                             "std_j": std_j,
