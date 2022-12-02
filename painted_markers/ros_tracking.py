@@ -104,7 +104,7 @@ if __name__ == "__main__":
                         #obsModelFunc=pointFeatureObs,
                         obsModelFunc=[
                                     pointFeatureObs, 
-                                    #shaftFeatureObs
+                                    shaftFeatureObs
                                     ],
                         num_particles=200)
 
@@ -169,15 +169,15 @@ if __name__ == "__main__":
                             "gamma": 0.15, 
                             },
                             #shaftFeatureObs arguments
-                            #{"detected_lines": (new_detected_shaftlines_l, new_detected_shaftlines_r),
-                            #"robot_arm": robot_arm, 
-                            #"cam": cam, 
-                            #"cam_T_b": cam_T_b,
-                            #"joint_angle_readings": new_joint_angles,
-                            #"gamma_rho": 1, 
-                            #"gamma_theta": 1, 
-                            #"rho_thresh": 2,
-                            #"theta_thresh": 2}
+                            {"detected_lines": (new_detected_shaftlines_l, new_detected_shaftlines_r),
+                            "robot_arm": robot_arm, 
+                            "cam": cam, 
+                            "cam_T_b": cam_T_b,
+                            "joint_angle_readings": new_joint_angles,
+                            "gamma_rho": 1, 
+                            "gamma_theta": 1, 
+                            "rho_thresh": 2,
+                            "theta_thresh": 2}
             ]
 
             pf.updateStep(upd_args)
