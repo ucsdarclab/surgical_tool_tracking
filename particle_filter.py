@@ -115,52 +115,6 @@ def gaussian_noise(x, sigmas, **kwargs):
     return x + n, prob
 
 
-#kwargs must have init_rvec, init_tvec, and joint_angles
-def project_feature_points(x, **kwargs):
-    
-    n_points = 5
-    
-    y = np.zeros((x.shape[0], n_points, 2))
-    
-    theta = kwargs["joint_angles"]
-    robot = kwargs["robot"]
-    cam = kwargs["camera"]
-    FK_tree = robot.get_FK_tree(theta)
-
-    f0 = dehomogenize_3d(robot.mount_T_base_left @FK_tree[robot.point_features['f0']['parent']] \
-                         @ np.vstack((m_2_inch(robot.point_features['f0']['position']).reshape(-1,1),1))).reshape(-1)
-    f1 = dehomogenize_3d(robot.mount_T_base_left @FK_tree[robot.point_features['f1']['parent']] \
-                         @ np.vstack((m_2_inch(robot.point_features['f1']['position']).reshape(-1,1),1))).reshape(-1)
-    f2 = dehomogenize_3d(robot.mount_T_base_left @FK_tree[robot.point_features['f2']['parent']] \
-                         @ np.vstack((m_2_inch(robot.point_features['f2']['position']).reshape(-1,1),1))).reshape(-1)
-    f3 = dehomogenize_3d(robot.mount_T_base_left @FK_tree[robot.point_features['f3']['parent']] \
-                         @ np.vstack((m_2_inch(robot.point_features['f3']['position']).reshape(-1,1),1))).reshape(-1)
-    f4 = dehomogenize_3d(robot.mount_T_base_left @FK_tree[robot.point_features['f4']['parent']] \
-                         @ np.vstack((m_2_inch(robot.point_features['f4']['position']).reshape(-1,1),1))).reshape(-1)
-    
-
-    for i, particle in enumerate(x):
-        
-        rvec, tvec = cv2.composeRT( kwargs["init_rvec"], kwargs["init_tvec"], particle[3:], particle[:3])[:2]
-        
-        p0,_ = cv2.projectPoints(f0, rvec, tvec, cam.P,cam.D)
-        p0 = np.squeeze(p0) - cam.offset
-        y[i, 0] = p0
-        p1,_ = cv2.projectPoints(f1, rvec, tvec, cam.P,cam.D)
-        p1 = np.squeeze(p1) - cam.offset
-        y[i, 1] = p1
-        p2,_ = cv2.projectPoints(f2, rvec, tvec, cam.P,cam.D)
-        p2 = np.squeeze(p2) - cam.offset
-        y[i, 2] = p2
-        p3,_ = cv2.projectPoints(f3, rvec, tvec, cam.P,cam.D)
-        p3 = np.squeeze(p3) - cam.offset
-        y[i, 3] = p3
-        p4,_ = cv2.projectPoints(f4, rvec, tvec, cam.P,cam.D)
-        p4 = np.squeeze(p4) - cam.offset
-        y[i, 4] = p4
-
-        
-    return y
 
 def prior_fn(n,scale_init_sigma,sigma_t,sigma_r):
     x = np.zeros((n, 6))
@@ -185,17 +139,6 @@ def prior_fn(n,scale_init_sigma,sigma_t,sigma_r):
         
     return x, p
 
-#kwargs must have confidence vector of equal length as y's second dimension (number of features)
-#kwargs alos much have gamma value
-# Note that x is of dimensions N (number of particles) by P (number of features) by 2 
-# and y is of dimensions P by 2
-def weight_function(x, y, **kwargs):
-    e = np.exp(-np.linalg.norm( x - y, axis=2) * kwargs["gamma"])
-    
-    for i, conf in enumerate(kwargs["confidence"]):
-        e[:, i] *= conf
-    
-    return np.sum(e, axis=1)
 
 def identity(x, **kwargs):
     return x
