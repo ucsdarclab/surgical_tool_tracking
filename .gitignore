@@ -159,5 +159,3 @@ cython_debug/
 # dev files
 dev
 taurus_dataset
-*.png
-*.mp4

@@ -5,15 +5,22 @@ Dataset: https://drive.google.com/drive/folders/1Twt8h1oPO2eixuUngoWw0zGMWQPZUoa
 
 ## Documentation ##
 
-`taurus_tool_tracking.ipynb`: read data from rosbag and perform tool tracking.
+`taurus_tool_tracking.ipynb`: read data from rosbag and perform tool tracking with DNN keypoint detector.
+
+`taurus_tool_tracking_with_marker.ipynb`: read data from rosbag and perform tool tracking using painted markers.
 
 `particle_filter.py`: implements particle filter with resample strategies, noise model, update and observation model.
 
 `robot_fk.py`: implements robot forward kinematics.
 
+`robot_fk_new.py`: inherit robot forward kinematic model from "fk_funcions.py".
+
 `camera.py`: stores camera parameters and some drawing functions.
 
 `point_feature.json`: defines the point feature with their postion w.r.t joints.
+
+`point_feature_markers.json`: defines the point feature (markers) with their postion w.r.t joints. See "key_markers.png" for illustration.
+
 
 ## Keypoint detection ##
 

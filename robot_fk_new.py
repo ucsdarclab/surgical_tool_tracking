@@ -45,6 +45,8 @@ class Taurus_FK:
                                                         theta[4],theta[5],theta[6])
         pitch_3_front = dehomogenize_3d(T_b_J6 @ np.vstack((np.array(self.point_features['pitch_3:front']['position']).reshape(-1,1),1)).reshape(-1))
         pitch_3_back = dehomogenize_3d(T_b_J6 @ np.vstack((np.array(self.point_features['pitch_3:back']['position']).reshape(-1,1),1)).reshape(-1))
+        yaw_1 = dehomogenize_3d(T_b_J6 @ np.vstack((np.array(self.point_features['yaw_1']['position']).reshape(-1,1),1)).reshape(-1))
+        yaw_2 = dehomogenize_3d(T_b_J6 @ np.vstack((np.array(self.point_features['yaw_2']['position']).reshape(-1,1),1)).reshape(-1))
 
         point_features = dict()
         point_features["roll_1:front"] = roll_1_front
@@ -57,6 +59,8 @@ class Taurus_FK:
         point_features["pitch_1:left"] = pitch_1_left
         point_features["pitch_3:front"] = pitch_3_front
         point_features["pitch_3:back"] = pitch_3_back
+        point_features["yaw_1"] = yaw_1
+        point_features["yaw_2"] = yaw_2
 
         return point_features
 
