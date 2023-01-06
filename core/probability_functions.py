@@ -178,9 +178,6 @@ def shaftFeatureObs(state, detected_lines, robot_arm, cam, cam_T_b, joint_angle_
     print('entering cost association calculation')
     print('projected_lines: {}'.format(projected_lines))
     print('detected_lines: {}'.format(detected_lines))
-
-    # add some error checking if necessary?
-    # if projected lines is None or detected lines is None?
     
     for cam_idx, proj_lines in enumerate(projected_lines):
         # Use hungarian algorithm to match projected and detected points
@@ -198,52 +195,3 @@ def shaftFeatureObs(state, detected_lines, robot_arm, cam, cam_T_b, joint_angle_
         prob *= np.sum(np.exp(C[row_idx, col_idx])) + (proj_lines.shape[0] - len(row_idx))*np.exp(-1 * association_threshold)
         
     return prob
-
-'''
-def shaftFeatureObs_SingleCam(detected_lines, projected_lines, gamma_rho, gamma_theta, rho_thresh, theta_thresh):
-    
-    # Maximum association divergence
-    max_cost = gamma_rho * rho_thresh + gamma_theta * theta_thresh
-
-    # Check if no projections or detections
-    if (detected_lines is None) or (projected_lines is None):
-        return 0
-    
-    rho_detect = detected_lines[:, 0]
-    theta_detect = detected_lines[:, 1]
-    
-    rho_proj= projected_lines[:, 0]
-    theta_proj = projected_lines[:, 1]
-    
-    rho_diffs = np.abs(rho_detect[:, None] - rho_proj) * gamma_rho
-    theta_diffs= np.abs(np.fmod(((theta_detect[:, None] - theta_proj) + (2 * np.pi)), (4 * np.pi)) - (2 * np.pi)) * gamma_theta
-    C = rho_diffs + theta_diffs
-
-    # Sort by cost (ascending)
-    sorted_row_idx, sorted_col_idx = np.unravel_index(np.argsort(C, axis=None), C.shape)
-    paired_costs = []
-    detected_checked = []
-    projected_checked = []
-
-    for i in range(len(sorted_row_idx)):
-        row = sorted_row_idx[i]
-        col = sorted_col_idx[i]
-        if (C[row, col] >= max_cost):
-            break
-        if (row in detected_checked) or (col in projected_checked):
-            continue
-        if (rho_diffs[row, col] >= rho_thresh) or (theta_diffs[row, col] >= theta_thresh):
-            continue
-        paired_costs.append([row, col, C[row, col]])
-        detected_checked.append(row)
-        projected_checked.append(col)
-    
-    # Check if any valid paired costs
-    if (len(paired_costs) == 0):
-        return projected_lines.shape[0] * np.exp(-1 * max_cost)
-    else:
-        paired_costs = np.asarray(paired_costs)
-        prob = (projected_lines.shape[0] - paired_costs.shape[0]) * np.exp(-1 * max_cost) + np.sum(np.exp(paired_costs[:, -1]))
-
-    return prob
-'''

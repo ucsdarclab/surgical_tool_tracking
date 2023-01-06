@@ -213,7 +213,3 @@ class StereoCamera():
         print('projected_lines_l: {}'.format(projected_lines_l))
         print('projected_lines_r: {}'.format(projected_lines_r))
         return projected_lines_l, projected_lines_r # Nx2 [rho, theta], Nx2 [rho, theta]
-    
-
-        
-        

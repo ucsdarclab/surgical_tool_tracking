@@ -93,11 +93,6 @@ def segmentColorAndGetKeyPoints(img, hsv_min=(90, 40, 40), hsv_max=(120, 255, 25
 
 # accepts single img and Nx2 [rho, theta] array of line parameters
 # returns altered img
-# TODO: add color as input to distinguish projected shaft lines vs. drawn lines
-# after colors, send videos to Florian (feature vs. shaft vs. feature + shaft)
-# - s/p Florian OK -> push to github with label
-# - start playing with kornia
-# -- use new folder w/jupyter notebook loads 2 images, runs dnn for associating moving lines from video to still image
 def drawLines(img, lines, color = (0, 0, 255)):
     for i in range(lines.shape[0]):
         rho = lines[i, 0]
@@ -129,19 +124,7 @@ def detectShaftLines(img):
     lines = np.squeeze(lines)
     # sort by max votes
     sorted_lines = lines[(-lines[:, 2]).argsort()]
-    '''
-    # draw all detected lines
-    for i in range(sorted_lines.shape[0]):
-        rho = sorted_lines[i, 0]
-        theta = sorted_lines[i, 1]
-        a = math.cos(theta)
-        b = math.sin(theta)
-        x0 = a * rho
-        y0 = b * rho
-        pt1 = (int(x0 + 1000*(-b)), int(y0 + 1000*(a)))
-        pt2 = (int(x0 - 1000*(-b)), int(y0 - 1000*(a)))
-        cv2.line(img, pt1, pt2, (0,0,255), 2)
-    '''
+
     # sort by max votes
     sorted_lines = lines[(-lines[:, 2]).argsort()]
 
@@ -160,20 +143,6 @@ def detectShaftLines(img):
         checked_clusters.append(cluster)
 
     best_lines = np.asarray(best_lines)
-
-    '''
-    # draw all clustered lines
-    for i in range(best_lines.shape[0]):
-        rho = best_lines[i, 0]
-        theta = best_lines[i, 1]
-        a = math.cos(theta)
-        b = math.sin(theta)
-        x0 = a * rho
-        y0 = b * rho
-        pt1 = (int(x0 + 2000*(-b)), int(y0 + 2000*(a)))
-        pt2 = (int(x0 - 2000*(-b)), int(y0 - 2000*(a)))
-        cv2.line(img, pt1, pt2, (255,0,0), 2)
-    '''
 
     # check for negative rho, add 2*pi to theta
     best_lines[:, 1][best_lines[:, 0] < 1] = best_lines[:, 1][best_lines[:, 0] < 1] + 2 * np.pi
