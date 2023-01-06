@@ -112,8 +112,6 @@ def detectShaftLines(img):
 
     # pre-processing
     grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-    # TODO: switch with bilateral filter
     blur = cv2.GaussianBlur(grey, ksize=(25,25), sigmaX=0)
     thresh, mask = cv2.threshold(blur, thresh = 150, maxval = 175, type = cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
     edges = cv2.Canny(blur, threshold1 = 200, threshold2 = 255, apertureSize = 5, L2gradient = True)
@@ -162,6 +160,7 @@ def detectShaftLines(img):
     best_lines = best_lines[vertical_line_mask, :]
 
     # draw all detected and clustered edges
+    # (B, G, R)
     img = drawLines(img, best_lines[:, 0:2], color = (0, 0, 255))
 
     # returns Nx2 array of # N detected lines x [rho, theta]
@@ -183,6 +182,7 @@ def drawShaftLines(shaftFeatures, cam, cam_T_b, img_list):
     # Project shaft lines from L and R camera-to-base frames onto 2D camera image plane
     projected_lines = cam.projectShaftLines(p_c, d_c, r)
 
+    # (B, G, R)
     img_l = drawLines(img_list[0], projected_lines[0], (0, 255, 0))
     img_r = drawLines(img_list[1], projected_lines[1], (0, 255, 0))
 
