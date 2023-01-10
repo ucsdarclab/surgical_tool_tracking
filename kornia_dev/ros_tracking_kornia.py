@@ -1,6 +1,8 @@
 import time
 import rospy
 import cv2
+import kornia as K
+import kornia.feature as KF
 
 from sensor_msgs.msg import Image, JointState
 from message_filters import ApproximateTimeSynchronizer, Subscriber
@@ -43,6 +45,19 @@ cb_left_img = None
 cb_right_img = None
 cb_joint_angles = None
 
+# Reference images for kornia network
+# left camera
+augmented_ref_l = np.load('canny_augmented_ref_l.npy') # (1080, 1920, 3) RGB uint8
+augmented_ref_l = K.image_to_tensor(augmented_ref_l).float() / 255.0 # [0, 1] torch.Size([3, 1080, 1920]) torch.float32
+augmented_ref_l = K.color.rgb_to_grayscale(augmented_ref_l) # [0, 1] torch.Size([1, 1080, 1920]) torch.float32
+# right camera
+augmented_ref_r = np.load('canny_augmented_ref_r.npy') # (1080, 1920, 3) RGB uint8
+augmented_ref_r = K.image_to_tensor(augmented_ref_r).float() / 255.0 # [0, 1] torch.Size([3, 1080, 1920]) torch.float32
+augmented_ref_r = K.color.rgb_to_grayscale(augmented_ref_r) # [0, 1] torch.Size([1, 1080, 1920]) torch.float32
+
+# Load kornia model
+sold2 = KF.SOLD2(pretrained=True, config=None)
+
 # ROS Callback for images and joint observations
 def gotData(l_img_msg, r_img_msg, j_msg, g_msg):
     global cam, new_cb_data, cb_detected_keypoints_l, cb_detected_keypoints_r, cb_detected_shaftlines_l, cb_detected_shaftlines_r, cb_left_img, cb_right_img, cb_joint_angles
@@ -59,8 +74,11 @@ def gotData(l_img_msg, r_img_msg, j_msg, g_msg):
     # TODO: move image processing out of callback so callback only returns raw image
     cb_detected_keypoints_l, _cb_left_img  = segmentColorAndGetKeyPoints(_cb_left_img,  draw_contours=True)
     cb_detected_keypoints_r, _cb_right_img = segmentColorAndGetKeyPoints(_cb_right_img, draw_contours=True)
-    cb_detected_shaftlines_l, _cb_left_img  = detectShaftLines(_cb_left_img)
-    cb_detected_shaftlines_r, _cb_right_img = detectShaftLines(_cb_right_img)
+    #cb_detected_shaftlines_l, _cb_left_img  = detectShaftLines(_cb_left_img)
+    #cb_detected_shaftlines_r, _cb_right_img = detectShaftLines(_cb_right_img)
+    ### RESUME HERE
+    cb_detected_shaftlines_l, _cb_left_img  = detectShaftLines_kornia(_cb_left_img)
+    cb_detected_shaftlines_r, _cb_right_img = detectShaftLines_kornia(_cb_right_img)
 
     cb_right_img = np.copy(_cb_right_img)
     cb_left_img  = np.copy(_cb_left_img)

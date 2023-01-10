@@ -3,6 +3,8 @@ import cv2
 import imutils
 import math
 from scipy.cluster.hierarchy import fclusterdata
+import torch
+import kornia as K
 
 def projectSkeleton(skeletonPts3D, cam_T_b, img_list, project_point_function):
     # skeletonPts3D should be in the same format as getSkeletonPoints from RobotLink
@@ -117,7 +119,7 @@ def detectShaftLines(img):
     edges = cv2.Canny(blur, threshold1 = 200, threshold2 = 255, apertureSize = 5, L2gradient = True)
     edges_and_mask = cv2.bitwise_and(edges, mask)
 
-    # detect lines
+   # detect lines
     lines = cv2.HoughLinesWithAccumulator(edges_and_mask, rho = 5, theta = 0.09, threshold = 100) 
     lines = np.squeeze(lines)
     # sort by max votes
@@ -159,6 +161,55 @@ def detectShaftLines(img):
             vertical_line_mask.append(True)
     best_lines = best_lines[vertical_line_mask, :]
 
+    # draw all detected and clustered edges
+    # (B, G, R)
+    img = drawLines(img, best_lines[:, 0:2], color = (0, 0, 255))
+
+    # returns Nx2 array of # N detected lines x [rho, theta], img with lines drawn, edges and mask
+    return best_lines[:, 0:2], img
+
+# canny image augmentation for kornia network
+def cannyPreProcess_kornia(img):
+
+    grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    blur = cv2.GaussianBlur(grey, ksize=(25,25), sigmaX=0)
+    thresh, mask = cv2.threshold(blur, thresh = 150, maxval = 175, type = cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    edges = cv2.Canny(blur, threshold1 = 200, threshold2 = 255, apertureSize = 5, L2gradient = True)
+    edges_and_mask = cv2.bitwise_and(edges, mask)
+    edges_and_mask = cv2.cvtColor(edges_and_mask, cv2.COLOR_GRAY2RGB)
+    return edges_and_mask
+
+def detectShaftLines_kornia(img):
+    
+    # pre-processing
+    rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    assert(rgb.shape == img.shape)
+    assert(rgb.min() >= 0 and rgb.max() <= 255)
+
+    canny = cannyPreProcess_kornia(rgb)
+    assert(canny.shape == rgb.shape)
+    assert(canny.min() >= 0 and canny.max() <= 255)
+    
+    temp = np.zeros_like(rgb, dtype=np.uint16)
+    temp += rgb
+    temp += canny
+    temp[temp > 255] = 255
+    assert(temp.min() >= 0)
+
+    ### RESUME HERE
+    ### No need for augmented image in this, because not line matching
+    # create augmented image
+    '''
+    augmented_img = np.array(temp, dtype=np.uint8) # (1080, 1920, 3) RGB uint8
+    augmented_img = K.image_to_tensor(augmented_img).float() / 255.0  # [0, 1] [3, 1080, 1920] float32
+    augmented_img = K.color.rgb_to_grayscale(augmented_img) # [0, 1] [1, 1080, 1920] float32
+
+    # use reference image for line matching
+    imgs = torch.stack([augmented_ref, augmented_img], )
+    with torch.inference_mode():
+        outputs = sold2(imgs)
+    '''
+    
     # draw all detected and clustered edges
     # (B, G, R)
     img = drawLines(img, best_lines[:, 0:2], color = (0, 0, 255))
