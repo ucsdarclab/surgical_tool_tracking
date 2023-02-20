@@ -27,6 +27,11 @@ from PIL import Image as PILImage
 
 bridge = CvBridge()
 
+import yaml
+
+############### read config file ##################
+with open("config.yaml", 'r') as ymlfile:
+    cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)
 
 
 ########################### essential functions ####################################
@@ -162,27 +167,22 @@ def weight_function(hypotheses, observed, **kwargs):
     return weights
 
 ################################# defining parameters and initialize particle filter ############################3
-hsv_min=(120, 40, 40)
-hsv_max=(150, 255, 255)
+hsv_min = np.array(cfg["hsv_min"])
+hsv_max = np.array(cfg["hsv_max"])
 
 # particle filter parameters
-sigma_t = 0.002 #0.005 #m
-sigma_r = 0.001   #0.035 #2 degrees
-#sigma_j = 0.001
-#u_j     = 0.002
-scale_init_sigma = 10
-gamma = 0.5 # 1
-association_threshold=500
-n_particles = 500
-n_eff = 0.5
-resample_proportion = 0
+sigma_t = cfg["sigma_t"] 
+sigma_r = cfg["sigma_r"]  
+scale_init_sigma = cfg["scale_init_sigma"]
+gamma = cfg["gamma"]
+association_threshold=cfg["association_threshold"]
+n_particles = cfg["n_particles"]
+n_eff = cfg["n_eff"]
+resample_proportion = cfg["resample_proportion"]
 
 taurus = Taurus_FK("point_feature_markers.json")
 
-T_b_c = np.array([[-0.0086596 ,  0.86086372, -0.50876189, 0.667792],
-                  [-0.9999511 , -0.00502532,  0.00851687, -0.027447],
-                  [ 0.00477517,  0.50881076,  0.86086515, -0.0123208],
-                  [ 0.0       , 0.0        , 0.0        , 1.0     ]])
+T_b_c = np.array(cfg["initial_camera_to_base"])
 T_c_b = np.linalg.inv(T_b_c)
 
 rvec_init = cv2.Rodrigues(T_c_b[:3,:3])[0].squeeze()
@@ -204,11 +204,9 @@ pf.init_filter()
 
 ############################# main loop ################################################3
 
-visualize = True
-start = time.time()
+visualize = False
 def gotData(img_msg, joint_msg):
-    global start
-    print("Received data!")
+    #print("Received data!")
 
     # receive images
     try:
@@ -222,19 +220,45 @@ def gotData(img_msg, joint_msg):
     # receive joint angles
     left_joint_angles_orderred = np.array(joint_msg.position)[[2, 4, 3, 0, 6, 5, 7]]
 
-        # detect point features
-    centroids, img = segmentColorAndGetKeyPoints(img, hsv_min, hsv_max, draw_contours=True)
+    # detect point features
+    centroids, img = segmentColorAndGetKeyPoints(img, hsv_min, hsv_max, draw_contours=visualize)
 
     
-    # estimate with particle filter
     # estimate with particle filter
     pf.update(centroids, init_rvec=rvec_init, init_tvec=tvec_init,\
                 joint_angles=left_joint_angles_orderred, association_threshold=association_threshold,\
                 gamma=gamma, robot=taurus, camera=camera)
     
-    # most recent prediction of the robot pose
+    # most recent prediction of the robot base pose
     rvec_new, tvec_new = cv2.composeRT(rvec_init, tvec_init, pf.mean_state[3:], pf.mean_state[:3], 
                            camera.P, camera.D)[:2]
+
+    # transformation matrix
+    R,_ = cv2.Rodrigues(rvec_new)
+    #quat_tmp = quaternions.mat2quat(R)
+    #quat = [quat_tmp[1],quat_tmp[2],quat_tmp[3],quat_tmp[0]]
+
+    c_T_b = np.hstack((R,tvec_new))
+    c_T_b = np.vstack((c_T_b,[0,0,0,1]))
+
+    T_J5 = taurus.get_elbow_transfrom(left_joint_angles_orderred[0],\
+                                            left_joint_angles_orderred[1],\
+                                                left_joint_angles_orderred[2],\
+                                                    left_joint_angles_orderred[3])
+
+    T_J6 = taurus.get_end_frame_transform(left_joint_angles_orderred[0],\
+                                            left_joint_angles_orderred[1],\
+                                                left_joint_angles_orderred[2],\
+                                                    left_joint_angles_orderred[3],\
+                                                        left_joint_angles_orderred[4],\
+                                                            left_joint_angles_orderred[5],\
+                                                                left_joint_angles_orderred[6])
+
+    print(img_msg.header.stamp)
+    c_T_elbow = c_T_b @ T_J5
+    c_T_wrist = c_T_b @ T_J6
+    print(c_T_elbow)
+    print(c_T_wrist)
 
 
     ####################################
@@ -243,27 +267,15 @@ def gotData(img_msg, joint_msg):
         point_features = taurus.get_point_features(left_joint_angles_orderred)
         image = img.copy()
 
-        T_J5 = taurus.get_elbow_transfrom(left_joint_angles_orderred[0],\
-                                            left_joint_angles_orderred[1],\
-                                                left_joint_angles_orderred[2],\
-                                                    left_joint_angles_orderred[3])
+        ori = c_T_elbow @ np.array([0,0,0,1])
+        x = c_T_elbow @ np.array([0.02,0,0,1])
+        y = c_T_elbow @ np.array([0,0.02,0,1])
+        z = c_T_elbow @ np.array([0,0,0.02,1])
 
-        T_J6 = taurus.get_end_frame_transform(left_joint_angles_orderred[0],\
-                                                left_joint_angles_orderred[1],\
-                                                    left_joint_angles_orderred[2],\
-                                                        left_joint_angles_orderred[3],\
-                                                            left_joint_angles_orderred[4],\
-                                                                left_joint_angles_orderred[5],\
-                                                                    left_joint_angles_orderred[6])
-        ori = T_J5 @ np.array([0,0,0,1])
-        x = T_J5 @ np.array([0.02,0,0,1])
-        y = T_J5 @ np.array([0,0.02,0,1])
-        z = T_J5 @ np.array([0,0,0.02,1])
-
-        px,_ = cv2.projectPoints(x[:3], rvec_new, tvec_new, P, D)
-        py,_ = cv2.projectPoints(y[:3], rvec_new, tvec_new, P, D)
-        pz,_ = cv2.projectPoints(z[:3], rvec_new, tvec_new, P, D)
-        po,_ = cv2.projectPoints(ori[:3], rvec_new, tvec_new, P, D)
+        px,_ = cv2.projectPoints(x[:3], np.zeros(3), np.zeros(3), P, D)
+        py,_ = cv2.projectPoints(y[:3], np.zeros(3), np.zeros(3), P, D)
+        pz,_ = cv2.projectPoints(z[:3], np.zeros(3), np.zeros(3), P, D)
+        po,_ = cv2.projectPoints(ori[:3], np.zeros(3), np.zeros(3), P, D)
 
         image = cv2.line(image, tuple(po.squeeze().astype(int)), tuple(px.squeeze().astype(int)), 
                                         (255,0,0), 5)
@@ -275,7 +287,6 @@ def gotData(img_msg, joint_msg):
             
 
         plt.imsave("test/" + str(time.time()) + ".png",image)
-    ####
         
 
 
@@ -284,14 +295,9 @@ rospy.init_node('taurus_tool_tracking')
 # Define your image topic
 image_topic = "/rgb/image_raw"
 robot_joint_topic = "/joint_states"
-robot_pose_topic = "robot_pose"
-# Set up your subscriber and define its callback
-#rospy.Subscriber(image_topic, sensor_msgs.msg.Image, gotData)
+#robot_pose_topic = "/robot_base_pose"
 
-image_sub = Subscriber(image_topic, sensor_msgs.msg.Image)
-robot_j_sub = Subscriber(robot_joint_topic, sensor_msgs.msg.JointState)
-pose_pub = rospy.Publisher(robot_pose_topic, geometry_msgs.msg.PoseStamped, queue_size=1)
-
+#### get camera info
 camera_info = rospy.wait_for_message("/rgb/camera_info", sensor_msgs.msg.CameraInfo)
 P = np.array(camera_info.P).reshape(3,4)[:,:3]
 D = np.array(camera_info.D)
@@ -299,6 +305,10 @@ offset = np.array([camera_info.roi.x_offset,camera_info.roi.y_offset])
 camera = Camera(P,D,offset)
 
 
+# Set up  subscriber and define its callback
+image_sub = Subscriber(image_topic, sensor_msgs.msg.Image)
+robot_j_sub = Subscriber(robot_joint_topic, sensor_msgs.msg.JointState)
+#pose_pub = rospy.Publisher(robot_pose_topic, geometry_msgs.msg.PoseStamped, queue_size=1)
 ats = ApproximateTimeSynchronizer([image_sub, robot_j_sub], queue_size=10, slop=5)
 ats.registerCallback(gotData)
 

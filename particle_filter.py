@@ -350,7 +350,7 @@ class ParticleFilter(object):
         
         # normalise weights to resampling probabilities
         self.weight_normalisation = np.sum(weights)
-        print(self.weight_normalisation)
+        #print(self.weight_normalisation)
         
         #FLORIAN ADDED THIS
         if self.weight_normalisation == 0:

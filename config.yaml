@@ -1,0 +1,20 @@
+
+# particle filter parameters
+sigma_t : 0.002 #0.005 #m
+sigma_r : 0.001   #0.035 #2 degrees
+#sigma_j = 0.001
+#u_j     = 0.002
+scale_init_sigma : 10
+gamma : 0.5 # 1
+association_threshold : 500
+n_particles : 500
+n_eff : 0.5
+resample_proportion : 0
+
+# image processing parameters
+hsv_min : [120, 40, 40]
+hsv_max : [150, 255, 255]
+
+# initial calibration
+
+initial_camera_to_base : [[-0.0086596 ,  0.86086372, -0.50876189, 0.667792],[-0.9999511 , -0.00502532,  0.00851687, -0.027447],[ 0.00477517,  0.50881076,  0.86086515, -0.0123208],[ 0.0       , 0.0        , 0.0        , 1.0     ]]
