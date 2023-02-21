@@ -161,12 +161,12 @@ class StereoCamera():
                 F *= -1
             
             rho = D / np.sqrt(F * F + G * G)
-            theta = math.atan2(G, F)
+            theta = math.atan2(G, F) # radians
             projected_lines.append([rho, theta])
             
         projected_lines = np.asarray(projected_lines)
         print('projected_lines from projectShaftLines_SingleCam: {}'.format(projected_lines))
-        return projected_lines # Nx2 [rho, theta]
+        return projected_lines # Nx2 [rho, theta] # theta in radians
 
     # Project shaft lines from L/R camera-to-base frames onto 2D camera image plane 
     # points: Nx3 np array of shaft points in L camera-to-base frame (left is default)
