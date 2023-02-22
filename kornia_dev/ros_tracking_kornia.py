@@ -46,14 +46,19 @@ cb_right_img = None
 cb_joint_angles = None
 
 # Reference images for kornia network
+ref_lines_l = torch.as_tensor(np.load('crop_ref_lines_l.npy')) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
+ref_lines_r = torch.as_tensor(np.load('crop_ref_lines_l.npy')) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
+
+crop_ref_dims = np.load('crop_ref_dims.npy') # array([ 720, 1280])
+
 # left camera
-augmented_ref_l = np.load('canny_augmented_ref_l.npy') # (1080, 1920, 3) RGB uint8
-augmented_ref_l = K.image_to_tensor(augmented_ref_l).float() / 255.0 # [0, 1] torch.Size([3, 1080, 1920]) torch.float32
-augmented_ref_l = K.color.rgb_to_grayscale(augmented_ref_l) # [0, 1] torch.Size([1, 1080, 1920]) torch.float32
+crop_ref_l = np.load('crop_ref_l.npy') # (720, 1080, 3) RGB uint8
+crop_ref_l = K.image_to_tensor(crop_ref_l).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
+crop_ref_l = K.color.rgb_to_grayscale(crop_ref_l) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
 # right camera
-augmented_ref_r = np.load('canny_augmented_ref_r.npy') # (1080, 1920, 3) RGB uint8
-augmented_ref_r = K.image_to_tensor(augmented_ref_r).float() / 255.0 # [0, 1] torch.Size([3, 1080, 1920]) torch.float32
-augmented_ref_r = K.color.rgb_to_grayscale(augmented_ref_r) # [0, 1] torch.Size([1, 1080, 1920]) torch.float32
+crop_ref_r = np.load('crop_ref_r.npy') # (1080, 1920, 3) RGB uint8
+crop_ref_r = K.image_to_tensor(crop_ref_r).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
+crop_ref_r = K.color.rgb_to_grayscale(crop_ref_r) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
 
 # Load kornia model
 sold2 = KF.SOLD2(pretrained=True, config=None)
@@ -76,7 +81,8 @@ def gotData(l_img_msg, r_img_msg, j_msg, g_msg):
     cb_detected_keypoints_r, _cb_right_img = segmentColorAndGetKeyPoints(_cb_right_img, draw_contours=True)
     #cb_detected_shaftlines_l, _cb_left_img  = detectShaftLines(_cb_left_img)
     #cb_detected_shaftlines_r, _cb_right_img = detectShaftLines(_cb_right_img)
-    ### RESUME HERE
+    
+    ### RESUME HERE ###
     cb_detected_shaftlines_l, _cb_left_img  = detectShaftLines_kornia(_cb_left_img)
     cb_detected_shaftlines_r, _cb_right_img = detectShaftLines_kornia(_cb_right_img)
 
