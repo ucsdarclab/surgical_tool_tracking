@@ -17,11 +17,11 @@ if module_path not in sys.path:
 
 print(module_path)
 
-from core.RobotLink import *
-from core.StereoCamera import *
-from core.ParticleFilter import *
-from core.probability_functions import *
-from core.utils import *
+from RobotLink_kornia import *
+from StereoCamera_kornia import *
+from ParticleFilter_kornia import *
+from probability_functions_kornia import *
+from utils_kornia import *
 
 # File inputs
 robot_file    = script_path + '/../../journal_dataset/LND.json'
