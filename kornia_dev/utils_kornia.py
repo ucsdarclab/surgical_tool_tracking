@@ -179,43 +179,93 @@ def cannyPreProcess_kornia(img):
     edges_and_mask = cv2.cvtColor(edges_and_mask, cv2.COLOR_GRAY2RGB)
     return edges_and_mask
 
-def detectShaftLines_kornia(img):
-    
-    # pre-processing
-    rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    assert(rgb.shape == img.shape)
-    assert(rgb.min() >= 0 and rgb.max() <= 255)
+def center_crop(img, dim):
+    height, width = img.shape[0], img.shape[1]
+    mid_y, mid_x = int(height / 2), int(width / 2)
 
-    canny = cannyPreProcess_kornia(rgb)
-    assert(canny.shape == rgb.shape)
-    assert(canny.min() >= 0 and canny.max() <= 255)
-    
-    temp = np.zeros_like(rgb, dtype=np.uint16)
-    temp += rgb
-    temp += canny
-    temp[temp > 255] = 255
-    assert(temp.min() >= 0)
+    crop_height, crop_width = int(dim[0] / 2), int(dim[1] / 2)
+    y_offset = mid_y - crop_height
+    x_offset = mid_x - crop_width
+    crop_img = img[y_offset: (mid_y + crop_height), x_offset: (mid_x + crop_width)]
+    return(crop_img, y_offset, x_offset)
 
-    ### RESUME HERE
-    ### No need for augmented image in this, because not line matching
-    # create augmented image
-    '''
-    augmented_img = np.array(temp, dtype=np.uint8) # (1080, 1920, 3) RGB uint8
-    augmented_img = K.image_to_tensor(augmented_img).float() / 255.0  # [0, 1] [3, 1080, 1920] float32
-    augmented_img = K.color.rgb_to_grayscale(augmented_img) # [0, 1] [1, 1080, 1920] float32
+def plot_color_line_matches(lines, lw=2, indices=(0, 1)):
+    """Plot line matches for existing images with multiple colors.
+    Args:
+        lines: list of ndarrays of size (N, 2, 2).
+        lw: line width as float pixels.
+        indices: indices of the images to draw the matches on.
+    """
+    n_lines = len(lines[0])
 
-    # use reference image for line matching
-    imgs = torch.stack([augmented_ref, augmented_img], )
+    cmap = plt.get_cmap("nipy_spectral", lut=n_lines)
+    colors = np.array([mcolors.rgb2hex(cmap(i)) for i in range(cmap.N)])
+
+    np.random.shuffle(colors)
+
+    fig = plt.gcf()
+    ax = fig.axes
+    assert len(ax) > max(indices)
+    axes = [ax[i] for i in indices]
+    fig.canvas.draw()
+
+    # Plot the lines
+    for a, l in zip(axes, lines):
+        for i in range(len(l)):
+            line = matplotlib.lines.Line2D(
+                (l[i, 1, 1], l[i, 0, 1]),
+                (l[i, 1, 0], l[i, 0, 0]),
+                zorder=1,
+                c=colors[i],
+                linewidth=lw,
+            )
+            a.add_line(line)
+
+def detectShaftLines_kornia(img, ref_img, crop_ref_lines, crop_ref_dims, model):
+    new_img, y_offset, x_offset = center_crop(img, crop_ref_dims) # crop_dims x 3 (RGB) uint8 ndarray [0 255]
+    new_img = K.image_to_tensor(new_img).float() / 255.0  # [0, 1] [3, crop_dims] float32
+    new_img = K.color.rgb_to_grayscale(new_img) # [0, 1] [1, crop_dims] float32
+    imgs = torch.stack([ref_img, new_img], )
     with torch.inference_mode():
-        outputs = sold2(imgs)
-    '''
+        outputs = model(imgs)
     
-    # draw all detected and clustered edges
-    # (B, G, R)
-    img = drawLines(img, best_lines[:, 0:2], color = (0, 0, 255))
+    # detect line segments
+    line_seg1 = outputs["line_segments"][0]
+    line_seg2 = outputs["line_segments"][1]
+    desc1 = outputs["dense_desc"][0]
+    desc2 = outputs["dense_desc"][1]
 
-    # returns Nx2 array of # N detected lines x [rho, theta]
-    return best_lines[:, 0:2], img
+    # perform association
+    with torch.inference_mode():
+        matches = model.match(line_seg1, line_seg2, desc1[None], desc2[None])
+    valid_matches = matches != -1
+    match_indices = matches[valid_matches]
+
+    matched_lines1 = line_seg1[valid_matches]
+    matched_lines2 = line_seg2[match_indices]
+
+    # sort matched lines by y-coordinate
+    sort_column = 0
+    values, indices = matched_lines1[:, :, sort_column].sort()
+    sorted_matched_lines1 = matched_lines1[[[x] for x in range(matched_lines1.shape[0])], indices]
+
+    # load ref lines and find identical lines in ref_img lines (matched_lines1)
+    dist_matrix = torch.cdist(torch.flatten(crop_ref_lines, start_dim = 1), torch.flatten(sorted_matched_lines1, start_dim = 1))
+    ind = torch.argmin(dist_matrix, dim = 1)
+
+    # select matching shaft lines
+    selected_lines1 = matched_lines1[ind]
+    selected_lines2 = matched_lines2[ind] #torch[2, 2, 2]
+        
+    # draw matched lines on cropped reference input image
+    # draw matched lines on new input img (at original size)
+    # add offsets to endpoints
+
+
+    # returns torch[2, 2, 2] tensor of endpoints for 2 line segments
+    # returns original size new image with line segments drawn
+    # returns cropped reference image with line segments drawn
+    return selected_lines2, img, ref_img
 
 def drawShaftLines(shaftFeatures, cam, cam_T_b, img_list):
 

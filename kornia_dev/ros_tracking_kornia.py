@@ -46,8 +46,8 @@ cb_right_img = None
 cb_joint_angles = None
 
 # Reference images for kornia network
-ref_lines_l = torch.as_tensor(np.load('crop_ref_lines_l.npy')) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
-ref_lines_r = torch.as_tensor(np.load('crop_ref_lines_l.npy')) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
+crop_ref_lines_l = torch.as_tensor(np.load('crop_ref_lines_l.npy')) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
+crop_ref_lines_r = torch.as_tensor(np.load('crop_ref_lines_l.npy')) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
 
 crop_ref_dims = np.load('crop_ref_dims.npy') # array([ 720, 1280])
 
@@ -61,7 +61,7 @@ crop_ref_r = K.image_to_tensor(crop_ref_r).float() / 255.0 # [0, 1] torch.Size([
 crop_ref_r = K.color.rgb_to_grayscale(crop_ref_r) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
 
 # Load kornia model
-sold2 = KF.SOLD2(pretrained=True, config=None)
+model = KF.SOLD2(pretrained=True, config=None)
 
 # ROS Callback for images and joint observations
 def gotData(l_img_msg, r_img_msg, j_msg, g_msg):
@@ -83,8 +83,8 @@ def gotData(l_img_msg, r_img_msg, j_msg, g_msg):
     #cb_detected_shaftlines_r, _cb_right_img = detectShaftLines(_cb_right_img)
     
     ### RESUME HERE ###
-    cb_detected_shaftlines_l, _cb_left_img  = detectShaftLines_kornia(_cb_left_img)
-    cb_detected_shaftlines_r, _cb_right_img = detectShaftLines_kornia(_cb_right_img)
+    cb_detected_shaftlines_l, _cb_left_img  = detectShaftLines_kornia(_cb_left_img, crop_ref_l, crop_ref_lines_l, crop_ref_dims, model) # returns line segment endpoints  # torch.Size([2, 2, 2])
+    cb_detected_shaftlines_r, _cb_right_img = detectShaftLines_kornia(_cb_right_img, crop_ref_r, crop_ref_lines_r, crop_ref_dims, model) # returns line segment endpoints # torch.Size([2, 2, 2])
 
     cb_right_img = np.copy(_cb_right_img)
     cb_left_img  = np.copy(_cb_left_img)
