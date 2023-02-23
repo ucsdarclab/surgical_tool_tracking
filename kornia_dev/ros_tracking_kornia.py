@@ -83,8 +83,8 @@ def gotData(l_img_msg, r_img_msg, j_msg, g_msg):
     #cb_detected_shaftlines_r, _cb_right_img = detectShaftLines(_cb_right_img)
     
     ### RESUME HERE ###
-    cb_detected_shaftlines_l, _cb_left_img  = detectShaftLines_kornia(_cb_left_img, crop_ref_l, crop_ref_lines_l, crop_ref_dims, model) # returns line segment endpoints  # torch.Size([2, 2, 2])
-    cb_detected_shaftlines_r, _cb_right_img = detectShaftLines_kornia(_cb_right_img, crop_ref_r, crop_ref_lines_r, crop_ref_dims, model) # returns line segment endpoints # torch.Size([2, 2, 2])
+    cb_detected_shaftlines_l, _cb_left_img  = detectShaftLines_kornia(_cb_left_img, crop_ref_l, crop_ref_lines_l, crop_ref_dims, model) # returns nx2 array of [rho, theta]
+    cb_detected_shaftlines_r, _cb_right_img = detectShaftLines_kornia(_cb_right_img, crop_ref_r, crop_ref_lines_r, crop_ref_dims, model) # returns nx2 array of [rho, theta]
 
     cb_right_img = np.copy(_cb_right_img)
     cb_left_img  = np.copy(_cb_left_img)
