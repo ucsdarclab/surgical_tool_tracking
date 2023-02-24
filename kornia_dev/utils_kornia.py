@@ -189,40 +189,25 @@ def center_crop(img, dim):
     crop_img = img[y_offset: (mid_y + crop_height), x_offset: (mid_x + crop_width)]
     return(crop_img, y_offset, x_offset)
 
-def plot_color_line_matches(lines, lw=2, indices=(0, 1)):
-    """Plot line matches for existing images with multiple colors.
-    Args:
-        lines: list of ndarrays of size (N, 2, 2).
-        lw: line width as float pixels.
-        indices: indices of the images to draw the matches on.
-    """
-    n_lines = len(lines[0])
+# accepts single img and torch[2, 2, 2] tensor of line segment endpoints
+# returns altered img
+def drawLineSegments(img, lines):
+    # BGR (255, 0, 0) = Blue
+    colors = [(255, 0, 0), (0, 0, 255)]
+    for i in range(lines.shape[0]):
+        endpoints = lines[i, :, :]
+        y1 = int(endpoints[0, 0])
+        x1 = int(endpoints[0, 1])
+        y2 = int(endpoints[1, 0])
+        x2 = int(endpoints[1, 1])
+        pt1 = (x1, y1)
+        pt2 = (x2, y2)
+        cv2.line(img, pt1, pt2, colors[i], 2)
+    
+    return img
 
-    cmap = plt.get_cmap("nipy_spectral", lut=n_lines)
-    colors = np.array([mcolors.rgb2hex(cmap(i)) for i in range(cmap.N)])
-
-    np.random.shuffle(colors)
-
-    fig = plt.gcf()
-    ax = fig.axes
-    assert len(ax) > max(indices)
-    axes = [ax[i] for i in indices]
-    fig.canvas.draw()
-
-    # Plot the lines
-    for a, l in zip(axes, lines):
-        for i in range(len(l)):
-            line = matplotlib.lines.Line2D(
-                (l[i, 1, 1], l[i, 0, 1]),
-                (l[i, 1, 0], l[i, 0, 0]),
-                zorder=1,
-                c=colors[i],
-                linewidth=lw,
-            )
-            a.add_line(line)
-
-def detectShaftLines_kornia(img, ref_img, crop_ref_lines, crop_ref_dims, model):
-    new_img, y_offset, x_offset = center_crop(img, crop_ref_dims) # crop_dims x 3 (RGB) uint8 ndarray [0 255]
+def detectShaftLines_kornia(new_img, ref_img, crop_ref_lines, crop_ref_dims, model, use_intensity, intensity_radius = 3):
+    new_img, y_offset, x_offset = center_crop(new_img, crop_ref_dims) # crop_dims x 3 (RGB) uint8 ndarray [0 255]
     new_img = K.image_to_tensor(new_img).float() / 255.0  # [0, 1] [3, crop_dims] float32
     new_img = K.color.rgb_to_grayscale(new_img) # [0, 1] [1, crop_dims] float32
     imgs = torch.stack([ref_img, new_img], )
@@ -256,16 +241,48 @@ def detectShaftLines_kornia(img, ref_img, crop_ref_lines, crop_ref_dims, model):
     # select matching shaft lines
     selected_lines1 = matched_lines1[ind]
     selected_lines2 = matched_lines2[ind] #torch[2, 2, 2]
-        
-    # draw matched lines on cropped reference input image
-    # draw matched lines on new input img (at original size)
-    # add offsets to endpoints
 
+    # find intensity-based endpoints
+    if (use_intensity):
+        line_heatmap = np.asarray(outputs['line_heatmap'][1])
+        
+        if (intensity_radius <= 0):
+            intensity_radius = 3
+
+        intensity_endpoints = []
+        x_min = 0
+        x_max = crop_ref_dims[1]
+        y_min = 0
+        y_max = crop_ref_dims[0]
+        for i in range(selected_lines2.shape[0]):
+            endpoints = selected_lines2[i, :, :]
+            print(endpoints)
+            for j in range(endpoints.shape[0]):
+                y = int(endpoints[j][0])
+                x = int(endpoints[j][1])
+                top_left = (max(y_min, y - intensity_radius), max(x_min, x - intensity_radius)) 
+                bottom_right = (min(y_max, y + intensity_radius), min(x_max, x + intensity_radius))
+                rows = np.arange(top_left[0], bottom_right[0])
+                cols = np.arange(top_left[1], bottom_right[1])
+                intensities = line_heatmap[top_left[0]: bottom_right[0], top_left[1]: bottom_right[1]]
+                idx_flat = intensities.ravel().argmax()
+                idx = np.unravel_index(idx_flat, intensities.shape)
+                y = rows[idx[0]]
+                x = cols[idx[1]]
+                intensity_endpoints.append([y, x])
+
+        selected_lines2 = torch.as_tensor(np.asarray(intensity_endpoints).reshape(selected_lines2.shape))
+
+    # draw matched lines on cropped reference input image
+    ref_img = drawLineSegments(ref_img, selected_lines1)
+
+    # draw matched lines on new input img (at original size)
+    img = drawLineSegments(new_img, selected_lines2)
 
     # returns torch[2, 2, 2] tensor of endpoints for 2 line segments
-    # returns original size new image with line segments drawn
-    # returns cropped reference image with line segments drawn
-    return selected_lines2, img, ref_img
+    # returns input image with line segments drawn
+    # returns reference image with line segments drawn
+    return selected_lines2, new_img, ref_img
 
 def drawShaftLines(shaftFeatures, cam, cam_T_b, img_list):
 

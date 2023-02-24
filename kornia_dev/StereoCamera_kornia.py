@@ -4,7 +4,7 @@ import cv2
 import math
 
 class StereoCamera():
-    def __init__(self, cal_file_path, rectify = True, downscale_factor = 2, scale_baseline=1e-3):
+    def __init__(self, cal_file_path, rectify = True, orig_ref_dims = None, crop_ref_dims = None, downscale_factor = 2, scale_baseline=1e-3):
         # Load cal file and get all the parameters
         # scale_baseline scales the baseline (i.e. converts units from mm to m!)
         f = open(cal_file_path)
@@ -28,6 +28,24 @@ class StereoCamera():
         
         self.K1[-1, -1] = 1
         self.K2[-1, -1] = 1
+
+        # re-center
+        if (orig_ref_dims and crop_ref_dims):
+                height, width = orig_ref_dims[0], orig_ref_dims[1]
+                mid_y, mid_x = int(height / 2), int(width / 2)
+
+                crop_height, crop_width = int(crop_ref_dims[0] / 2), int(crop_ref_dims[1] / 2)
+                y_offset = mid_y - crop_height
+                x_offset = mid_x - crop_width
+
+                # cx' = cx - x_offset
+                self.K1[0, -1] = self.K1[0, -1] - x_offset
+                self.K2[0, -1] = self.K2[0, -1] - x_offset
+
+                # cy' = cy - y_offset
+                self.K1[1, -1] = self.K1[1, -1] - y_offset
+                self.K2[1, -1] = self.K2[1, -1] - y_offset
+
         
         # Prepare undistort and rectification (if desired) here
         if rectify:
