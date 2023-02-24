@@ -256,7 +256,6 @@ def detectShaftLines_kornia(new_img, ref_img, crop_ref_lines, crop_ref_dims, mod
         y_max = crop_ref_dims[0]
         for i in range(selected_lines2.shape[0]):
             endpoints = selected_lines2[i, :, :]
-            print(endpoints)
             for j in range(endpoints.shape[0]):
                 y = int(endpoints[j][0])
                 x = int(endpoints[j][1])
@@ -277,12 +276,26 @@ def detectShaftLines_kornia(new_img, ref_img, crop_ref_lines, crop_ref_dims, mod
     ref_img = drawLineSegments(ref_img, selected_lines1)
 
     # draw matched lines on new input img (at original size)
-    img = drawLineSegments(new_img, selected_lines2)
+    new_img = drawLineSegments(new_img, selected_lines2)
 
+    # get rho, theta params
+    lines = []
+    for i in range(selected_lines2.shape[0]):
+        endpoints = selected_lines2[i, :, :]
+        y1 = int(endpoints[0][0])
+        x1 = int(endpoints[0][1])
+        y2 = int(endpoints[1][0])
+        x2 = int(endpoints[1][1])
+        theta = np.arctan2((x1 - x2), (y2 - y1))
+        rho = x1 * np.cos(theta) + y1 * np.sin(theta)
+        lines.append([rho, theta])
+    lines = np.asarray(lines)
+    
     # returns torch[2, 2, 2] tensor of endpoints for 2 line segments
+    # returns Nx2 array line segments [[rho, theta], [rho, theta]]
     # returns input image with line segments drawn
     # returns reference image with line segments drawn
-    return selected_lines2, new_img, ref_img
+    return ([selected_lines2, lines], new_img, ref_img)
 
 def drawShaftLines(shaftFeatures, cam, cam_T_b, img_list):
 

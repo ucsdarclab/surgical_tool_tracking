@@ -89,8 +89,8 @@ def gotData(l_img_msg, r_img_msg, j_msg, g_msg):
     #cb_detected_shaftlines_l, _cb_left_img  = detectShaftLines(_cb_left_img)
     #cb_detected_shaftlines_r, _cb_right_img = detectShaftLines(_cb_right_img)
     
-    cb_detected_shaftlines_l, _cb_left_img, _cb_left_ref_img  = detectShaftLines_kornia(_cb_left_img, crop_ref_l, crop_ref_lines_l, crop_ref_dims, model, cb_use_intensity, cb_intensity_radius) # returns torch[2, 2, 2] of endpoints, image with line segments drawn, ref image with reference line segments drawn
-    cb_detected_shaftlines_r, _cb_right_img, _cb_right_ref_img = detectShaftLines_kornia(_cb_right_img, crop_ref_r, crop_ref_lines_r, crop_ref_dims, model, cb_use_intensity, cb_intensity_radius) # returns torch[2, 2, 2] of endpoints, image with line segments drawn, ref image with reference line segments drawn
+    cb_detected_shaftlines_l, _cb_left_img, _cb_left_ref_img  = detectShaftLines_kornia(_cb_left_img, crop_ref_l, crop_ref_lines_l, crop_ref_dims, model, cb_use_intensity, cb_intensity_radius) # (returns torch[2, 2, 2] of endpoints, Nx2 array of [rho, theta]), image with line segments drawn, ref image with reference line segments drawn
+    cb_detected_shaftlines_r, _cb_right_img, _cb_right_ref_img = detectShaftLines_kornia(_cb_right_img, crop_ref_r, crop_ref_lines_r, crop_ref_dims, model, cb_use_intensity, cb_intensity_radius) # (returns torch[2, 2, 2] of endpoints, Nx2 array of [rho, theta]),image with line segments drawn, ref image with reference line segments drawn
 
     cb_left_img  = np.copy(_cb_left_img)
     cb_left_ref_img = np.copy(_cb_left_ref_img)
