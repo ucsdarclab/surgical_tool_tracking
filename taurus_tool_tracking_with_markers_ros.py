@@ -222,6 +222,9 @@ def gotData(img_msg, joint_msg):
 
     # detect point features
     centroids, img = segmentColorAndGetKeyPoints(img, hsv_min, hsv_max, draw_contours=visualize)
+    if centroids.shape[0] == 0:
+        print("No marker detected!!!")
+        centroids = None
 
     
     # estimate with particle filter
