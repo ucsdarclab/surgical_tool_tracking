@@ -258,7 +258,7 @@ class ParticleFilter(object):
         #FLORIAN ADDED THIS
         self.weights = (1.0/self.n_particles)*np.ones((self.n_particles,))
 
-        #self.mean_state = np.zeros(6)
+        self.mean_state = np.zeros(6)
 
     def init_filter(self, mask=None):
         """Initialise the filter by drawing samples from the prior.
