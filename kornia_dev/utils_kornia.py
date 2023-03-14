@@ -95,7 +95,7 @@ def segmentColorAndGetKeyPoints(img, hsv_min=(90, 40, 40), hsv_max=(120, 255, 25
 
 # accepts single img and Nx2 [rho, theta] array of line parameters
 # returns altered img
-def drawLines(img, lines, color = (0, 0, 255)):
+def drawPolarLines(img, lines, color = (0, 0, 255)):
     for i in range(lines.shape[0]):
         rho = lines[i, 0]
         theta = lines[i, 1]
@@ -110,7 +110,7 @@ def drawLines(img, lines, color = (0, 0, 255)):
     
     return img
 
-def detectShaftLines(img):
+def detectCannyShaftLines(img):
 
     # pre-processing
     grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -311,10 +311,10 @@ def drawShaftLines(shaftFeatures, cam, cam_T_b, img_list):
     d_c = np.transpose(d_c)
     
     # Project shaft lines from L and R camera-to-base frames onto 2D camera image plane
-    projected_lines = cam.projectShaftLines(p_c, d_c, r)
+    projected_lines = cam.projectPolarShaftLines(p_c, d_c, r)
 
     # (B, G, R)
-    img_l = drawLines(img_list[0], projected_lines[0], (0, 255, 0))
-    img_r = drawLines(img_list[1], projected_lines[1], (0, 255, 0))
+    img_l = drawPolarLines(img_list[0], projected_lines[0], (0, 255, 0))
+    img_r = drawPolarLines(img_list[1], projected_lines[1], (0, 255, 0))
 
     return img_l, img_r
