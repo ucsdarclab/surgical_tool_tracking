@@ -46,8 +46,9 @@ cb_left_ref_img = None
 cb_right_img = None
 cb_right_ref_img = None
 cb_joint_angles = None
-cb_use_intensity = True
-cb_intensity_radius = 3
+cb_output_l = None
+cb_output_r = None
+
 
 # crop parameters
 orig_ref_dims = np.load('orig_ref_dims.npy')
@@ -70,6 +71,37 @@ crop_ref_r = K.color.rgb_to_grayscale(crop_ref_r) # [0, 1] torch.Size([1, 720, 1
 # Load kornia model
 model = KF.SOLD2(pretrained=True, config=None)
 
+canny_params = {
+    'use_canny': False,
+    'hough_rho_accumulator': 5.0,
+    'hough_theta_accumulator': 0.09,
+    'hough_vote_threshold': 100,
+    'rho_cluster_distance': 5.0,
+    'theta_cluster_distance': 0.09
+}
+
+kornia_params = {
+    'use_kornia': True,
+    'endpoints_to_polar': False,
+    'use_endpoint_intensities_only': False,
+    'endpoint_intensities_to_polar': False,
+    'search_radius': 25.0,
+    'intensity_params': {
+        'use_metric': 'mean',
+        'mean': 0,
+        'std': 1.0,
+        'pct': 10.0
+    },
+    'ransac_params': {
+        'min_samples': 3.0,
+        'residual_threshold': 0.75,
+        'max_trials': 100,
+        'crop_ref_dims': crop_ref_dims
+    },
+    'use_line_intensities_only': False,
+    'line_intensities_to_polar': True
+} 
+
 # ROS Callback for images and joint observations
 def gotData(l_img_msg, r_img_msg, j_msg, g_msg):
     global cam, new_cb_data, cb_detected_keypoints_l, cb_detected_keypoints_r, cb_detected_shaftlines_l, cb_detected_shaftlines_r, cb_left_img, cb_right_img, cb_joint_angles
@@ -89,13 +121,27 @@ def gotData(l_img_msg, r_img_msg, j_msg, g_msg):
     #cb_detected_shaftlines_l, _cb_left_img  = detectShaftLines(_cb_left_img)
     #cb_detected_shaftlines_r, _cb_right_img = detectShaftLines(_cb_right_img)
     
-    cb_detected_shaftlines_l, _cb_left_img, _cb_left_ref_img  = detectShaftLines_kornia(_cb_left_img, crop_ref_l, crop_ref_lines_l, crop_ref_dims, model, cb_use_intensity, cb_intensity_radius) # (returns torch[2, 2, 2] of endpoints, Nx2 array of [rho, theta]), image with line segments drawn, ref image with reference line segments drawn
-    cb_detected_shaftlines_r, _cb_right_img, _cb_right_ref_img = detectShaftLines_kornia(_cb_right_img, crop_ref_r, crop_ref_lines_r, crop_ref_dims, model, cb_use_intensity, cb_intensity_radius) # (returns torch[2, 2, 2] of endpoints, Nx2 array of [rho, theta]),image with line segments drawn, ref image with reference line segments drawn
+    #cb_detected_shaftlines_l, _cb_left_img, _cb_left_ref_img  = detectShaftLines(_cb_left_img, crop_ref_l, crop_ref_lines_l, crop_ref_dims, model, cb_use_intensity, cb_intensity_radius) # (returns torch[2, 2, 2] of endpoints, Nx2 array of [rho, theta]), image with line segments drawn, ref image with reference line segments drawn
+    #cb_detected_shaftlines_r, _cb_right_img, _cb_right_ref_img = detectShaftLines(_cb_right_img, crop_ref_r, crop_ref_lines_r, crop_ref_dims, model, cb_use_intensity, cb_intensity_radius) # (returns torch[2, 2, 2] of endpoints, Nx2 array of [rho, theta]),image with line segments drawn, ref image with reference line segments drawn
+    cb_output_l  = detectShaftLines(new_img = _cb_left_img, 
+                                 ref_img = crop_ref_l,
+                                 crop_ref_lines = crop_ref_lines_l,
+                                 crop_ref_dims = crop_ref_dims,
+                                 model = model,
+                                 canny_params = canny_params,
+                                 kornia_params = kornia_params)
+    cb_output_r  = detectShaftLines(new_img = _cb_right_img, 
+                                 ref_img = crop_ref_r,
+                                 crop_ref_lines = crop_ref_lines_r,
+                                 crop_ref_dims = crop_ref_dims,
+                                 model = model,
+                                 canny_params = canny_params,
+                                 kornia_params = kornia_params)
 
-    cb_left_img  = np.copy(_cb_left_img)
-    cb_left_ref_img = np.copy(_cb_left_ref_img)
-    cb_right_img = np.copy(_cb_right_img)
-    cb_right_ref_img = np.copy(_cb_right_ref_img)
+    cb_left_img  = np.copy(cb_output_l['new_img'])
+    cb_left_ref_img = np.copy(cb_output_l['ref_img'])
+    cb_right_img = np.copy(cb_output_r['new_img'])
+    cb_right_ref_img = np.copy(cb_output_r['ref_img'])
     
     cb_joint_angles = np.array(j_msg.position + g_msg.position)
     new_cb_data = True

@@ -5,6 +5,13 @@ import math
 from scipy.cluster.hierarchy import fclusterdata
 import torch
 import kornia as K
+from scipy.spatial import distance_matrix
+from sklearn import linear_model
+import scipy.stats
+import kornia.feature as KF
+from PIL import Image
+import pandas as pd
+import copy
 
 def projectSkeleton(skeletonPts3D, cam_T_b, img_list, project_point_function):
     # skeletonPts3D should be in the same format as getSkeletonPoints from RobotLink
@@ -61,7 +68,6 @@ def matrixToPose(T):
     pose[3:] = rotationMatrixToAxisAngle(T[:-1, :-1])
     return pose
 
-
 def invertTransformMatrix(T):
     out = np.eye(4)
     out[:-1, :-1] = np.transpose(T[:-1, :-1])
@@ -95,7 +101,8 @@ def segmentColorAndGetKeyPoints(img, hsv_min=(90, 40, 40), hsv_max=(120, 255, 25
 
 # accepts single img and Nx2 [rho, theta] array of line parameters
 # returns altered img
-def drawPolarLines(img, lines, color = (0, 0, 255)):
+def drawPolarLines(img = None, lines = None, color = (0, 0, 255)):
+    lines = lines.reshape(-1, 2)
     for i in range(lines.shape[0]):
         rho = lines[i, 0]
         theta = lines[i, 1]
@@ -110,7 +117,13 @@ def drawPolarLines(img, lines, color = (0, 0, 255)):
     
     return img
 
-def detectCannyShaftLines(img):
+def detectCannyShaftLines(img = None, 
+                          hough_rho_accumulator = None, 
+                          hough_theta_accumulator = None, 
+                          hough_vote_threshold = None,
+                          rho_cluster_distance = None,
+                          theta_cluster_distance = None 
+                          ):
 
     # pre-processing
     grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -120,7 +133,7 @@ def detectCannyShaftLines(img):
     edges_and_mask = cv2.bitwise_and(edges, mask)
 
    # detect lines
-    lines = cv2.HoughLinesWithAccumulator(edges_and_mask, rho = 5, theta = 0.09, threshold = 100) 
+    lines = cv2.HoughLinesWithAccumulator(edges_and_mask, rho = hough_rho_accumulator, theta = hough_theta_accumulator, threshold = hough_vote_threshold) 
     lines = np.squeeze(lines)
     # sort by max votes
     sorted_lines = lines[(-lines[:, 2]).argsort()]
@@ -128,8 +141,8 @@ def detectCannyShaftLines(img):
     # sort by max votes
     sorted_lines = lines[(-lines[:, 2]).argsort()]
 
-    rho_clusters = fclusterdata(sorted_lines[:, 0].reshape(-1, 1), t = 5, criterion = 'distance', method = 'complete')
-    theta_clusters = fclusterdata(sorted_lines[:, 1].reshape(-1, 1), t = 0.09, criterion = 'distance', method = 'complete')
+    rho_clusters = fclusterdata(sorted_lines[:, 0].reshape(-1, 1), t = rho_cluster_distance, criterion = 'distance', method = 'complete')
+    theta_clusters = fclusterdata(sorted_lines[:, 1].reshape(-1, 1), t = theta_cluster_distance, criterion = 'distance', method = 'complete')
 
     best_lines = []
     checked_clusters = []
@@ -163,13 +176,13 @@ def detectCannyShaftLines(img):
 
     # draw all detected and clustered edges
     # (B, G, R)
-    img = drawLines(img, best_lines[:, 0:2], color = (0, 0, 255))
+    img = drawPolarLines(img, best_lines[:, 0:2], color = (0, 0, 255))
 
     # returns Nx2 array of # N detected lines x [rho, theta], img with lines drawn, edges and mask
     return best_lines[:, 0:2], img
 
 # canny image augmentation for kornia network
-def cannyPreProcess_kornia(img):
+def cannyPreProcess(img = None):
 
     grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     blur = cv2.GaussianBlur(grey, ksize=(25,25), sigmaX=0)
@@ -179,7 +192,7 @@ def cannyPreProcess_kornia(img):
     edges_and_mask = cv2.cvtColor(edges_and_mask, cv2.COLOR_GRAY2RGB)
     return edges_and_mask
 
-def center_crop(img, dim):
+def centerCrop(img = None, dim = None):
     height, width = img.shape[0], img.shape[1]
     mid_y, mid_x = int(height / 2), int(width / 2)
 
@@ -191,9 +204,9 @@ def center_crop(img, dim):
 
 # accepts single img and torch[2, 2, 2] tensor of line segment endpoints
 # returns altered img
-def drawLineSegments(img, lines):
+def drawLineSegments(img = None, lines = None, colors = [(255, 0, 0), (0, 255, 0)]):
+    
     # BGR (255, 0, 0) = Blue
-    colors = [(255, 0, 0), (0, 0, 255)]
     for i in range(lines.shape[0]):
         endpoints = lines[i, :, :]
         y1 = int(endpoints[0, 0])
@@ -206,8 +219,97 @@ def drawLineSegments(img, lines):
     
     return img
 
-def detectShaftLines_kornia(new_img, ref_img, crop_ref_lines, crop_ref_dims, model, use_intensity, intensity_radius = 3):
-    new_img, y_offset, x_offset = center_crop(new_img, crop_ref_dims) # crop_dims x 3 (RGB) uint8 ndarray [0 255]
+def fitRansacLines(point_clouds, ransac_params):
+    
+    # ransac params
+    min_samples = int(ransac_params['min_samples'])
+    residual_threshold = ransac_params['residual_threshold']
+    max_trials = ransac_params['max_trials']
+    crop_ref_dims = ransac_params['crop_ref_dims']
+    
+    # fit point clouds
+    lines = []
+    for cloud in point_clouds:
+        
+        # data
+        X = cloud[:, 1].reshape(-1, 1)
+        y = cloud[:, 0].reshape(-1, 1)
+        residual_threshold *= scipy.stats.median_abs_deviation(y, axis = None)
+        ransac = linear_model.RANSACRegressor(min_samples = min_samples, residual_threshold = residual_threshold, max_trials = max_trials)
+        
+        # sequential ransac
+        while (True):
+            try: 
+                ransac.fit(X, y)
+                inlier_mask = ransac.inlier_mask_
+                outlier_mask = np.logical_not(inlier_mask)
+                m = float(ransac.estimator_.coef_)
+                b = float(ransac.estimator_.intercept_)
+                y1, x1 = int(b), 0
+                y2, x2 = int(m * crop_ref_dims[1] + b), crop_ref_dims[1]
+                theta = np.arctan2((x1 - x2), (y2 - y1))
+                rho = x1 * np.cos(theta) + y1 * np.sin(theta)
+
+                # convert to hough line bounds
+                if (theta < 0) and (theta >= -np.pi):
+                    theta += np.pi
+                    rho *= -1
+                elif (theta < -np.pi) and (theta >= -2 * np.pi):
+                    theta += 2 * np.pi
+                    rho = rho
+                elif (theta >= np.pi) and (theta <= 2 * np.pi):
+                    theta -= np.pi
+                    rho *= -1
+                
+                lines.append([rho, theta])
+                X = X[outlier_mask]
+                y = y[outlier_mask]
+                if (len(X) <= min_samples or len(y) <= min_samples):
+                    break
+            except:
+                pass
+    return lines
+
+def detectShaftLines(new_img = None, 
+                    ref_img = None, 
+                    crop_ref_lines = None, 
+                    crop_ref_dims = None, 
+                    model = None, 
+                    canny_params = {},
+                    kornia_params = {}):
+
+    # center crop new_img
+    new_img, y_offset, x_offset = centerCrop(new_img, crop_ref_dims) # crop_dims x 3 (RGB) uint8 ndarray [0 255]
+
+    # use canny edge detection
+    canny_lines = None
+    if ((canny_params is not None) and (canny_params['use_canny'])):
+        
+        # check that all params are used
+        assert(None not in canny_params.values())
+
+        hough_rho_accumulator = canny_params['hough_rho_accumulator']
+        hough_theta_accumulator = canny_params['hough_theta_accumulator']
+        hough_vote_threshold = canny_params['hough_vote_threshold']
+        rho_cluster_distance = canny_params['rho_cluster_distance']
+        theta_cluster_distance = canny_params['theta_cluster_distance']
+        
+        # returns Nx2 array of # N detected lines x [rho, theta]
+        # img with lines drawn in color (0, 0, 255)
+        canny_lines, new_img = detectCannyShaftLines(
+                        img = new_img, 
+                        hough_rho_accumulator = hough_rho_accumulator, 
+                        hough_theta_accumulator = hough_theta_accumulator, 
+                        hough_vote_threshold = hough_vote_threshold,
+                        rho_cluster_distance = rho_cluster_distance,
+                        theta_cluster_distance = theta_cluster_distance
+                        )
+        
+    else: # use kornia
+        assert((kornia_params is not None) and (kornia_params['use_kornia']))
+
+    # process input image
+    orig_img = new_img.copy()
     new_img = K.image_to_tensor(new_img).float() / 255.0  # [0, 1] [3, crop_dims] float32
     new_img = K.color.rgb_to_grayscale(new_img) # [0, 1] [1, crop_dims] float32
     imgs = torch.stack([ref_img, new_img], )
@@ -219,8 +321,11 @@ def detectShaftLines_kornia(new_img, ref_img, crop_ref_lines, crop_ref_dims, mod
     line_seg2 = outputs["line_segments"][1]
     desc1 = outputs["dense_desc"][0]
     desc2 = outputs["dense_desc"][1]
+    line_heatmap1 = np.asarray(outputs['line_heatmap'][0])
+    line_heatmap2 = np.asarray(outputs['line_heatmap'][1])
 
-    # perform association
+    # perform association between All line segments 
+    # in ref_img and new_img
     with torch.inference_mode():
         matches = model.match(line_seg1, line_seg2, desc1[None], desc2[None])
     valid_matches = matches != -1
@@ -229,73 +334,154 @@ def detectShaftLines_kornia(new_img, ref_img, crop_ref_lines, crop_ref_dims, mod
     matched_lines1 = line_seg1[valid_matches]
     matched_lines2 = line_seg2[match_indices]
 
-    # sort matched lines by y-coordinate
+    # sort matched line segments from ref_img by y-coordinate
     sort_column = 0
     values, indices = matched_lines1[:, :, sort_column].sort()
     sorted_matched_lines1 = matched_lines1[[[x] for x in range(matched_lines1.shape[0])], indices]
 
-    # load ref lines and find identical lines in ref_img lines (matched_lines1)
+    # load ref lines and find only those lines in ref_img line segments (matched_lines1)
+    # using y coordinate
     dist_matrix = torch.cdist(torch.flatten(crop_ref_lines, start_dim = 1), torch.flatten(sorted_matched_lines1, start_dim = 1))
     ind = torch.argmin(dist_matrix, dim = 1)
 
-    # select matching shaft lines
-    selected_lines1 = matched_lines1[ind]
-    selected_lines2 = matched_lines2[ind] #torch[2, 2, 2]
-
-    # find intensity-based endpoints
-    if (use_intensity):
-        line_heatmap = np.asarray(outputs['line_heatmap'][1])
-        
-        if (intensity_radius <= 0):
-            intensity_radius = 3
-
-        intensity_endpoints = []
-        x_min = 0
-        x_max = crop_ref_dims[1]
-        y_min = 0
-        y_max = crop_ref_dims[0]
-        for i in range(selected_lines2.shape[0]):
-            endpoints = selected_lines2[i, :, :]
-            for j in range(endpoints.shape[0]):
-                y = int(endpoints[j][0])
-                x = int(endpoints[j][1])
-                top_left = (max(y_min, y - intensity_radius), max(x_min, x - intensity_radius)) 
-                bottom_right = (min(y_max, y + intensity_radius), min(x_max, x + intensity_radius))
-                rows = np.arange(top_left[0], bottom_right[0])
-                cols = np.arange(top_left[1], bottom_right[1])
-                intensities = line_heatmap[top_left[0]: bottom_right[0], top_left[1]: bottom_right[1]]
-                idx_flat = intensities.ravel().argmax()
-                idx = np.unravel_index(idx_flat, intensities.shape)
-                y = rows[idx[0]]
-                x = cols[idx[1]]
-                intensity_endpoints.append([y, x])
-
-        selected_lines2 = torch.as_tensor(np.asarray(intensity_endpoints).reshape(selected_lines2.shape))
-
-    # draw matched lines on cropped reference input image
+    # select only matching line segments that correspond to ref lines
+    selected_lines1 = matched_lines1[ind] # ref lines torch[2, 2, 2]
+    ref_img = np.load('crop_ref_l.npy')
     ref_img = drawLineSegments(ref_img, selected_lines1)
+    selected_lines2 = matched_lines2[ind] # matched lines in new_img torch[2, 2, 2]
+    new_img = drawLineSegments(orig_img, selected_lines2)
 
-    # draw matched lines on new input img (at original size)
-    new_img = drawLineSegments(new_img, selected_lines2)
+    # new image detected endpoints
+    detected_endpoints = np.asarray(np.around(np.asarray(selected_lines2), decimals = 0), dtype = int) # [[y, x], [y, x]]
 
-    # get rho, theta params
-    lines = []
-    for i in range(selected_lines2.shape[0]):
-        endpoints = selected_lines2[i, :, :]
-        y1 = int(endpoints[0][0])
-        x1 = int(endpoints[0][1])
-        y2 = int(endpoints[1][0])
-        x2 = int(endpoints[1][1])
-        theta = np.arctan2((x1 - x2), (y2 - y1))
-        rho = x1 * np.cos(theta) + y1 * np.sin(theta)
-        lines.append([rho, theta])
-    lines = np.asarray(lines)
+    # convert detected endpoints to rho, theta form
+    endpoints_to_polar = kornia_params['endpoints_to_polar'] # boolean
+    polar_lines_detected_endpoints = None
+    if (endpoints_to_polar):
+        polar_lines_detected_endpoints = []
+        for line in detected_endpoints:
+            y1 = line[0][0]
+            x1 = line[0][1]
+            y2 = line[1][0]
+            x2 = line[1][1]
+
+            theta = np.arctan2((x1 - x2), (y2 - y1))
+            rho = x1 * np.cos(theta) + y1 * np.sin(theta)
+            polar_lines_detected_endpoints.append([rho, theta])
+            new_img = drawPolarLines(new_img, np.asarray([rho, theta]))
+
+    # search region around detected endpoints for all pixels
+    # that meet intensity threshold
+    # return point cloud vs. rho, theta best fit ransac lines
+    use_endpoint_intensities_only = kornia_params['use_endpoint_intensities_only'] # boolean
+    endpoint_intensities_to_polar = kornia_params['endpoint_intensities_to_polar'] # boolean
+    search_radius = int(kornia_params['search_radius']) # kernel size for dilation
+    intensity_params = kornia_params['intensity_params'] # {'metric': value} {'mean': 0, 'std': 1, 'pct': 10}
+    ransac_params = kornia_params['ransac_params'] # ransac params 
+    # {'min_samples: 3, 'residual_threshold': None, 'max_trials': 100, 'crop_ref_dims': [720, 1280]}
     
-    # returns torch[2, 2, 2] tensor of endpoints for 2 line segments
-    # returns Nx2 array line segments [[rho, theta], [rho, theta]]
-    # returns input image with line segments drawn
-    # returns reference image with line segments drawn
-    return ([selected_lines2, lines], new_img, ref_img)
+    intensity_endpoint_clouds = None
+    intensity_endpoint_lines = None
+    if (use_endpoint_intensities_only) or (endpoint_intensities_to_polar): # returns all intensity pixels
+        
+        intensity_endpoint_clouds = []
+        kernel = np.ones((search_radius, search_radius), np.uint8)
+
+        for line in detected_endpoints:
+            y1 = line[0][0]
+            x1 = line[0][1]
+            y2 = line[1][0]
+            x2 = line[1][1]
+
+            # convert detected endpoints to endpoint intensity clouds
+            blank = np.zeros((crop_ref_dims[0], crop_ref_dims[1]))
+            dotted = blank.copy()
+            dotted[y1, x1] = 255.0
+            dotted[y2, x2] = 255.0
+
+            dotted_dilation = cv2.dilate(dotted, kernel, iterations = 1)
+            ys, xs = np.where(dotted_dilation)
+            dilated_points = list(zip(list(ys), list(xs)))
+            dilated_points_intensities = np.asarray([line_heatmap2[coord[0], coord[1]] for coord in dilated_points])
+
+            metric = intensity_params['use_metric']
+            if (metric == 'mean'):
+                intensity_threshold = dilated_points_intensities.mean()
+            elif (metric == 'std'):
+                stds = intensity_params[metric]
+                intensity_threshold = dilated_points_intensities.mean() + (stds * dilated_points_intensities.std())
+            elif (metric == 'pct'):
+                pct = float(intensity_params[metric])
+                intensity_threshold = np.percentile(dilated_points_intensities, pct)
+            
+            intensity_mask = dilated_points_intensities >= intensity_threshold
+
+            thresholded_dilated_points = np.asarray(dilated_points)[intensity_mask]
+            intensity_endpoint_clouds.append(thresholded_dilated_points)
+
+            if (endpoint_intensities_to_polar):
+                intensity_endpoint_lines = fitRansacLines(intensity_endpoint_clouds, ransac_params)
+                new_img = drawPolarLines(new_img, np.asarray(intensity_endpoint_lines))
+    
+    # search region between detected endpoints for all pixels
+    # that meet intensity threshold
+    # return point cloud vs. rho, theta best fit ransac lines
+    use_line_intensities_only = kornia_params['use_line_intensities_only'] # boolean
+    line_intensities_to_polar = kornia_params['line_intensities_to_polar'] # boolean
+    intensity_line_clouds = None
+    intensity_line_lines = None
+
+    if (use_line_intensities_only) or (line_intensities_to_polar): # returns all intensity pixels
+        
+        intensity_line_clouds = []
+        kernel = np.ones((search_radius, search_radius), np.uint8)
+
+        for line in detected_endpoints:
+            y1 = line[0][0]
+            x1 = line[0][1]
+            y2 = line[1][0]
+            x2 = line[1][1]
+
+            # convert detected endpoints to line intensity cloud
+            blank = np.zeros((crop_ref_dims[0], crop_ref_dims[1]))
+            lined = blank.copy()
+            lined = cv2.line(blank, (x1, y1), (x2, y2), (255, 255, 255), thickness = 1)
+            lined_dilation = cv2.dilate(lined, kernel, iterations=1)
+            ys, xs = np.where(lined_dilation)
+            dilated_line = list(zip(list(ys), list(xs)))
+            dilated_line_intensities = np.asarray([line_heatmap2[coord[0], coord[1]] for coord in dilated_line])
+
+            metric = intensity_params['use_metric']
+            if (metric == 'mean'):
+                intensity_threshold = dilated_line_intensities.mean()
+            elif (metric == 'std'):
+                stds = intensity_params[metric]
+                intensity_threshold = dilated_line_intensities.mean() + (stds * dilated_line_intensities.std())
+            elif (metric == 'pct'):
+                pct = float(intensity_params[metric])
+                intensity_threshold = np.percentile(dilated_line_intensities, pct)
+
+            intensity_mask = dilated_line_intensities >= intensity_threshold
+
+            thresholded_dilated_line = np.asarray(dilated_line)[intensity_mask]
+            intensity_line_clouds.append(thresholded_dilated_line)
+
+            if (line_intensities_to_polar):
+                intensity_line_lines = fitRansacLines(intensity_line_clouds, ransac_params)
+                new_img = drawPolarLines(new_img, np.asarray(intensity_line_lines))
+    
+    output = {
+        'ref_img': ref_img,
+        'new_img': new_img,
+        'canny_lines': canny_lines,
+        'polar_lines_detected_endpoints': polar_lines_detected_endpoints,
+        'intensity_endpoint_clouds': intensity_endpoint_clouds,
+        'intensity_endpoint_lines': intensity_endpoint_lines,
+        'intensity_line_clouds': intensity_line_clouds,
+        'intensity_line_lines': intensity_line_lines
+    }
+
+    return output
 
 def drawShaftLines(shaftFeatures, cam, cam_T_b, img_list):
 
@@ -311,7 +497,7 @@ def drawShaftLines(shaftFeatures, cam, cam_T_b, img_list):
     d_c = np.transpose(d_c)
     
     # Project shaft lines from L and R camera-to-base frames onto 2D camera image plane
-    projected_lines = cam.projectPolarShaftLines(p_c, d_c, r)
+    projected_lines = cam.projectShaftLines(p_c, d_c, r)
 
     # (B, G, R)
     img_l = drawPolarLines(img_list[0], projected_lines[0], (0, 255, 0))

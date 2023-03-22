@@ -29,7 +29,7 @@ class StereoCamera():
         self.K1[-1, -1] = 1
         self.K2[-1, -1] = 1
 
-        # re-center
+        # re-center for crop
         if (orig_ref_dims and crop_ref_dims):
                 height, width = orig_ref_dims[0], orig_ref_dims[1]
                 mid_y, mid_x = int(height / 2), int(width / 2)
@@ -180,6 +180,18 @@ class StereoCamera():
             
             rho = D / np.sqrt(F * F + G * G)
             theta = math.atan2(G, F) # radians
+
+            # convert to hough line bounds
+            if (theta < 0) and (theta >= -np.pi):
+                theta += np.pi
+                rho *= -1
+            elif (theta < -np.pi) and (theta >= -2 * np.pi):
+                theta += 2 * np.pi
+                rho = rho
+            elif (theta >= np.pi) and (theta <= 2 * np.pi):
+                theta -= np.pi
+                rho *= -1
+
             projected_lines.append([rho, theta])
             
         projected_lines = np.asarray(projected_lines)
