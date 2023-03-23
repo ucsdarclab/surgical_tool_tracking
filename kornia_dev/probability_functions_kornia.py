@@ -1,4 +1,5 @@
 import numpy as np
+import math
 from scipy import optimize
 from scipy.stats import norm
 from scipy.spatial import distance_matrix
@@ -12,6 +13,13 @@ def sampleNormalDistribution(std):
     prob_individual = norm.pdf(sample, m, std)
     prob_individual[np.isnan(prob_individual)] = 1.0
     return sample, np.prod(prob_individual)
+
+# probability density at a point in normal distribution
+def normpdf(x, mean, sd):
+    var = float(sd)**2
+    denom = (2*math.pi*var)**.5
+    num = math.exp(-(float(x)-float(mean))**2/(2*var))
+    return num/denom
 
 # Example motion model function for Particle Filter class, kwargs would include std
 def additiveGaussianNoise(state, std):
@@ -196,12 +204,28 @@ def shaftFeatureObs(state, detected_lines, robot_arm, cam, cam_T_b, joint_angle_
         
     return prob
 
-def shaftFeatureObs_kornia(state, detected_lines, robot_arm, cam, cam_T_b, joint_angle_readings, gamma_rho, gamma_theta, rho_thresh, theta_thresh):
-    print('in shaftFeatureObs')
-    print('state: {}'.format(state))
-    print('detected_lines: {}'.format(detected_lines))
-    print('cam: {}'.format(cam))
+def shaftFeatureObs_kornia(
+        state, 
+        use_lines = None, 
+        use_clouds = None, 
+        detected_lines = None, 
+        intensity_clouds = None, 
+        robot_arm = None, 
+        cam = None, 
+        cam_T_b = None, 
+        joint_angle_readings = None, 
+        cost_assoc_params = None,
+        pixel_probability_params = None
+        ):
     
+    # determine metric
+    if (use_lines):
+        algo = use_lines
+        detected_lines = detected_lines[algo]
+    elif (use_clouds):
+        algo = use_clouds
+        detected_clouds = intensity_clouds[algo]
+
     # Get lumped error
     T = poseToMatrix(state[:6])
     print('T: {}'.format(T))
@@ -241,28 +265,97 @@ def shaftFeatureObs_kornia(state, detected_lines, robot_arm, cam, cam_T_b, joint
                                                                                                             len(detected_lines)) \
                         + "Note that these lengths represent the number of cameras being used.")
     
-    # Make association between detected and projected & compute probability
-    prob = 1
-    association_threshold = gamma_rho * rho_thresh + gamma_theta * theta_thresh
-    # len(projected_points) = # of cameras
-    # each list in projected points (2x for R/L cameras) is also a list of projected points
-    print('entering cost association calculation')
-    print('projected_lines: {}'.format(projected_lines))
-    print('detected_lines: {}'.format(detected_lines))
+    # Make association between detected and projected lines
+    # compute probability of detected lines
+    if (use_lines):
+        prob = 1
+        association_threshold = cost_assoc_params['gamma_rho'] * cost_assoc_params['rho_thresh'] +\
+                                cost_assoc_params['gamma_theta'] * cost_assoc_params['theta_thresh']
+        # len(projected_points) = # of cameras
+        # each list in projected points (2x for R/L cameras) is also a list of projected points
+        for cam_idx, proj_lines in enumerate(projected_lines):
+            # Use hungarian algorithm to match projected and detected points
+            C_rho = cost_assoc_params['gamma_rho'] * distance_matrix(proj_lines[:, 0, None], detected_lines[cam_idx][:, 0, None])
+            C_theta = cost_assoc_params['gamma_theta'] * distance_matrix(proj_lines[:, 1, None], detected_lines[cam_idx][:, 1, None])
+            C = C_rho + C_theta
+            row_idx, col_idx = optimize.linear_sum_assignment(C)
+            
+            # Use threshold to remove outliers
+            idx_to_keep = C[row_idx, col_idx] < association_threshold
+            row_idx = row_idx[idx_to_keep]
+            col_idx = col_idx[idx_to_keep]
+            
+            # Compute observation probability
+            prob *= np.sum(np.exp(C[row_idx, col_idx])) + (proj_lines.shape[0] - len(row_idx))*np.exp(-1 * association_threshold)
     
-    for cam_idx, proj_lines in enumerate(projected_lines):
-        # Use hungarian algorithm to match projected and detected points
-        C_rho = gamma_rho * distance_matrix(proj_lines[:, 0, None], detected_lines[cam_idx][:, 0, None])
-        C_theta = gamma_theta * distance_matrix(proj_lines[:, 1, None], detected_lines[cam_idx][:, 1, None])
-        C = C_rho + C_theta
-        row_idx, col_idx = optimize.linear_sum_assignment(C)
+    # compute probability of intensity point clouds
+    elif (use_clouds):
+        prob = 1
+        sigma2_x = pixel_probability_params['sigma2_x']
+        sigma2_y = pixel_probability_params['sigma2_y']
+
+        detected_clouds_l = detected_clouds[0]
+        detected_clouds_r = detected_clouds[1]
+
+        projected_lines_l = projected_lines[0]
+        projected_lines_r = projected_lines[1]
+
+        distributions_l = []
+        for proj_line_l in projected_lines_l:
+            rho = proj_line_l[0]
+            theta = proj_line_l[1]
+            mean = 0
+            var = (np.cos(theta) ** 2) * sigma2_x + (np.sin(theta) ** 2) * sigma2_y
+            distribution = [rho, theta, mean, var]
+            distributions_l.append(distribution)
+
+        distributions_r = []
+        for proj_line_r in projected_lines_r:
+            rho = proj_line_r[0]
+            theta = proj_line_r[1]
+            mean = 0
+            var = (np.cos(theta) ** 2) * sigma2_x + (np.sin(theta) ** 2) * sigma2_y
+            distribution = [rho, theta, mean, var]
+            distributions_r.append(distribution)
         
-        # Use threshold to remove outliers
-        idx_to_keep = C[row_idx, col_idx] < association_threshold
-        row_idx = row_idx[idx_to_keep]
-        col_idx = col_idx[idx_to_keep]
+        # flatten detected clouds to list of x, y points
+        max_point_probs_l = []
+        for coord in detected_clouds_l:
+            y = coord[0]
+            x = coord[1]
+            max_point_prob = -99
+            for distribution in distributions_l:
+                rho = distribution[0]
+                theta = distribution[1]
+                mean = distribution[2]
+                var = distribution[3]
+                rv = x * np.cos(theta) + y * np.sin(theta) - rho
+                point_prob = normpdf(rv, mean, np.sqrt(var))
+                if (point_prob > max_point_prob):
+                    max_point_prob = point_prob
+            max_point_probs_l.append(max_point_prob)
         
-        # Compute observation probability
-        prob *= np.sum(np.exp(C[row_idx, col_idx])) + (proj_lines.shape[0] - len(row_idx))*np.exp(-1 * association_threshold)
+        max_point_probs_r = []
+        for coord in detected_clouds_r:
+            y = coord[0]
+            x = coord[1]
+            max_point_prob = -99
+            for distribution in distributions_r:
+                rho = distribution[0]
+                theta = distribution[1]
+                mean = distribution[2]
+                var = distribution[3]
+                rv = x * np.cos(theta) + y * np.sin(theta) - rho
+                point_prob = normpdf(rv, mean, np.sqrt(var))
+                if (point_prob > max_point_prob):
+                    max_point_prob = point_prob
+            max_point_probs_r.append(max_point_prob)
         
+        # join all pixel probabilities from l/r cameras
+        max_point_probs = []
+        max_point_probs.extend(max_point_probs_l)
+        max_point_probs.extend(max_point_probs_r)
+        max_point_probs = np.asarray(max_point_probs)
+        prob = np.prod(max_point_probs)
+
     return prob
