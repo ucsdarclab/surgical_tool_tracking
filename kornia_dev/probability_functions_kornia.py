@@ -224,7 +224,7 @@ def shaftFeatureObs_kornia(
         detected_lines = detected_lines[algo]
     elif (use_clouds):
         algo = use_clouds
-        detected_clouds = intensity_clouds[algo]
+        intensity_clouds = intensity_clouds[algo]
 
     # Get lumped error
     T = poseToMatrix(state[:6])
@@ -294,8 +294,8 @@ def shaftFeatureObs_kornia(
         sigma2_x = pixel_probability_params['sigma2_x']
         sigma2_y = pixel_probability_params['sigma2_y']
 
-        detected_clouds_l = detected_clouds[0]
-        detected_clouds_r = detected_clouds[1]
+        intensity_clouds_l = intensity_clouds[0]
+        intensity_clouds_r = intensity_clouds[1]
 
         projected_lines_l = projected_lines[0]
         projected_lines_r = projected_lines[1]
@@ -319,10 +319,13 @@ def shaftFeatureObs_kornia(
             distributions_r.append(distribution)
         
         # flatten detected clouds to list of x, y points
+        intensity_clouds_l = np.vstack(intensity_clouds_l)
+        assert(intensity_clouds_l.shape[1] == 2)
+        
         max_point_probs_l = []
-        for coord in detected_clouds_l:
-            y = coord[0]
-            x = coord[1]
+        for i in range(intensity_clouds_l.shape[0]):
+            y = intensity_clouds_l[i, 0]
+            x = intensity_clouds_l[i, 1]
             max_point_prob = -99
             for distribution in distributions_l:
                 rho = distribution[0]
@@ -335,10 +338,14 @@ def shaftFeatureObs_kornia(
                     max_point_prob = point_prob
             max_point_probs_l.append(max_point_prob)
         
+        # flatten detected clouds to list of x, y points
+        intensity_clouds_r = np.vstack(intensity_clouds_r)
+        assert(intensity_clouds_r.shape[1] == 2)
+        
         max_point_probs_r = []
-        for coord in detected_clouds_r:
-            y = coord[0]
-            x = coord[1]
+        for i in range(intensity_clouds_r.shape[0]):
+            y = intensity_clouds_r[i, 0]
+            x = intensity_clouds_r[i, 1]
             max_point_prob = -99
             for distribution in distributions_r:
                 rho = distribution[0]
@@ -356,6 +363,6 @@ def shaftFeatureObs_kornia(
         max_point_probs.extend(max_point_probs_l)
         max_point_probs.extend(max_point_probs_r)
         max_point_probs = np.asarray(max_point_probs)
-        prob = np.prod(max_point_probs)
+        prob *= np.prod(max_point_probs)
 
     return prob
