@@ -9,7 +9,7 @@ from scipy.spatial import distance_matrix
 from sklearn import linear_model
 import scipy.stats
 import kornia.feature as KF
-from PIL import Image
+#from PIL import Image
 import pandas as pd
 import copy
 

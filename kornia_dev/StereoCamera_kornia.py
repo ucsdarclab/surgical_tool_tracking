@@ -30,7 +30,7 @@ class StereoCamera():
         self.K2[-1, -1] = 1
 
         # re-center for crop
-        if (orig_ref_dims and crop_ref_dims):
+        if (orig_ref_dims is not None) and (crop_ref_dims is not None):
                 height, width = orig_ref_dims[0], orig_ref_dims[1]
                 mid_y, mid_x = int(height / 2), int(width / 2)
 

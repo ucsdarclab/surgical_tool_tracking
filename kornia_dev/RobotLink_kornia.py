@@ -1,6 +1,6 @@
 import numpy as np
 import json
-from .utils import *
+from utils_kornia import *
 
 class RobotLink:
     # To reduce number of repeated computations, this class updates internal data structures
