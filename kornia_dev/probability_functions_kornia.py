@@ -222,6 +222,9 @@ def shaftFeatureObs_kornia(
     if (use_lines):
         algo = use_lines
         detected_lines = detected_lines[algo]
+        print('shaftfeatureobs detected_lines: {}'.format(detected_lines))
+        #print('shaftfeatureobs detected_lines.shape: {}'.format(detected_lines.shape))
+        
     elif (use_clouds):
         algo = use_clouds
         intensity_clouds = intensity_clouds[algo]
@@ -258,6 +261,7 @@ def shaftFeatureObs_kornia(
     # Project shaft lines from L and R camera-to-base frames onto 2D camera image plane
     assert(cam is not None)
     projected_lines = cam.projectShaftLines(p_c, d_c, r)
+    print('shaftfeatureobs projected lines: {}'.format(projected_lines))
 
         # Raise error if number of cameras doesn't line up
     if len(projected_lines) != len(detected_lines):
@@ -274,6 +278,7 @@ def shaftFeatureObs_kornia(
         # len(projected_points) = # of cameras
         # each list in projected points (2x for R/L cameras) is also a list of projected points
         for cam_idx, proj_lines in enumerate(projected_lines):
+            print('shaftfeatureobs hungarian proj_lines.shape: {}'.format(proj_lines.shape))
             # Use hungarian algorithm to match projected and detected points
             C_rho = cost_assoc_params['gamma_rho'] * distance_matrix(proj_lines[:, 0, None], detected_lines[cam_idx][:, 0, None])
             C_theta = cost_assoc_params['gamma_theta'] * distance_matrix(proj_lines[:, 1, None], detected_lines[cam_idx][:, 1, None])
