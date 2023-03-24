@@ -80,7 +80,7 @@ if __name__ == "__main__":
 
     # crop parameters
     orig_ref_dims = np.load('orig_ref_dims.npy')
-    crop_ref_dims = np.load('crop_ref_dims.npy') # array([ 720, 1280])
+    crop_ref_dims = np.load('crop_ref_dims.npy') # array([ 405, 720])
 
     # reference lines
     crop_ref_lines_l = torch.as_tensor(np.load('crop_ref_lines_l.npy')) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
     # reference images
     # left camera
-    crop_ref_l = np.load('crop_ref_l.npy') # (720, 1080, 3) RGB uint8
+    crop_ref_l = np.load('crop_ref_l.npy') # (405, 720, 3) RGB uint8
     crop_ref_l = K.image_to_tensor(crop_ref_l).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
     crop_ref_l = K.color.rgb_to_grayscale(crop_ref_l) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
     # right camera

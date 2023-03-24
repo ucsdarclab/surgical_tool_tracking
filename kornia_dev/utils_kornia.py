@@ -278,9 +278,6 @@ def detectShaftLines(new_img = None,
                     canny_params = {},
                     kornia_params = {}):
 
-    # center crop new_img
-    new_img, y_offset, x_offset = centerCrop(new_img, crop_ref_dims) # crop_dims x 3 (RGB) uint8 ndarray [0 255]
-
     # use canny edge detection
     canny_lines = None
     if ((canny_params is not None) and (canny_params['use_canny'])):
