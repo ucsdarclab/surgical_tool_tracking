@@ -2,6 +2,7 @@ import numpy as np
 import yaml
 import cv2
 import math
+from utils_kornia import centerCrop
 
 class StereoCamera():
     def __init__(self, cal_file_path, rectify = True, orig_ref_dims = None, crop_ref_dims = None, downscale_factor = 2, scale_baseline=1e-3):
@@ -74,6 +75,7 @@ class StereoCamera():
         right_image = cv2.resize(right_image, self.img_size)
         left_image  = cv2.remap(left_image,  self.left_map1,  self.left_map2,  interpolation=cv2.INTER_LINEAR)
         right_image = cv2.remap(right_image, self.right_map1, self.right_map2, interpolation=cv2.INTER_LINEAR)
+        
         
         return left_image, right_image
 
