@@ -113,7 +113,7 @@ def drawPolarLines(img = None, lines = None, color = (0, 0, 255)):
         pt1 = (int(x0 + 2000*(-b)), int(y0 + 2000*(a)))
         pt2 = (int(x0 - 2000*(-b)), int(y0 - 2000*(a)))
         # BGR (255, 0, 0) = Blue
-        cv2.line(img, pt1, pt2, color, 2)
+        cv2.line(img, pt1, pt2, color, 1)
     
     return img
 
@@ -204,7 +204,7 @@ def centerCrop(img = None, dim = None):
 
 # accepts single img and torch[2, 2, 2] tensor of line segment endpoints
 # returns altered img
-def drawLineSegments(img = None, lines = None, colors = [(255, 0, 0), (0, 255, 0)]):
+def drawLineSegments(img = None, lines = None, colors = [(0, 0, 0), (255, 255, 255)]):
     
     # BGR (255, 0, 0) = Blue
     for i in range(lines.shape[0]):
@@ -215,7 +215,18 @@ def drawLineSegments(img = None, lines = None, colors = [(255, 0, 0), (0, 255, 0
         x2 = int(endpoints[1, 1])
         pt1 = (x1, y1)
         pt2 = (x2, y2)
-        cv2.line(img, pt1, pt2, colors[i], 2)
+        cv2.line(img, pt1, pt2, colors[i], 5)
+    
+    return img
+
+# annotate image with pixels
+def drawPixels(img = None, pixels = None):
+    
+    # BGR (255, 0, 0) = Blue
+    for i in range(pixels.shape[0]):
+        y = pixels[i, 0]
+        x = pixels[i, 1]
+        img[y, x] = (255, 255, 255)
     
     return img
 
