@@ -95,12 +95,12 @@ class RobotLink:
     def getShaftFeatures(self):
         # returns self.shaft_features3DPos and self.shaft_features3DDir
         # data type for both is Nx3 numpy array for N shaft features 
-        print('returning from getShaftFeatures')
-        print('self.shaft_features3DPos: {}'.format(self.shaft_features3DPos))
-        print('self.shaft_features3DPos.shape: {}'.format(self.shaft_features3DPos.shape))
-        print('self.shaft_features3DDir: {}'.format(self.shaft_features3DDir))
-        print('self.shaft_features3DDir.shape: {}'.format(self.shaft_features3DDir.shape))
-        print('self.shaft_radius: {}'.format(self.shaft_radius))
+        #print('returning from getShaftFeatures')
+        #print('self.shaft_features3DPos: {}'.format(self.shaft_features3DPos))
+        #print('self.shaft_features3DPos.shape: {}'.format(self.shaft_features3DPos.shape))
+        #print('self.shaft_features3DDir: {}'.format(self.shaft_features3DDir))
+        #print('self.shaft_features3DDir.shape: {}'.format(self.shaft_features3DDir.shape))
+        #print('self.shaft_radius: {}'.format(self.shaft_radius))
 
         return self.shaft_features3DPos, self.shaft_features3DDir, self.shaft_featuresNames, self.shaft_radius
     

@@ -5,7 +5,7 @@ import math
 from utils_kornia import centerCrop
 
 class StereoCamera():
-    def __init__(self, cal_file_path, rectify = True, orig_ref_dims = None, crop_ref_dims = None, downscale_factor = 2, scale_baseline=1e-3):
+    def __init__(self, cal_file_path, rectify = True, crop_ref_dims = None, downscale_factor = 2, scale_baseline=1e-3):
         # Load cal file and get all the parameters
         # scale_baseline scales the baseline (i.e. converts units from mm to m!)
         f = open(cal_file_path)
@@ -23,30 +23,12 @@ class StereoCamera():
         # Downscale stuff
         self.downscale_factor = downscale_factor
         self.img_size = np.array(cal_data['ImageSize'])/self.downscale_factor
-        self.img_size = ( int(self.img_size[1]), int(self.img_size[0]) )
+        self.img_size = ( int(self.img_size[1]), int(self.img_size[0]) ) # width, height
         self.K1 = self.K1/self.downscale_factor
         self.K2 = self.K2/self.downscale_factor
         
         self.K1[-1, -1] = 1
         self.K2[-1, -1] = 1
-
-        # re-center for crop
-        if (orig_ref_dims is not None) and (crop_ref_dims is not None):
-                height, width = orig_ref_dims[0], orig_ref_dims[1]
-                mid_y, mid_x = int(height / 2), int(width / 2)
-
-                crop_height, crop_width = int(crop_ref_dims[0] / 2), int(crop_ref_dims[1] / 2)
-                y_offset = mid_y - crop_height
-                x_offset = mid_x - crop_width
-
-                # cx' = cx - x_offset
-                self.K1[0, -1] = self.K1[0, -1] - x_offset
-                self.K2[0, -1] = self.K2[0, -1] - x_offset
-
-                # cy' = cy - y_offset
-                self.K1[1, -1] = self.K1[1, -1] - y_offset
-                self.K2[1, -1] = self.K2[1, -1] - y_offset
-
         
         # Prepare undistort and rectification (if desired) here
         if rectify:
@@ -67,18 +49,38 @@ class StereoCamera():
                                                                            self.img_size, cv2.CV_32FC1)
             self.right_map1, self.right_map2 = cv2.initUndistortRectifyMap(self.K2, self.D2, np.eye(3), self.K2, 
                                                                            self.img_size, cv2.CV_32FC1)
+        
+         # re-center for crop
+        if (crop_ref_dims is not None):
+                height, width = self.img_size[1], self.img_size[0]
+                mid_y, mid_x = int(height / 2), int(width / 2)
+
+                crop_height, crop_width = int(crop_ref_dims[0] / 2), int(crop_ref_dims[1] / 2)
+                y_offset = mid_y - crop_height
+                x_offset = mid_x - crop_width
+
+                # cx' = cx - x_offset
+                self.K1[0, -1] = self.K1[0, -1] - x_offset
+                self.K2[0, -1] = self.K2[0, -1] - x_offset
+
+                # cy' = cy - y_offset
+                self.K1[1, -1] = self.K1[1, -1] - y_offset
+                self.K2[1, -1] = self.K2[1, -1] - y_offset
+        
+                #self.img_size = ((mid_x + crop_width - x_offset), (mid_y + crop_height - y_offset))
+        
         self.T[:3, :3] = self.rotation
         self.T[:3, -1] = self.translation
         
-    def processImage(self, left_image = None, right_image = None):
+    def processImage(self, left_image = None, right_image = None, dim = None):
         print('processImage: {}, {}'.format(left_image.shape, right_image.shape))
         left_image  = cv2.resize(left_image,  self.img_size)
         right_image = cv2.resize(right_image, self.img_size)
         left_image  = cv2.remap(left_image,  self.left_map1,  self.left_map2,  interpolation=cv2.INTER_LINEAR)
         right_image = cv2.remap(right_image, self.right_map1, self.right_map2, interpolation=cv2.INTER_LINEAR)
         print('left_image.shape: {}, right_image.shape: {}'.format(left_image.shape, right_image.shape))
-        left_image, _, _ = centerCrop(left_image, dim = [405, 720])
-        right_image, _, _ = centerCrop(right_image, dim = [405, 720])
+        left_image, _, _ = centerCrop(left_image, dim = dim)
+        right_image, _, _ = centerCrop(right_image, dim = dim)
         print('left_image.shape: {}, right_image.shape: {}'.format(left_image.shape, right_image.shape))
         
         return left_image, right_image
@@ -98,13 +100,13 @@ class StereoCamera():
     # https://github.com/ucsdarclab/dvrk_particle_filter/blob/master/src/stereo_camera.cpp#L252
     def projectShaftLines_SingleCam(self, points, directions, radii, camera):
 
-        print('in projectShaftLines_SingleCam')
-        print('points: {}'.format(points))
-        print('points.shape: {}'.format(points.shape))
-        print('directions: {}'.format(directions))
-        print('directions.shape: {}'.format(directions.shape))
-        print('radii: {}'.format(radii))
-        print('camera: {}'.format(camera))
+        #print('in projectShaftLines_SingleCam camera: {}'.format(camera))
+        #print('points: {}'.format(points))
+        #print('points.shape: {}'.format(points.shape))
+        #print('directions: {}'.format(directions))
+        #print('directions.shape: {}'.format(directions.shape))
+        #print('radii: {}'.format(radii))
+        #print('camera: {}'.format(camera))
         
         # identify L or R camera
         cam_K_matrix = None
@@ -121,22 +123,22 @@ class StereoCamera():
         for i in range(points.shape[0]):
             
             x0 = points[i, 0]
-            print('x0: {}'.format(x0))
+            #print('x0: {}'.format(x0))
             y0 = points[i, 1]
-            print('y0: {}'.format(y0))
+            #print('y0: {}'.format(y0))
             z0 = points[i, 2]
-            print('z0: {}'.format(z0))
+            #print('z0: {}'.format(z0))
 
             a = directions[i, 0]
-            print('a: {}'.format(a))
+            #print('a: {}'.format(a))
             b = directions[i, 1]
-            print('b: {}'.format(b))
+            #print('b: {}'.format(b))
             c = directions[i, 2]
-            print('c: {}'.format(c))
+            #print('c: {}'.format(c))
 
             # are these units correct? makes A < 0
             R = radii[i]
-            print('R: {}'.format(R))
+            #print('R: {}'.format(R))
 
             alpha1 = (1 - a * a) * x0 - a * b * y0 - a * c * z0
             beta1  = -a * b * x0 + (1 - b * b) * y0 - b * c * z0
@@ -147,7 +149,7 @@ class StereoCamera():
             gamma2 = b * x0 - a * y0
 
             A = x0 * x0 + y0 * y0 + z0 * z0 - (a * x0 + b * y0 + c * z0) * (a * x0 + b * y0 + c * z0) - R * R
-            print('A: {}'.format(A))
+            #print('A: {}'.format(A))
 
             if (A <= 0):
                 continue
@@ -201,7 +203,7 @@ class StereoCamera():
             projected_lines.append([rho, theta])
             
         projected_lines = np.asarray(projected_lines)
-        print('projected_lines from projectShaftLines_SingleCam: {}'.format(projected_lines))
+        #print('projected_lines from projectShaftLines_SingleCam: {}'.format(projected_lines))
         return projected_lines # Nx2 [rho, theta] # theta in radians
 
     # Project shaft lines from L/R camera-to-base frames onto 2D camera image plane 
@@ -210,12 +212,12 @@ class StereoCamera():
     # radii: Nx1 np array
     def projectShaftLines(self, points, directions, radii):
 
-        print('in projectShaftLines')
-        print('points: {}'.format(points))
-        print('points.shape: {}'.format(points.shape))
-        print('directions: {}'.format(directions))
-        print('directions.shape: {}'.format(directions.shape))
-        print('radii: {}'.format(radii))
+        #print('in projectShaftLines')
+        #print('points: {}'.format(points))
+        #print('points.shape: {}'.format(points.shape))
+        #print('directions: {}'.format(directions))
+        #print('directions.shape: {}'.format(directions.shape))
+        #print('radii: {}'.format(radii))
         
         # Check if points / directions exist
         if (points is None) or (directions is None) or (radii is None):
@@ -223,12 +225,12 @@ class StereoCamera():
 
         # Project lines of 3D cylinder in L camera-to-base frame onto 2D projection on L camera image plane
         points_l = points.copy() #Nx3
-        print('points_l: {}'.format(points_l))
-        print('points_l.shape: {}'.format(points_l.shape))
+        #print('points_l: {}'.format(points_l))
+        #print('points_l.shape: {}'.format(points_l.shape))
 
         directions_l = directions.copy() #Nx3
-        print('directions_l: {}'.format(directions_l))
-        print('directions_l.shape: {}'.format(directions_l.shape))
+        #print('directions_l: {}'.format(directions_l))
+        #print('directions_l.shape: {}'.format(directions_l.shape))
 
         projected_lines_l = self.projectShaftLines_SingleCam(points_l, directions_l, radii, 'left') # Nx2 [rho, theta]
 
@@ -238,14 +240,14 @@ class StereoCamera():
         points_r = np.dot(self.T, points_homogeneous)[:-1, :] # 3xN
         points_r = np.transpose(points_r) # Nx3
 
-        print('points_r.shape: {}'.format(points_r.shape))
+        #print('points_r.shape: {}'.format(points_r.shape))
 
         # Rotate L camera-to-base frame lines to R camera-to-base frame lines
         directions_r = np.dot(self.T[0:3, 0:3], np.transpose(directions)) # 3xN
         directions_r = np.transpose(directions_r) # Nx3
         projected_lines_r = self.projectShaftLines_SingleCam(points_r, directions_r, radii, 'right') # Nx2 [rho, theta]
         
-        print('returning projected lines from projectShaftLines')
-        print('projected_lines_l: {}'.format(projected_lines_l))
-        print('projected_lines_r: {}'.format(projected_lines_r))
+        #print('returning projected lines from projectShaftLines')
+        #print('projected_lines_l: {}'.format(projected_lines_l))
+        #print('projected_lines_r: {}'.format(projected_lines_r))
         return projected_lines_l, projected_lines_r # Nx2 [rho, theta], Nx2 [rho, theta]

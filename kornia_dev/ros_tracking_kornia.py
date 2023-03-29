@@ -81,6 +81,8 @@ if __name__ == "__main__":
     # crop parameters
     orig_ref_dims = np.load('orig_ref_dims.npy')
     crop_ref_dims = np.load('crop_ref_dims.npy') # array([ 405, 720])
+    print('orig_ref_dims: {}'.format(orig_ref_dims))
+    print('crop_ref_dims: {}'.format(crop_ref_dims))
 
     # reference lines
     crop_ref_lines_l = torch.as_tensor(np.load('crop_ref_lines_l.npy')) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
@@ -88,11 +90,13 @@ if __name__ == "__main__":
 
     # reference images
     # left camera
-    crop_ref_l = np.load('crop_ref_l.npy') # (405, 720, 3) RGB uint8
+    crop_ref_l = np.load('crop_ref_l.npy') # (404, 720, 3) RGB uint8
+    print('crop_ref_l.shape: {}'.format(crop_ref_l.shape))
     crop_ref_l = K.image_to_tensor(crop_ref_l).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
     crop_ref_l = K.color.rgb_to_grayscale(crop_ref_l) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
     # right camera
-    crop_ref_r = np.load('crop_ref_r.npy') # (1080, 1920, 3) RGB uint8
+    crop_ref_r = np.load('crop_ref_r.npy') # (404, 720, 3) RGB uint8
+    print('crop_ref_r.shape: {}'.format(crop_ref_l.shape))
     crop_ref_r = K.image_to_tensor(crop_ref_r).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
     crop_ref_r = K.color.rgb_to_grayscale(crop_ref_r) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
 
@@ -128,11 +132,11 @@ if __name__ == "__main__":
             'crop_ref_dims': crop_ref_dims
         },
         'use_line_intensities_only': False,
-        'line_intensities_to_polar': True
+        'line_intensities_to_polar': False
     } 
 
     robot_arm = RobotLink(robot_file, use_dh_offset=False) # position / orientation in Meters
-    cam = StereoCamera(camera_file, rectify = True, orig_ref_dims = orig_ref_dims, crop_ref_dims = crop_ref_dims)
+    cam = StereoCamera(camera_file, rectify = True, crop_ref_dims = crop_ref_dims)
 
     # Load hand-eye transform 
     # originally in M
@@ -181,7 +185,7 @@ if __name__ == "__main__":
             new_right_img = _cb_right_img.copy()
 
             # process callback images
-            new_left_img, new_right_img = cam.processImage(new_left_img, new_right_img)
+            new_left_img, new_right_img = cam.processImage(new_left_img, new_right_img, dim = crop_ref_dims)
             detected_keypoints_l, new_left_img  = segmentColorAndGetKeyPoints(new_left_img,  draw_contours=True)
             new_detected_keypoints_l = np.copy(detected_keypoints_l)
             detected_keypoints_r, new_right_img = segmentColorAndGetKeyPoints(new_right_img, draw_contours=True)
