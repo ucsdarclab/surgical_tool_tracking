@@ -282,7 +282,8 @@ def fitRansacLines(point_clouds, ransac_params):
     return lines
 
 def detectShaftLines(new_img = None, 
-                    ref_img = None, 
+                    ref_img = None,
+                    orig_ref_img = None,
                     crop_ref_lines = None, 
                     crop_ref_dims = None, 
                     model = None, 
@@ -317,7 +318,7 @@ def detectShaftLines(new_img = None,
         assert((kornia_params is not None) and (kornia_params['use_kornia']))
 
     # process input image
-    orig_img = new_img.copy()
+    orig_new_img = new_img.copy()
     new_img = K.image_to_tensor(new_img).float() / 255.0  # [0, 1] [3, crop_dims] float32
     new_img = K.color.rgb_to_grayscale(new_img) # [0, 1] [1, crop_dims] float32
     imgs = torch.stack([ref_img, new_img], )
@@ -354,10 +355,9 @@ def detectShaftLines(new_img = None,
 
     # select only matching line segments that correspond to ref lines
     selected_lines1 = matched_lines1[ind] # ref lines torch[2, 2, 2]
-    ref_img = np.load('crop_ref_l.npy')
-    ref_img = drawLineSegments(ref_img, selected_lines1)
+    orig_ref_img = drawLineSegments(orig_ref_img, selected_lines1)
     selected_lines2 = matched_lines2[ind] # matched lines in new_img torch[2, 2, 2]
-    new_img = drawLineSegments(orig_img, selected_lines2)
+    orig_new_img = drawLineSegments(orig_new_img, selected_lines2)
 
     # new image detected endpoints
     detected_endpoints = np.asarray(np.around(np.asarray(selected_lines2), decimals = 0), dtype = int) # [[y, x], [y, x]]
@@ -376,7 +376,7 @@ def detectShaftLines(new_img = None,
             theta = np.arctan2((x1 - x2), (y2 - y1))
             rho = x1 * np.cos(theta) + y1 * np.sin(theta)
             polar_lines_detected_endpoints.append([rho, theta])
-            new_img = drawPolarLines(new_img, np.asarray([rho, theta]))
+            orig_new_img = drawPolarLines(orig_new_img, np.asarray([rho, theta]))
 
     # search region around detected endpoints for all pixels
     # that meet intensity threshold
@@ -429,7 +429,7 @@ def detectShaftLines(new_img = None,
 
             if (endpoint_intensities_to_polar):
                 intensity_endpoint_lines = fitRansacLines(intensity_endpoint_clouds, ransac_params)
-                new_img = drawPolarLines(new_img, np.asarray(intensity_endpoint_lines))
+                orig_new_img = drawPolarLines(orig_new_img, np.asarray(intensity_endpoint_lines))
     
     # search region between detected endpoints for all pixels
     # that meet intensity threshold
@@ -476,11 +476,11 @@ def detectShaftLines(new_img = None,
 
             if (line_intensities_to_polar):
                 intensity_line_lines = fitRansacLines(intensity_line_clouds, ransac_params)
-                new_img = drawPolarLines(new_img, np.asarray(intensity_line_lines))
+                orig_new_img = drawPolarLines(orig_new_img, np.asarray(intensity_line_lines))
     
     output = {
-        'ref_img': ref_img,
-        'new_img': new_img,
+        'ref_img': orig_ref_img,
+        'new_img': orig_new_img,
         'canny_lines': canny_lines,
         'polar_lines_detected_endpoints': polar_lines_detected_endpoints,
         'intensity_endpoint_clouds': intensity_endpoint_clouds,

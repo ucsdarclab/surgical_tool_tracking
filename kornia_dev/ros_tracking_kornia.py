@@ -79,24 +79,26 @@ if __name__ == "__main__":
     ats.registerCallback(gotData)
 
     # crop parameters
-    orig_ref_dims = np.load('orig_ref_dims.npy')
-    crop_ref_dims = np.load('crop_ref_dims.npy') # array([ 405, 720])
+    orig_ref_dims = np.load('kornia_dev/orig_ref_dims.npy')
+    crop_ref_dims = np.load('kornia_dev/crop_ref_dims.npy') # array([ 405, 720])
     print('orig_ref_dims: {}'.format(orig_ref_dims))
     print('crop_ref_dims: {}'.format(crop_ref_dims))
 
     # reference lines
-    crop_ref_lines_l = torch.as_tensor(np.load('crop_ref_lines_l.npy')) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
-    crop_ref_lines_r = torch.as_tensor(np.load('crop_ref_lines_l.npy')) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
+    crop_ref_lines_l = torch.as_tensor(np.load('kornia_dev/crop_ref_lines_l.npy')) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
+    crop_ref_lines_r = torch.as_tensor(np.load('kornia_dev/crop_ref_lines_l.npy')) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
 
     # reference images
     # left camera
-    crop_ref_l = np.load('crop_ref_l.npy') # (404, 720, 3) RGB uint8
+    crop_ref_l = np.load('kornia_dev/crop_ref_l.npy') # (404, 720, 3) RGB uint8
     print('crop_ref_l.shape: {}'.format(crop_ref_l.shape))
+    orig_ref_l = crop_ref_l.copy()
     crop_ref_l = K.image_to_tensor(crop_ref_l).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
     crop_ref_l = K.color.rgb_to_grayscale(crop_ref_l) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
     # right camera
-    crop_ref_r = np.load('crop_ref_r.npy') # (404, 720, 3) RGB uint8
-    print('crop_ref_r.shape: {}'.format(crop_ref_l.shape))
+    crop_ref_r = np.load('kornia_dev/crop_ref_r.npy') # (404, 720, 3) RGB uint8
+    print('crop_ref_r.shape: {}'.format(crop_ref_r.shape))
+    orig_ref_r = crop_ref_r.copy()
     crop_ref_r = K.image_to_tensor(crop_ref_r).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
     crop_ref_r = K.color.rgb_to_grayscale(crop_ref_r) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
 
@@ -195,6 +197,7 @@ if __name__ == "__main__":
             #cb_detected_shaftlines_r, _cb_right_img, _cb_right_ref_img = detectShaftLines(_cb_right_img, crop_ref_r, crop_ref_lines_r, crop_ref_dims, model, cb_use_intensity, cb_intensity_radius) # (returns torch[2, 2, 2] of endpoints, Nx2 array of [rho, theta]),image with line segments drawn, ref image with reference line segments drawn
             output_l  = detectShaftLines(new_img = new_left_img, 
                                         ref_img = crop_ref_l,
+                                        orig_ref_img = orig_ref_l,
                                         crop_ref_lines = crop_ref_lines_l,
                                         crop_ref_dims = crop_ref_dims,
                                         model = model,
@@ -202,6 +205,7 @@ if __name__ == "__main__":
                                         kornia_params = kornia_params)
             output_r  = detectShaftLines(new_img = new_right_img, 
                                         ref_img = crop_ref_r,
+                                        orig_ref_img = orig_ref_r,
                                         crop_ref_lines = crop_ref_lines_r,
                                         crop_ref_dims = crop_ref_dims,
                                         model = model,
