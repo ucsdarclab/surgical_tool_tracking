@@ -5,7 +5,7 @@ import math
 from utils_kornia import centerCrop
 
 class StereoCamera():
-    def __init__(self, cal_file_path, rectify = True, crop_ref_dims = None, downscale_factor = 2, scale_baseline=1e-3):
+    def __init__(self, cal_file_path, rectify = True, crop_scale = None, downscale_factor = 2, scale_baseline=1e-3):
         # Load cal file and get all the parameters
         # scale_baseline scales the baseline (i.e. converts units from mm to m!)
         f = open(cal_file_path)
@@ -26,9 +26,8 @@ class StereoCamera():
         self.downscale_factor = downscale_factor
         self.input_img_size = np.array(cal_data['ImageSize']) # 1080 x 1920
         print('self.input_img_size: {}'.format(self.input_img_size))
-        # NOT SURE WHY OPENCV REQUIRES FLIPPED DIMENSIONS FOR JUST THIS
         self.down_scaled_img_size = ( int(self.input_img_size[0]/self.downscale_factor), 
-                                      int(self.input_img_size[1]/self.downscale_factor) ) # width, height (960 x 540)
+                                      int(self.input_img_size[1]/self.downscale_factor) ) # width, height (540 x 960)
         print('self.down_scaled_img_size: {}'.format(self.down_scaled_img_size))
         self.K1 = self.K1/self.downscale_factor
         self.K2 = self.K2/self.downscale_factor
@@ -61,25 +60,25 @@ class StereoCamera():
                                                                            (self.down_scaled_img_size[1], self.down_scaled_img_size[0]), cv2.CV_32FC1)
         
          # re-center for crop
-        if (crop_ref_dims is not None):
+        if (crop_scale is not None):
             height, width = self.down_scaled_img_size[0], self.down_scaled_img_size[1] # 540, 960
             mid_y, mid_x = int(height / 2), int(width / 2) # 270, 480
 
-            crop_height, crop_width = int(crop_ref_dims[0] / 2), int(crop_ref_dims[1] / 2) # 202 x 360
-            y_offset = mid_y - crop_height # 68
-            x_offset = mid_x - crop_width # 120
+            crop_height, crop_width = int((height * crop_scale) / 2), int((width * crop_scale) / 2) # 135 x 240
+            y_offset = mid_y - crop_height # 135
+            x_offset = mid_x - crop_width # 240
 
             # cx' = cx - x_offset
-            self.K1[0, -1] = self.K1[0, -1] - x_offset # ~202
+            self.K1[0, -1] = self.K1[0, -1] - x_offset # 240
             self.K2[0, -1] = self.K2[0, -1] - x_offset 
 
             # cy' = cy - y_offset
-            self.K1[1, -1] = self.K1[1, -1] - y_offset # ~360
+            self.K1[1, -1] = self.K1[1, -1] - y_offset # 135
             self.K2[1, -1] = self.K2[1, -1] - y_offset
 
             print('cropped self.K1: {}'.format(self.K1))
     
-            self.final_img_size = (crop_ref_dims[0], crop_ref_dims[1])
+            self.final_img_size = (int(height * crop_scale), int(width * crop_scale))
         else:
             self.final_img_size = self.down_scaled_img_size 
         
@@ -87,15 +86,15 @@ class StereoCamera():
         self.T[:3, :3] = self.rotation
         self.T[:3, -1] = self.translation
         
-    def processImage(self, left_image = None, right_image = None, dim = None):
+    def processImage(self, left_image = None, right_image = None, crop_scale = None):
         print('processImage: {}, {}'.format(left_image.shape, right_image.shape))
         left_image  = cv2.resize(left_image,  (self.down_scaled_img_size[1], self.down_scaled_img_size[0]))
         right_image = cv2.resize(right_image, (self.down_scaled_img_size[1], self.down_scaled_img_size[0]))
         left_image  = cv2.remap(left_image,  self.left_map1,  self.left_map2,  interpolation=cv2.INTER_LINEAR)
         right_image = cv2.remap(right_image, self.right_map1, self.right_map2, interpolation=cv2.INTER_LINEAR)
         print('left_image.shape: {}, right_image.shape: {}'.format(left_image.shape, right_image.shape))
-        left_image, _, _ = centerCrop(left_image, dim = dim)
-        right_image, _, _ = centerCrop(right_image, dim = dim)
+        left_image, _, _ = centerCrop(left_image, crop_scale = crop_scale)
+        right_image, _, _ = centerCrop(right_image, crop_scale = crop_scale)
         print('left_image.shape: {}, right_image.shape: {}'.format(left_image.shape, right_image.shape))
         
         return left_image, right_image

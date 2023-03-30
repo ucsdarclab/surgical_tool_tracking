@@ -192,11 +192,11 @@ def cannyPreProcess(img = None):
     edges_and_mask = cv2.cvtColor(edges_and_mask, cv2.COLOR_GRAY2RGB)
     return edges_and_mask
 
-def centerCrop(img = None, dim = None):
+def centerCrop(img = None, crop_scale = None):
     height, width = img.shape[0], img.shape[1]
     mid_y, mid_x = int(height / 2), int(width / 2)
 
-    crop_height, crop_width = int(dim[0] / 2), int(dim[1] / 2)
+    crop_height, crop_width = int((height * crop_scale) / 2), int((width * crop_scale) / 2)
     y_offset = mid_y - crop_height
     x_offset = mid_x - crop_width
     crop_img = img[y_offset: (mid_y + crop_height), x_offset: (mid_x + crop_width)]
@@ -236,7 +236,7 @@ def fitRansacLines(point_clouds, ransac_params):
     min_samples = int(ransac_params['min_samples'])
     residual_threshold = ransac_params['residual_threshold']
     max_trials = ransac_params['max_trials']
-    crop_ref_dims = ransac_params['crop_ref_dims']
+    img_dims = ransac_params['img_dims']
     
     # fit point clouds
     lines = []
@@ -257,7 +257,7 @@ def fitRansacLines(point_clouds, ransac_params):
                 m = float(ransac.estimator_.coef_)
                 b = float(ransac.estimator_.intercept_)
                 y1, x1 = int(b), 0
-                y2, x2 = int(m * crop_ref_dims[1] + b), crop_ref_dims[1]
+                y2, x2 = int(m * img_dims[1] + b), img_dims[1]
                 theta = np.arctan2((x1 - x2), (y2 - y1))
                 rho = x1 * np.cos(theta) + y1 * np.sin(theta)
 
@@ -285,7 +285,7 @@ def detectShaftLines(new_img = None,
                     ref_img = None,
                     orig_ref_img = None,
                     crop_ref_lines = None, 
-                    crop_ref_dims = None, 
+                    img_dims = None, 
                     model = None, 
                     canny_params = {},
                     kornia_params = {}):
@@ -319,6 +319,8 @@ def detectShaftLines(new_img = None,
 
     # process input image
     orig_new_img = new_img.copy()
+    img_height = new_img.shape[1]
+    img_width = new_img.shape[2]
     new_img = K.image_to_tensor(new_img).float() / 255.0  # [0, 1] [3, crop_dims] float32
     new_img = K.color.rgb_to_grayscale(new_img) # [0, 1] [1, crop_dims] float32
     imgs = torch.stack([ref_img, new_img], )
@@ -386,7 +388,7 @@ def detectShaftLines(new_img = None,
     search_radius = int(kornia_params['search_radius']) # kernel size for dilation
     intensity_params = kornia_params['intensity_params'] # {'metric': value} {'mean': 0, 'std': 1, 'pct': 10}
     ransac_params = kornia_params['ransac_params'] # ransac params 
-    # {'min_samples: 3, 'residual_threshold': None, 'max_trials': 100, 'crop_ref_dims': [720, 1280]}
+    # {'min_samples: 3, 'residual_threshold': None, 'max_trials': 100, 'img_dims': (height, width)}
     
     intensity_endpoint_clouds = None
     intensity_endpoint_lines = None
@@ -402,7 +404,7 @@ def detectShaftLines(new_img = None,
             x2 = line[1][1]
 
             # convert detected endpoints to endpoint intensity clouds
-            blank = np.zeros((crop_ref_dims[0], crop_ref_dims[1]))
+            blank = np.zeros((img_height, img_width))
             dotted = blank.copy()
             dotted[y1, x1] = 255.0
             dotted[y2, x2] = 255.0
@@ -451,7 +453,7 @@ def detectShaftLines(new_img = None,
             x2 = line[1][1]
 
             # convert detected endpoints to line intensity cloud
-            blank = np.zeros((crop_ref_dims[0], crop_ref_dims[1]))
+            blank = np.zeros((img_height, img_width))
             lined = blank.copy()
             lined = cv2.line(blank, (x1, y1), (x2, y2), (255, 255, 255), thickness = 1)
             lined_dilation = cv2.dilate(lined, kernel, iterations=1)

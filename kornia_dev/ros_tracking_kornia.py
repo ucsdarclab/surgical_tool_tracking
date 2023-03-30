@@ -79,10 +79,8 @@ if __name__ == "__main__":
     ats.registerCallback(gotData)
 
     # crop parameters
-    orig_ref_dims = np.load('kornia_dev/orig_ref_dims.npy') # array([540, 960])
-    crop_ref_dims = np.load('kornia_dev/crop_ref_dims.npy') # array([ 405, 720])
-    print('orig_ref_dims: {}'.format(orig_ref_dims))
-    print('crop_ref_dims: {}'.format(crop_ref_dims))
+    crop_scale = np.load('kornia_dev/crop_scale.npy')
+    print('crop_scale: {}'.format(crop_scale))
 
     # reference lines
     crop_ref_lines_l = torch.as_tensor(np.load('kornia_dev/crop_ref_lines_l.npy')) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
@@ -92,6 +90,8 @@ if __name__ == "__main__":
     # left camera
     crop_ref_l = np.load('kornia_dev/crop_ref_l.npy') # (404, 720, 3) RGB uint8
     print('crop_ref_l.shape: {}'.format(crop_ref_l.shape))
+    img_dims = [crop_ref_l.shape[0], crop_ref_l.shape[1]]
+    print('img_dims: {}'.format(img_dims))
     orig_ref_l = crop_ref_l.copy()
     crop_ref_l = K.image_to_tensor(crop_ref_l).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
     crop_ref_l = K.color.rgb_to_grayscale(crop_ref_l) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
@@ -131,14 +131,14 @@ if __name__ == "__main__":
             'min_samples': 3.0,
             'residual_threshold': 0.75,
             'max_trials': 100,
-            'crop_ref_dims': crop_ref_dims
+            'img_dims': img_dims
         },
         'use_line_intensities_only': False,
         'line_intensities_to_polar': False
     } 
 
     robot_arm = RobotLink(robot_file, use_dh_offset=False) # position / orientation in Meters
-    cam = StereoCamera(camera_file, rectify = True, crop_ref_dims = crop_ref_dims)
+    cam = StereoCamera(camera_file, rectify = True, crop_scale = crop_scale, downscale_factor = 2, scale_baseline=1e-3)
 
     # Load hand-eye transform 
     # originally in M
@@ -188,19 +188,17 @@ if __name__ == "__main__":
             new_right_img = _cb_right_img.copy()
 
             # process callback images
-            new_left_img, new_right_img = cam.processImage(new_left_img, new_right_img, dim = crop_ref_dims)
+            new_left_img, new_right_img = cam.processImage(new_left_img, new_right_img, crop_scale = crop_scale)
             detected_keypoints_l, new_left_img  = segmentColorAndGetKeyPoints(new_left_img,  draw_contours=True)
             new_detected_keypoints_l = np.copy(detected_keypoints_l)
             detected_keypoints_r, new_right_img = segmentColorAndGetKeyPoints(new_right_img, draw_contours=True)
             new_detected_keypoints_r = np.copy(detected_keypoints_r)
             
-            #cb_detected_shaftlines_l, _cb_left_img, _cb_left_ref_img  = detectShaftLines(_cb_left_img, crop_ref_l, crop_ref_lines_l, crop_ref_dims, model, cb_use_intensity, cb_intensity_radius) # (returns torch[2, 2, 2] of endpoints, Nx2 array of [rho, theta]), image with line segments drawn, ref image with reference line segments drawn
-            #cb_detected_shaftlines_r, _cb_right_img, _cb_right_ref_img = detectShaftLines(_cb_right_img, crop_ref_r, crop_ref_lines_r, crop_ref_dims, model, cb_use_intensity, cb_intensity_radius) # (returns torch[2, 2, 2] of endpoints, Nx2 array of [rho, theta]),image with line segments drawn, ref image with reference line segments drawn
             output_l  = detectShaftLines(new_img = new_left_img, 
                                         ref_img = crop_ref_l,
                                         orig_ref_img = orig_ref_l,
                                         crop_ref_lines = crop_ref_lines_l,
-                                        crop_ref_dims = crop_ref_dims,
+                                        img_dims = img_dims,
                                         model = model,
                                         canny_params = canny_params,
                                         kornia_params = kornia_params)
@@ -208,7 +206,7 @@ if __name__ == "__main__":
                                         ref_img = crop_ref_r,
                                         orig_ref_img = orig_ref_r,
                                         crop_ref_lines = crop_ref_lines_r,
-                                        crop_ref_dims = crop_ref_dims,
+                                        img_dims = img_dims,
                                         model = model,
                                         canny_params = canny_params,
                                         kornia_params = kornia_params)
