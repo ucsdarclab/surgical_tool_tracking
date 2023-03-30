@@ -23,7 +23,7 @@ def normpdf(x, mean, sd):
 
 # Example motion model function for Particle Filter class, kwargs would include std
 def additiveGaussianNoise(state, std):
-    sample, prob = sampleNormalDistribution(std)
+    sample, prob = sampleNormalDistribution(np.asarray(std))
     return state + sample, prob
 
 # Create "Lumped Error" Motion model that:
@@ -54,7 +54,8 @@ def pointFeatureObs(state, point_detections, robot_arm, joint_angle_readings, ca
     T = poseToMatrix(state[:6])
 
     # Add estimated joint errors to the robot link
-    joint_angle_readings[-(state.shape[0]-6):] += state[6:]
+    if state.shape[0] > 6:
+        joint_angle_readings[-(state.shape[0]-6):] += state[6:]
     robot_arm.updateJointAngles(joint_angle_readings)
 
     # Project points
@@ -100,7 +101,8 @@ def pointFeatureObsRightLumpedError(state, point_detections, robot_arm, cam,
     T = poseToMatrix(state[:6])
 
     # Add estimated joint errors to the robot link
-    joint_angle_readings[-(state.shape[0]-6):] += state[6:]
+    if state.shape[0] > 6:
+        joint_angle_readings[-(state.shape[0]-6):] += state[6:]
     robot_arm.updateJointAngles(joint_angle_readings)
 
     # Project points
@@ -144,7 +146,8 @@ def shaftFeatureObs(state, detected_lines, robot_arm, cam, cam_T_b, joint_angle_
     print('T: {}'.format(T))
 
     # Add estimated joint errors to the robot link
-    joint_angle_readings[-(state.shape[0]-6):] += state[6:]
+    if state.shape[0] > 6:
+        joint_angle_readings[-(state.shape[0]-6):] += state[6:]
     robot_arm.updateJointAngles(joint_angle_readings)
 
     # Project points from base to 2D L/R camera image planes
@@ -234,7 +237,8 @@ def shaftFeatureObs_kornia(
     print('T: {}'.format(T))
 
     # Add estimated joint errors to the robot link
-    joint_angle_readings[-(state.shape[0]-6):] += state[6:]
+    if state.shape[0] > 6:
+        joint_angle_readings[-(state.shape[0]-6):] += state[6:]
     robot_arm.updateJointAngles(joint_angle_readings)
 
     # Project points from base to 2D L/R camera image planes
@@ -342,6 +346,7 @@ def shaftFeatureObs_kornia(
                 if (point_prob > max_point_prob):
                     max_point_prob = point_prob
             max_point_probs_l.append(max_point_prob)
+            # color pixel to match projected line
         
         # flatten detected clouds to list of x, y points
         intensity_clouds_r = np.vstack(intensity_clouds_r)

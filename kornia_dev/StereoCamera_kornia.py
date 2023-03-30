@@ -15,6 +15,8 @@ class StereoCamera():
         self.K2 = np.array(cal_data['K2']['data']).reshape(3,3)
         self.D1 = np.array(cal_data['D1']['data'])
         self.D2 = np.array(cal_data['D2']['data'])
+
+        print('initialization self.K1: {}'.format(self.K1))
         
         self.rotation    = np.array(cal_data['R']['data']).reshape(3,3)
         self.translation = np.array(cal_data['T'])*scale_baseline
@@ -22,60 +24,73 @@ class StereoCamera():
         
         # Downscale stuff
         self.downscale_factor = downscale_factor
-        self.img_size = np.array(cal_data['ImageSize'])/self.downscale_factor
-        self.img_size = ( int(self.img_size[1]), int(self.img_size[0]) ) # width, height
+        self.input_img_size = np.array(cal_data['ImageSize']) # 1080 x 1920
+        print('self.input_img_size: {}'.format(self.input_img_size))
+        # NOT SURE WHY OPENCV REQUIRES FLIPPED DIMENSIONS FOR JUST THIS
+        self.down_scaled_img_size = ( int(self.input_img_size[0]/self.downscale_factor), 
+                                      int(self.input_img_size[1]/self.downscale_factor) ) # width, height (960 x 540)
+        print('self.down_scaled_img_size: {}'.format(self.down_scaled_img_size))
         self.K1 = self.K1/self.downscale_factor
         self.K2 = self.K2/self.downscale_factor
         
         self.K1[-1, -1] = 1
         self.K2[-1, -1] = 1
+
+        print('downscaled self.K1: {}'.format(self.K1))
         
         # Prepare undistort and rectification (if desired) here
         if rectify:
             R1, R2, P1, P2, Q, roi1, roi2 = cv2.stereoRectify(self.K1, self.D1, self.K2, self.D2, 
-                                                              self.img_size, self.rotation, self.translation)
+                                                              (self.down_scaled_img_size[1], self.down_scaled_img_size[0]), self.rotation, self.translation)
             self.left_map1,  self.left_map2   = cv2.initUndistortRectifyMap(self.K1, self.D1, R1, P1[:,:-1], 
-                                                                            self.img_size, cv2.CV_32FC1)
+                                                                            (self.down_scaled_img_size[1], self.down_scaled_img_size[0]), cv2.CV_32FC1)
             self.right_map1, self.right_map2  = cv2.initUndistortRectifyMap(self.K2, self.D2, R2, P2[:,:-1], 
-                                                                            self.img_size, cv2.CV_32FC1)
+                                                                            (self.down_scaled_img_size[1], self.down_scaled_img_size[0]), cv2.CV_32FC1)
             self.K1 = P1[:,:-1]
             self.K2 = P2[:,:-1]
+
+            print('rectified self.K1: {}'.format(self.K1))
             
             self.rotation = np.eye(3)
             self.translation = np.linalg.norm(self.translation)*P2[:, -1]/np.linalg.norm(P2[:, -1])
 
         else:
             self.left_map1, self.left_map2   = cv2.initUndistortRectifyMap(self.K1, self.D1, np.eye(3), self.K1, 
-                                                                           self.img_size, cv2.CV_32FC1)
+                                                                           (self.down_scaled_img_size[1], self.down_scaled_img_size[0]), cv2.CV_32FC1)
             self.right_map1, self.right_map2 = cv2.initUndistortRectifyMap(self.K2, self.D2, np.eye(3), self.K2, 
-                                                                           self.img_size, cv2.CV_32FC1)
+                                                                           (self.down_scaled_img_size[1], self.down_scaled_img_size[0]), cv2.CV_32FC1)
         
          # re-center for crop
         if (crop_ref_dims is not None):
-                height, width = self.img_size[1], self.img_size[0]
-                mid_y, mid_x = int(height / 2), int(width / 2)
+            height, width = self.down_scaled_img_size[0], self.down_scaled_img_size[1] # 540, 960
+            mid_y, mid_x = int(height / 2), int(width / 2) # 270, 480
 
-                crop_height, crop_width = int(crop_ref_dims[0] / 2), int(crop_ref_dims[1] / 2)
-                y_offset = mid_y - crop_height
-                x_offset = mid_x - crop_width
+            crop_height, crop_width = int(crop_ref_dims[0] / 2), int(crop_ref_dims[1] / 2) # 202 x 360
+            y_offset = mid_y - crop_height # 68
+            x_offset = mid_x - crop_width # 120
 
-                # cx' = cx - x_offset
-                self.K1[0, -1] = self.K1[0, -1] - x_offset
-                self.K2[0, -1] = self.K2[0, -1] - x_offset
+            # cx' = cx - x_offset
+            self.K1[0, -1] = self.K1[0, -1] - x_offset # ~202
+            self.K2[0, -1] = self.K2[0, -1] - x_offset 
 
-                # cy' = cy - y_offset
-                self.K1[1, -1] = self.K1[1, -1] - y_offset
-                self.K2[1, -1] = self.K2[1, -1] - y_offset
+            # cy' = cy - y_offset
+            self.K1[1, -1] = self.K1[1, -1] - y_offset # ~360
+            self.K2[1, -1] = self.K2[1, -1] - y_offset
+
+            print('cropped self.K1: {}'.format(self.K1))
+    
+            self.final_img_size = (crop_ref_dims[0], crop_ref_dims[1])
+        else:
+            self.final_img_size = self.down_scaled_img_size 
         
-                #self.img_size = ((mid_x + crop_width - x_offset), (mid_y + crop_height - y_offset))
-        
+        print('self.final_img_size: {}'.format(self.final_img_size))
         self.T[:3, :3] = self.rotation
         self.T[:3, -1] = self.translation
         
     def processImage(self, left_image = None, right_image = None, dim = None):
         print('processImage: {}, {}'.format(left_image.shape, right_image.shape))
-        left_image  = cv2.resize(left_image,  self.img_size)
-        right_image = cv2.resize(right_image, self.img_size)
+        left_image  = cv2.resize(left_image,  (self.down_scaled_img_size[1], self.down_scaled_img_size[0]))
+        right_image = cv2.resize(right_image, (self.down_scaled_img_size[1], self.down_scaled_img_size[0]))
         left_image  = cv2.remap(left_image,  self.left_map1,  self.left_map2,  interpolation=cv2.INTER_LINEAR)
         right_image = cv2.remap(right_image, self.right_map1, self.right_map2, interpolation=cv2.INTER_LINEAR)
         print('left_image.shape: {}, right_image.shape: {}'.format(left_image.shape, right_image.shape))

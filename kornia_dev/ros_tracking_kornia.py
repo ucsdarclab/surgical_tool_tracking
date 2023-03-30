@@ -79,7 +79,7 @@ if __name__ == "__main__":
     ats.registerCallback(gotData)
 
     # crop parameters
-    orig_ref_dims = np.load('kornia_dev/orig_ref_dims.npy')
+    orig_ref_dims = np.load('kornia_dev/orig_ref_dims.npy') # array([540, 960])
     crop_ref_dims = np.load('kornia_dev/crop_ref_dims.npy') # array([ 405, 720])
     print('orig_ref_dims: {}'.format(orig_ref_dims))
     print('crop_ref_dims: {}'.format(crop_ref_dims))
@@ -151,10 +151,10 @@ if __name__ == "__main__":
 
 
     # Initialize filter
-    pf = ParticleFilter(num_states=9, 
+    pf = ParticleFilter(num_states=6, # originally 9 (6 for lumped error + 3 for endowrist pitch/yaw/squeeze) -> 6 for just lumped error
                         initialDistributionFunc=sampleNormalDistribution,
-                        #motionModelFunc=additiveGaussianNoise, \
-                        motionModelFunc=lumpedErrorMotionModel,
+                        motionModelFunc=additiveGaussianNoise,
+                        #motionModelFunc=lumpedErrorMotionModel,
                         #obsModelFunc=pointFeatureObs,
                         obsModelFunc=[
                                     pointFeatureObs, 
@@ -167,7 +167,8 @@ if __name__ == "__main__":
                     "std": np.array([1.0e-3, 1.0e-3, 1.0e-3, # pos # in M i.e. 1x10^-3 M
                                     1.0e-2, 1.0e-2, 1.0e-2, # ori
                                     #5.0e-3, 5.0e-3, 0.02
-                                    0.0, 0.0, 0.0])   # joints
+                                    #0.0, 0.0, 0.0
+                                    ])   # joints
                   }
 
     pf.initializeFilter(**init_kwargs)
@@ -211,13 +212,20 @@ if __name__ == "__main__":
                                         model = model,
                                         canny_params = canny_params,
                                         kornia_params = kornia_params)
-
+           
+           
             # copy new images to avoid overwriting by callback
             new_left_img  = np.copy(output_l['new_img']) # cropped img w/detected lines
             new_left_ref_img = np.copy(output_l['ref_img']) # cropped img w/ref line segments
             new_right_img = np.copy(output_r['new_img']) # cropped img w/detected lines
             new_right_ref_img = np.copy(output_r['ref_img']) # cropped img w/ref line segments
-
+            
+            '''
+            cv2.imshow("Ref L Image", new_left_ref_img)
+            cv2.imshow("Ref R Image", new_right_ref_img)
+            cv2.imshow("New L Image", new_left_img)
+            cv2.imshow("New R Image", new_right_img)
+            '''
             # Nx2 array [[rho, theta], [rho, theta], ...]
             new_canny_lines_l = np.copy(output_l['canny_lines']) 
             new_detected_endpoint_lines_l = np.copy(output_l['polar_lines_detected_endpoints']) # Nx2 array [[rho, theta], [rho, theta], ...]
@@ -245,18 +253,24 @@ if __name__ == "__main__":
             
             # Predict Particle Filter
             robot_arm.updateJointAngles(new_joint_angles)
-            j_change = new_joint_angles - prev_joint_angles
+            #j_change = new_joint_angles - prev_joint_angles
 
-            std_j = np.abs(j_change)*0.01
-            std_j[-3:] = 0.0
+            #std_j = np.abs(j_change)*0.01
+            #std_j[-3:] = 0.0
+
+            # pred_kwargs = {
+            #                 "std_pos": 2.5e-5, # in Meters
+            #                 "std_ori": 1.0e-4,
+            #                 "robot_arm": robot_arm, 
+            #                 "std_j": std_j,
+            #                 "nb": 4
+            #               }
 
             pred_kwargs = {
-                            "std_pos": 2.5e-5, # in Meters
-                            "std_ori": 1.0e-4,
-                            "robot_arm": robot_arm, 
-                            "std_j": std_j,
-                            "nb": 4
+                            "std": [2.5e-5, 2.5e-5, 2.5e-5,  # in Meters THESE ARE THE MAIN TUNING PARAMETERS!
+                                    1.0e-4, 1.0e-4, 1.0e-4] # in radians
                           }
+            
             pf.predictionStep(**pred_kwargs)
             
             # Update Particle Filter
@@ -268,7 +282,7 @@ if __name__ == "__main__":
                             'cam': cam, 
                             'cam_T_b': cam_T_b,
                             'joint_angle_readings': new_joint_angles,
-                            'gamma': 0.15, 
+                            'gamma': 0.15, # THIS IS A MAIN TUNING PARAMETER FOR FILTER PERFORMANCE
                         },
                         
                         #shaftFeatureObs_kornia arguments
@@ -290,8 +304,8 @@ if __name__ == "__main__":
                             'cam_T_b': cam_T_b,
                             'joint_angle_readings': new_joint_angles,
                             'cost_assoc_params': {
-                                'gamma_rho': 1, 
-                                'gamma_theta': 1, 
+                                'gamma_rho': 0.1,  # THIS IS A MAIN TUNING PARAMETER FOR FILTER PERFORMANCE
+                                'gamma_theta': 1, # THIS IS A MAIN TUNING PARAMETER FOR FILTER PERFORMANCE
                                 'rho_thresh': 2,
                                 'theta_thresh': 2
                             },
@@ -311,7 +325,8 @@ if __name__ == "__main__":
 
             # Project and draw skeleton
             T = poseToMatrix(correction_estimation[:6])  
-            new_joint_angles[-(correction_estimation.shape[0]-6):] += correction_estimation[6:]
+            if correction_estimation.shape[0] > 6:
+                new_joint_angles[-(correction_estimation.shape[0]-6):] += correction_estimation[6:]
             robot_arm.updateJointAngles(new_joint_angles)
             img_list = projectSkeleton(robot_arm.getSkeletonPoints(), np.dot(cam_T_b, T), [new_left_img, new_right_img], cam.projectPoints)
             img_list = drawShaftLines(robot_arm.getShaftFeatures(), cam, np.dot(cam_T_b, T), img_list)
