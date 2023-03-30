@@ -105,6 +105,8 @@ if __name__ == "__main__":
     # Load kornia model
     model = KF.SOLD2(pretrained=True, config=None)
 
+    # show reference image with reference lines
+
     # parameters for shaft detection
     canny_params = {
         'use_canny': True,
