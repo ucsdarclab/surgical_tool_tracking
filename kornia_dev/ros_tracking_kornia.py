@@ -282,7 +282,7 @@ if __name__ == "__main__":
                             'cam': cam, 
                             'cam_T_b': cam_T_b,
                             'joint_angle_readings': new_joint_angles,
-                            'gamma': 0.15, # THIS IS A MAIN TUNING PARAMETER FOR FILTER PERFORMANCE
+                            'gamma': 0.5, # THIS IS A MAIN TUNING PARAMETER FOR FILTER PERFORMANCE https://github.com/ucsdarclab/dvrk_particle_filter/blob/master/config/ex_vivo_dataset_configure_filter.json
                         },
                         
                         #shaftFeatureObs_kornia arguments
@@ -304,10 +304,10 @@ if __name__ == "__main__":
                             'cam_T_b': cam_T_b,
                             'joint_angle_readings': new_joint_angles,
                             'cost_assoc_params': {
-                                'gamma_rho': 0.1,  # THIS IS A MAIN TUNING PARAMETER FOR FILTER PERFORMANCE
-                                'gamma_theta': 1, # THIS IS A MAIN TUNING PARAMETER FOR FILTER PERFORMANCE
-                                'rho_thresh': 2,
-                                'theta_thresh': 2
+                                'gamma_rho': 0.05,  # THIS IS A MAIN TUNING PARAMETER FOR FILTER PERFORMANCE https://github.com/ucsdarclab/dvrk_particle_filter/blob/master/config/ex_vivo_dataset_configure_filter.json
+                                'gamma_theta': 7.5, # THIS IS A MAIN TUNING PARAMETER FOR FILTER PERFORMANCE https://github.com/ucsdarclab/dvrk_particle_filter/blob/master/config/ex_vivo_dataset_configure_filter.json
+                                'rho_thresh': 75,
+                                'theta_thresh': 0.5
                             },
                             'pixel_probability_params': {
                                 'sigma2_x': 0.5,
