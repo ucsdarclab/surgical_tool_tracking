@@ -522,18 +522,17 @@ def drawShaftLines(shaftFeatures, cam, cam_T_b, img_list):
 
 def makeShaftAssociations(
                         new_img = None, 
+                        ref_tensor = None,
                         ref_img = None,
-                        orig_ref_img = None,
                         crop_ref_lines = None,
                         crop_ref_lines_idx = None,
                         model = None
                         ):
     
     # process input image
-    orig_new_img = new_img.copy()
-    new_img = K.image_to_tensor(new_img).float() / 255.0  # [0, 1] [3, crop_dims] float32
-    new_img = K.color.rgb_to_grayscale(new_img) # [0, 1] [1, crop_dims] float32
-    imgs = torch.stack([ref_img, new_img], )
+    new_tensor = K.image_to_tensor(new_img).float() / 255.0  # [0, 1] [3, crop_dims] float32
+    new_tensor = K.color.rgb_to_grayscale(new_tensor) # [0, 1] [1, crop_dims] float32
+    imgs = torch.stack([ref_tensor, new_tensor], )
     with torch.inference_mode():
         outputs = model(imgs)
     
@@ -557,6 +556,9 @@ def makeShaftAssociations(
 
     # select only matching line segments that correspond to ref lines
     selected_lines1 = matched_lines1[crop_ref_lines_idx] # ref lines torch[2, 2, 2]
-    orig_ref_img = drawLineSegments(orig_ref_img, selected_lines1)
+    assert(selected_lines1 == crop_ref_lines)
+    ref_img = drawLineSegments(ref_img, selected_lines1)
     selected_lines2 = matched_lines2[crop_ref_lines_idx] # matched lines in new_img torch[2, 2, 2]
-    orig_new_img = drawLineSegments(orig_new_img, selected_lines2)
+    new_img = drawLineSegments(new_img, selected_lines2)
+
+    return ref_img, new_img

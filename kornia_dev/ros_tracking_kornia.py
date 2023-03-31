@@ -92,19 +92,17 @@ if __name__ == "__main__":
 
     # reference images
     # left camera
-    crop_ref_l = np.load('kornia_dev/crop_ref_l.npy') # (404, 720, 3) RGB uint8
-    print('crop_ref_l.shape: {}'.format(crop_ref_l.shape))
-    img_dims = [crop_ref_l.shape[0], crop_ref_l.shape[1]]
+    crop_ref_l_img = np.load('kornia_dev/crop_ref_l.npy') # (404, 720, 3) RGB uint8
+    print('crop_ref_l_img.shape: {}'.format(crop_ref_l_img.shape))
+    img_dims = [crop_ref_l_img.shape[0], crop_ref_l_img.shape[1]]
     print('img_dims: {}'.format(img_dims))
-    orig_ref_l = crop_ref_l.copy()
-    crop_ref_l = K.image_to_tensor(crop_ref_l).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
-    crop_ref_l = K.color.rgb_to_grayscale(crop_ref_l) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
+    crop_ref_l_tensor = K.image_to_tensor(crop_ref_l_img).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
+    crop_ref_l_tensor = K.color.rgb_to_grayscale(crop_ref_l_tensor) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
     # right camera
-    crop_ref_r = np.load('kornia_dev/crop_ref_r.npy') # (404, 720, 3) RGB uint8
-    print('crop_ref_r.shape: {}'.format(crop_ref_r.shape))
-    orig_ref_r = crop_ref_r.copy()
-    crop_ref_r = K.image_to_tensor(crop_ref_r).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
-    crop_ref_r = K.color.rgb_to_grayscale(crop_ref_r) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
+    crop_ref_r_img = np.load('kornia_dev/crop_ref_r.npy') # (404, 720, 3) RGB uint8
+    print('crop_ref_r_img.shape: {}'.format(crop_ref_r_img.shape))
+    crop_ref_r_tensor = K.image_to_tensor(crop_ref_r_img).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
+    crop_ref_r_tensor = K.color.rgb_to_grayscale(crop_ref_r_tensor) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
 
     # Load kornia model
     model = KF.SOLD2(pretrained=True, config=None)
@@ -202,8 +200,8 @@ if __name__ == "__main__":
 
             ref_img_l, new_left_img = makeShaftAssociations(
                                         new_img = new_left_img, 
-                                        ref_img = crop_ref_l,
-                                        orig_ref_img = orig_ref_l,
+                                        ref_tensor = crop_ref_l_tensor,
+                                        ref_img = crop_ref_l_img,
                                         crop_ref_lines = crop_ref_lines_l,
                                         crop_ref_lines_idx = crop_ref_lines_l_idx,
                                         model = model
@@ -213,8 +211,8 @@ if __name__ == "__main__":
             
             ref_img_r, new_right_img = makeShaftAssociations(
                                         new_img = new_right_img, 
-                                        ref_img = crop_ref_r,
-                                        orig_ref_img = orig_ref_r,
+                                        ref_tensor = crop_ref_r_tensor,
+                                        ref_img = crop_ref_r_img,
                                         crop_ref_lines = crop_ref_lines_r,
                                         crop_ref_lines_idx = crop_ref_lines_r_idx,
                                         model = model
