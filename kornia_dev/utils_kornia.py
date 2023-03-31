@@ -525,6 +525,7 @@ def makeShaftAssociations(
                         ref_tensor = None,
                         ref_img = None,
                         crop_ref_lines = None,
+                        crop_ref_lines_selected = None,
                         crop_ref_lines_idx = None,
                         model = None
                         ):
@@ -532,9 +533,9 @@ def makeShaftAssociations(
     # process input image
     new_tensor = K.image_to_tensor(new_img).float() / 255.0  # [0, 1] [3, crop_dims] float32
     new_tensor = K.color.rgb_to_grayscale(new_tensor) # [0, 1] [1, crop_dims] float32
-    imgs = torch.stack([ref_tensor, new_tensor], )
+    tensors = torch.stack([ref_tensor, new_tensor], )
     with torch.inference_mode():
-        outputs = model(imgs)
+        outputs = model(tensors)
     
     # detect line segments
     line_seg1 = outputs["line_segments"][0]
@@ -552,9 +553,8 @@ def makeShaftAssociations(
     match_indices = matches[valid_matches]
 
     matched_lines1 = line_seg1[valid_matches]
-    print('matched_lines1: {}'.format(matched_lines1))
+    assert(np.allclose(np.asarray(matched_lines1), np.asarray(crop_ref_lines)))
     matched_lines2 = line_seg2[match_indices]
-    print('matched_lines2: {}'.format(matched_lines2))
 
     # pick only shaft lines in reference image by length (largest 2x lines)
     reference_line_lengths = []
@@ -562,23 +562,14 @@ def makeShaftAssociations(
         reference_line_lengths.append(np.linalg.norm(matched_lines1[i][0] - matched_lines1[i][1]))
     reference_line_lengths = np.asarray(reference_line_lengths)
     ind = np.argpartition(reference_line_lengths, -2)[-2:]
-    print('ref_line_indices: {}'.format(ind))
-    print('crop_ref_lines_idx: {}'.format(crop_ref_lines_idx))
+    assert(np.allclose(np.asarray(ind), np.asarray(crop_ref_lines_idx)))
 
     # plot matched shaft lines only
     selected_lines1 = matched_lines1[ind]
+    assert(np.allclose(np.asarray(selected_lines1), np.asarray(crop_ref_lines_selected)))
     selected_lines2 = matched_lines2[ind]
 
-    # select only matching line segments that correspond to ref lines
-    #selected_lines1 = matched_lines1[crop_ref_lines_idx] # ref lines torch[2, 2, 2]
-    print('selected_lines1: {}'.format(selected_lines1))
-    print('crop_ref_lines: {}'.format(crop_ref_lines))
-    assert(np.allclose(np.asarray(selected_lines1), np.asarray(crop_ref_lines)))
     ref_img = drawLineSegments(ref_img, selected_lines1)
-
-    print('selected_lines2: {}'.format(selected_lines2))
-    print('matched_lines2[crop_ref_lines_idx]: {}'.format(matched_lines2[crop_ref_lines_idx]))
-    #selected_lines2 = matched_lines2[crop_ref_lines_idx] # matched lines in new_img torch[2, 2, 2]
     new_img = drawLineSegments(new_img, selected_lines2)
 
     return ref_img, new_img
