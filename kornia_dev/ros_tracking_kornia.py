@@ -84,7 +84,11 @@ if __name__ == "__main__":
 
     # reference lines
     crop_ref_lines_l = torch.as_tensor(np.load('kornia_dev/crop_ref_lines_l.npy')) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
-    crop_ref_lines_r = torch.as_tensor(np.load('kornia_dev/crop_ref_lines_l.npy')) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
+    crop_ref_lines_r = torch.as_tensor(np.load('kornia_dev/crop_ref_lines_r.npy')) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
+
+    # ref line indices
+    crop_ref_lines_l_idx = np.load('kornia_dev/crop_ref_lines_l_idx.npy') # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
+    crop_ref_lines_r_idx = np.load('kornia_dev/crop_ref_lines_r_idx.npy') # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
 
     # reference images
     # left camera
@@ -200,6 +204,7 @@ if __name__ == "__main__":
                                         ref_img = crop_ref_l,
                                         orig_ref_img = orig_ref_l,
                                         crop_ref_lines = crop_ref_lines_l,
+                                        crop_ref_lines_idx = crop_ref_lines_l_idx,
                                         img_dims = img_dims,
                                         model = model,
                                         canny_params = canny_params,
@@ -208,6 +213,7 @@ if __name__ == "__main__":
                                         ref_img = crop_ref_r,
                                         orig_ref_img = orig_ref_r,
                                         crop_ref_lines = crop_ref_lines_r,
+                                        crop_ref_lines_idx = crop_ref_lines_r_idx,
                                         img_dims = img_dims,
                                         model = model,
                                         canny_params = canny_params,

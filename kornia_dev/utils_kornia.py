@@ -284,7 +284,8 @@ def fitRansacLines(point_clouds, ransac_params):
 def detectShaftLines(new_img = None, 
                     ref_img = None,
                     orig_ref_img = None,
-                    crop_ref_lines = None, 
+                    crop_ref_lines = None,
+                    crop_ref_lines_idx = None,
                     img_dims = None, 
                     model = None, 
                     canny_params = {},
@@ -346,19 +347,19 @@ def detectShaftLines(new_img = None,
     matched_lines2 = line_seg2[match_indices]
 
     # sort matched line segments from ref_img by y-coordinate
-    sort_column = 0
-    values, indices = matched_lines1[:, :, sort_column].sort()
-    sorted_matched_lines1 = matched_lines1[[[x] for x in range(matched_lines1.shape[0])], indices]
+    #sort_column = 0
+    #values, indices = matched_lines1[:, :, sort_column].sort()
+    #sorted_matched_lines1 = matched_lines1[[[x] for x in range(matched_lines1.shape[0])], indices]
 
     # load ref lines and find only those lines in ref_img line segments (matched_lines1)
     # using y coordinate
-    dist_matrix = torch.cdist(torch.flatten(crop_ref_lines, start_dim = 1), torch.flatten(sorted_matched_lines1, start_dim = 1))
-    ind = torch.argmin(dist_matrix, dim = 1)
+    #dist_matrix = torch.cdist(torch.flatten(crop_ref_lines, start_dim = 1), torch.flatten(sorted_matched_lines1, start_dim = 1))
+    #ind = torch.argmin(dist_matrix, dim = 1)
 
     # select only matching line segments that correspond to ref lines
-    selected_lines1 = matched_lines1[ind] # ref lines torch[2, 2, 2]
+    selected_lines1 = matched_lines1[crop_ref_lines_idx] # ref lines torch[2, 2, 2]
     orig_ref_img = drawLineSegments(orig_ref_img, selected_lines1)
-    selected_lines2 = matched_lines2[ind] # matched lines in new_img torch[2, 2, 2]
+    selected_lines2 = matched_lines2[crop_ref_lines_idx] # matched lines in new_img torch[2, 2, 2]
     orig_new_img = drawLineSegments(orig_new_img, selected_lines2)
 
     # new image detected endpoints
