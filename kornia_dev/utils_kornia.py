@@ -556,7 +556,7 @@ def makeShaftAssociations(
 
     # select only matching line segments that correspond to ref lines
     selected_lines1 = matched_lines1[crop_ref_lines_idx] # ref lines torch[2, 2, 2]
-    assert(selected_lines1 == crop_ref_lines)
+    assert(torch.eq(selected_lines1, crop_ref_lines))
     ref_img = drawLineSegments(ref_img, selected_lines1)
     selected_lines2 = matched_lines2[crop_ref_lines_idx] # matched lines in new_img torch[2, 2, 2]
     new_img = drawLineSegments(new_img, selected_lines2)
