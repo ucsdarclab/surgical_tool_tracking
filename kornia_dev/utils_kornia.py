@@ -552,7 +552,9 @@ def makeShaftAssociations(
     match_indices = matches[valid_matches]
 
     matched_lines1 = line_seg1[valid_matches]
+    print('matched_lines1: {}'.format(matched_lines1))
     matched_lines2 = line_seg2[match_indices]
+    print('matched_lines2: {}'.format(matched_lines2))
 
     # select only matching line segments that correspond to ref lines
     selected_lines1 = matched_lines1[crop_ref_lines_idx] # ref lines torch[2, 2, 2]
