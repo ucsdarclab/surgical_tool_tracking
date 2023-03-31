@@ -199,7 +199,29 @@ if __name__ == "__main__":
             new_detected_keypoints_l = np.copy(detected_keypoints_l)
             detected_keypoints_r, new_right_img = segmentColorAndGetKeyPoints(new_right_img, draw_contours=True)
             new_detected_keypoints_r = np.copy(detected_keypoints_r)
+
+            ref_img_l, new_left_img = makeShaftAssociations(
+                                        new_img = new_left_img, 
+                                        ref_img = crop_ref_l,
+                                        orig_ref_img = orig_ref_l,
+                                        crop_ref_lines = crop_ref_lines_l,
+                                        crop_ref_lines_idx = crop_ref_lines_l_idx,
+                                        model = model
+                                        )
+            cv2.imshow('ref_img_l', ref_img_l)
+            cv2.imshow('new_left_img', new_left_img)
             
+            ref_img_r, new_right_img = makeShaftAssociations(
+                                        new_img = new_right_img, 
+                                        ref_img = crop_ref_r,
+                                        orig_ref_img = orig_ref_r,
+                                        crop_ref_lines = crop_ref_lines_r,
+                                        crop_ref_lines_idx = crop_ref_lines_r_idx,
+                                        model = model
+                                        )
+            cv2.imshow('ref_img_r', ref_img_r)
+            cv2.imshow('new_right_img', new_right_img)
+            '''
             output_l  = detectShaftLines(new_img = new_left_img, 
                                         ref_img = crop_ref_l,
                                         orig_ref_img = orig_ref_l,
@@ -226,12 +248,11 @@ if __name__ == "__main__":
             new_right_img = np.copy(output_r['new_img']) # cropped img w/detected lines
             new_right_ref_img = np.copy(output_r['ref_img']) # cropped img w/ref line segments
             
-            '''
             cv2.imshow("Ref L Image", new_left_ref_img)
             cv2.imshow("Ref R Image", new_right_ref_img)
             cv2.imshow("New L Image", new_left_img)
             cv2.imshow("New R Image", new_right_img)
-            '''
+            
             # Nx2 array [[rho, theta], [rho, theta], ...]
             new_canny_lines_l = np.copy(output_l['canny_lines']) 
             new_detected_endpoint_lines_l = np.copy(output_l['polar_lines_detected_endpoints']) # Nx2 array [[rho, theta], [rho, theta], ...]
@@ -338,6 +359,7 @@ if __name__ == "__main__":
             img_list = drawShaftLines(robot_arm.getShaftFeatures(), cam, np.dot(cam_T_b, T), img_list)
             cv2.imshow("Left Img",  img_list[0])
             cv2.imshow("Right Img", img_list[1])
+            '''
             cv2.waitKey(1)
             
         

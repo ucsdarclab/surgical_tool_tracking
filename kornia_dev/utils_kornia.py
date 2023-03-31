@@ -293,6 +293,11 @@ def detectShaftLines(new_img = None,
 
     # use canny edge detection
     canny_lines = None
+    polar_lines_detected_endpoints = None
+    intensity_endpoint_clouds = None
+    intensity_endpoint_lines = None
+    intensity_line_clouds = None
+    intensity_line_lines = None
     if ((canny_params is not None) and (canny_params['use_canny'])):
         
         # check that all params are used
@@ -314,12 +319,6 @@ def detectShaftLines(new_img = None,
                         rho_cluster_distance = rho_cluster_distance,
                         theta_cluster_distance = theta_cluster_distance
                         )
-    
-    polar_lines_detected_endpoints = None
-    intensity_endpoint_clouds = None
-    intensity_endpoint_lines = None
-    intensity_line_clouds = None
-    intensity_line_lines = None
     else: # use kornia
         assert((kornia_params is not None) and (kornia_params['use_kornia']))
 
@@ -520,3 +519,44 @@ def drawShaftLines(shaftFeatures, cam, cam_T_b, img_list):
     img_r = drawPolarLines(img_list[1], projected_lines[1], (0, 255, 0))
 
     return img_l, img_r
+
+def makeShaftAssociations(
+                        new_img = None, 
+                        ref_img = None,
+                        orig_ref_img = None,
+                        crop_ref_lines = None,
+                        crop_ref_lines_idx = None,
+                        model = None
+                        ):
+    
+    # process input image
+    orig_new_img = new_img.copy()
+    new_img = K.image_to_tensor(new_img).float() / 255.0  # [0, 1] [3, crop_dims] float32
+    new_img = K.color.rgb_to_grayscale(new_img) # [0, 1] [1, crop_dims] float32
+    imgs = torch.stack([ref_img, new_img], )
+    with torch.inference_mode():
+        outputs = model(imgs)
+    
+    # detect line segments
+    line_seg1 = outputs["line_segments"][0]
+    line_seg2 = outputs["line_segments"][1]
+    desc1 = outputs["dense_desc"][0]
+    desc2 = outputs["dense_desc"][1]
+    line_heatmap1 = np.asarray(outputs['line_heatmap'][0])
+    line_heatmap2 = np.asarray(outputs['line_heatmap'][1])
+
+    # perform association between All line segments 
+    # in ref_img and new_img
+    with torch.inference_mode():
+        matches = model.match(line_seg1, line_seg2, desc1[None], desc2[None])
+    valid_matches = matches != -1
+    match_indices = matches[valid_matches]
+
+    matched_lines1 = line_seg1[valid_matches]
+    matched_lines2 = line_seg2[match_indices]
+
+    # select only matching line segments that correspond to ref lines
+    selected_lines1 = matched_lines1[crop_ref_lines_idx] # ref lines torch[2, 2, 2]
+    orig_ref_img = drawLineSegments(orig_ref_img, selected_lines1)
+    selected_lines2 = matched_lines2[crop_ref_lines_idx] # matched lines in new_img torch[2, 2, 2]
+    orig_new_img = drawLineSegments(orig_new_img, selected_lines2)
