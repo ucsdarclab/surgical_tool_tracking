@@ -99,17 +99,16 @@ if __name__ == "__main__":
     crop_ref_lines_r_selected = np.load('kornia_dev/crop_ref_lines_l_selected.npy')
 
 
-
     # reference images
     # left camera
-    crop_ref_l_img = np.load('kornia_dev/crop_ref_l.npy') # (404, 720, 3) RGB uint8
+    crop_ref_l_img = np.load('kornia_dev/crop_ref_l_img.npy') # (404, 720, 3) RGB uint8
     print('crop_ref_l_img.shape: {}'.format(crop_ref_l_img.shape))
     img_dims = [crop_ref_l_img.shape[0], crop_ref_l_img.shape[1]]
     print('img_dims: {}'.format(img_dims))
     crop_ref_l_tensor = K.image_to_tensor(crop_ref_l_img).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
     crop_ref_l_tensor = K.color.rgb_to_grayscale(crop_ref_l_tensor) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
     # right camera
-    crop_ref_r_img = np.load('kornia_dev/crop_ref_r.npy') # (404, 720, 3) RGB uint8
+    crop_ref_r_img = np.load('kornia_dev/crop_ref_r_img.npy') # (404, 720, 3) RGB uint8
     print('crop_ref_r_img.shape: {}'.format(crop_ref_r_img.shape))
     crop_ref_r_tensor = K.image_to_tensor(crop_ref_r_img).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
     crop_ref_r_tensor = K.color.rgb_to_grayscale(crop_ref_r_tensor) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
