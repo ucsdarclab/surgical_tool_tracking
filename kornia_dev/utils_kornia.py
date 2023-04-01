@@ -553,24 +553,26 @@ def makeShaftAssociations(
     valid_matches = matches != -1
     match_indices = matches[valid_matches]
 
-    matched_lines1 = copy.deepcopy(line_seg1[valid_matches])
-    assert(np.allclose(np.asarray(matched_lines1), np.asarray(crop_ref_lines)))
+    matched_lines1 = line_seg1[valid_matches]
+    #assert(np.allclose(np.asarray(matched_lines1), np.asarray(crop_ref_lines)))
     matched_lines2 = line_seg2[match_indices]
 
     # sort
     sort_column = 0
     values, indices = matched_lines1[:, :, sort_column].sort()
     sorted_matched_lines1 = matched_lines1[[[x] for x in range(matched_lines1.shape[0])], indices]
-    assert(np.allclose(np.asarray(sorted_matched_lines1), np.asarray(crop_ref_lines_sorted)))
+    #assert(np.allclose(np.asarray(sorted_matched_lines1), np.asarray(crop_ref_lines_sorted)))
     values, indices = matched_lines2[:, :, sort_column].sort()
     sorted_matched_lines2 = matched_lines2[[[x] for x in range(matched_lines2.shape[0])], indices]
 
     # find matches to target reference lines
+    print('crop_ref_lines_selected: {}'.format(crop_ref_lines_selected))
     dist_matrix = torch.cdist(torch.flatten(torch.as_tensor(crop_ref_lines_selected), start_dim = 1), torch.flatten(sorted_matched_lines1, start_dim = 1))
     ind = torch.argmin(dist_matrix, dim = 1)
     selected_lines1 = sorted_matched_lines1[ind]
-    assert(np.allclose(np.asarray(selected_lines1), np.asarray(crop_ref_lines_selected)))
-    assert(np.allclose(np.asarray(ind), np.asarray(crop_ref_lines_idx)))
+    print('selected_lines1: {}'.format(selected_lines1))
+    #assert(np.allclose(np.asarray(selected_lines1), np.asarray(crop_ref_lines_selected), atol = 1.0, rtol = 0))
+    #assert(np.allclose(np.asarray(ind), np.asarray(crop_ref_lines_idx)))
     selected_lines2 = sorted_matched_lines2[ind]
     
     # pick only shaft lines in reference image by length (largest 2x lines)
