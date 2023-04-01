@@ -78,38 +78,55 @@ if __name__ == "__main__":
                                       queue_size=5, slop=0.015)
     ats.registerCallback(gotData)
 
+    # reference image w vs. without contours
+    draw_contours = True
+    if (draw_contours):
+        source_dir = 'kornia_dev/ref_data/contour/'
+    else:
+        source_dir = 'kornia_dev/ref_data/no_contour/'
+
     # crop parameters
-    crop_scale = np.load('kornia_dev/crop_scale.npy')
+    in_file = source_dir + 'crop_scale.npy'
+    crop_scale = np.load(in_file)
     print('crop_scale: {}'.format(crop_scale))
 
     # reference lines
-    crop_ref_lines_l = torch.as_tensor(np.load('kornia_dev/crop_ref_lines_l.npy')) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
-    crop_ref_lines_r = torch.as_tensor(np.load('kornia_dev/crop_ref_lines_r.npy')) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
+    in_file = source_dir + 'crop_ref_lines_l.npy'
+    crop_ref_lines_l = torch.as_tensor(np.load(in_file)) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
+    in_file = source_dir + 'crop_ref_lines_r.npy'
+    crop_ref_lines_r = torch.as_tensor(np.load(in_file)) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
 
     # sorted reference lines
-    crop_ref_lines_l_sorted = torch.as_tensor(np.load('kornia_dev/crop_ref_lines_l_sorted.npy')) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
-    crop_ref_lines_r_sorted = torch.as_tensor(np.load('kornia_dev/crop_ref_lines_r_sorted.npy'))
+    in_file = source_dir + 'crop_ref_lines_l_sorted.npy'
+    crop_ref_lines_l_sorted = torch.as_tensor(np.load(in_file)) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
+    in_file = source_dir + 'crop_ref_lines_r_sorted.npy'
+    crop_ref_lines_r_sorted = torch.as_tensor(np.load(in_file))
     
     # ref line indices
-    crop_ref_lines_l_idx = np.load('kornia_dev/crop_ref_lines_l_idx.npy') # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
-    crop_ref_lines_r_idx = np.load('kornia_dev/crop_ref_lines_r_idx.npy') # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
+    in_file = source_dir + 'crop_ref_lines_l_idx.npy'
+    crop_ref_lines_l_idx = np.load(in_file) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
+    in_file = source_dir + 'crop_ref_lines_r_idx.npy'
+    crop_ref_lines_r_idx = np.load(in_file) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
 
     # selected ref lines
-    crop_ref_lines_l_selected = np.load('kornia_dev/crop_ref_lines_l_selected.npy')
-    crop_ref_lines_r_selected = np.load('kornia_dev/crop_ref_lines_l_selected.npy')
-
+    in_file = source_dir + 'crop_ref_lines_l_selected.npy'
+    crop_ref_lines_l_selected = np.load(in_file)
+    in_file = source_dir + 'crop_ref_lines_r_selected.npy'
+    crop_ref_lines_r_selected = np.load(in_file)
 
     # reference images
     # left camera
-    crop_ref_l_img = np.load('kornia_dev/crop_ref_l_img.npy') # (404, 720, 3) RGB uint8
-    print('crop_ref_l_img.shape: {}'.format(crop_ref_l_img.shape))
+    in_file = source_dir + 'crop_ref_l_img.npy'
+    crop_ref_l_img = np.load(in_file) # (404, 720, 3) RGB uint8
+    #print('crop_ref_l_img.shape: {}'.format(crop_ref_l_img.shape))
     img_dims = [crop_ref_l_img.shape[0], crop_ref_l_img.shape[1]]
-    print('img_dims: {}'.format(img_dims))
+    #print('img_dims: {}'.format(img_dims))
     crop_ref_l_tensor = K.image_to_tensor(crop_ref_l_img).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
     crop_ref_l_tensor = K.color.rgb_to_grayscale(crop_ref_l_tensor) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
     # right camera
-    crop_ref_r_img = np.load('kornia_dev/crop_ref_r_img.npy') # (404, 720, 3) RGB uint8
-    print('crop_ref_r_img.shape: {}'.format(crop_ref_r_img.shape))
+    in_file = source_dir + 'crop_ref_r_img.npy'
+    crop_ref_r_img = np.load('in_file') # (404, 720, 3) RGB uint8
+    #print('crop_ref_r_img.shape: {}'.format(crop_ref_r_img.shape))
     crop_ref_r_tensor = K.image_to_tensor(crop_ref_r_img).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
     crop_ref_r_tensor = K.color.rgb_to_grayscale(crop_ref_r_tensor) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
 
@@ -202,9 +219,9 @@ if __name__ == "__main__":
 
             # process callback images
             new_left_img, new_right_img = cam.processImage(new_left_img, new_right_img, crop_scale = crop_scale)
-            detected_keypoints_l, new_left_img  = segmentColorAndGetKeyPoints(new_left_img,  draw_contours=True)
+            detected_keypoints_l, new_left_img  = segmentColorAndGetKeyPoints(new_left_img,  draw_contours = draw_contours)
             new_detected_keypoints_l = np.copy(detected_keypoints_l)
-            detected_keypoints_r, new_right_img = segmentColorAndGetKeyPoints(new_right_img, draw_contours=True)
+            detected_keypoints_r, new_right_img = segmentColorAndGetKeyPoints(new_right_img, draw_contours = draw_contours)
             new_detected_keypoints_r = np.copy(detected_keypoints_r)
 
             ref_img_l, new_left_img = makeShaftAssociations(
