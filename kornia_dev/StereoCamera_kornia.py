@@ -16,7 +16,7 @@ class StereoCamera():
         self.D1 = np.array(cal_data['D1']['data'])
         self.D2 = np.array(cal_data['D2']['data'])
 
-        print('initialization self.K1: {}'.format(self.K1))
+        #print('initialization self.K1: {}'.format(self.K1))
         
         self.rotation    = np.array(cal_data['R']['data']).reshape(3,3)
         self.translation = np.array(cal_data['T'])*scale_baseline
@@ -25,17 +25,17 @@ class StereoCamera():
         # Downscale stuff
         self.downscale_factor = downscale_factor
         self.input_img_size = np.array(cal_data['ImageSize']) # 1080 x 1920
-        print('self.input_img_size: {}'.format(self.input_img_size))
+        #print('self.input_img_size: {}'.format(self.input_img_size))
         self.down_scaled_img_size = ( int(self.input_img_size[0]/self.downscale_factor), 
                                       int(self.input_img_size[1]/self.downscale_factor) ) # width, height (540 x 960)
-        print('self.down_scaled_img_size: {}'.format(self.down_scaled_img_size))
+        #print('self.down_scaled_img_size: {}'.format(self.down_scaled_img_size))
         self.K1 = self.K1/self.downscale_factor
         self.K2 = self.K2/self.downscale_factor
         
         self.K1[-1, -1] = 1
         self.K2[-1, -1] = 1
 
-        print('downscaled self.K1: {}'.format(self.K1))
+        #print('downscaled self.K1: {}'.format(self.K1))
         
         # Prepare undistort and rectification (if desired) here
         if rectify:
@@ -48,7 +48,7 @@ class StereoCamera():
             self.K1 = P1[:,:-1]
             self.K2 = P2[:,:-1]
 
-            print('rectified self.K1: {}'.format(self.K1))
+            #print('rectified self.K1: {}'.format(self.K1))
             
             self.rotation = np.eye(3)
             self.translation = np.linalg.norm(self.translation)*P2[:, -1]/np.linalg.norm(P2[:, -1])
@@ -76,13 +76,13 @@ class StereoCamera():
             self.K1[1, -1] = self.K1[1, -1] - y_offset # 135
             self.K2[1, -1] = self.K2[1, -1] - y_offset
 
-            print('cropped self.K1: {}'.format(self.K1))
+            #print('cropped self.K1: {}'.format(self.K1))
     
             self.final_img_size = (int(height * crop_scale), int(width * crop_scale))
         else:
             self.final_img_size = self.down_scaled_img_size 
         
-        print('self.final_img_size: {}'.format(self.final_img_size))
+        #print('self.final_img_size: {}'.format(self.final_img_size))
         self.T[:3, :3] = self.rotation
         self.T[:3, -1] = self.translation
         
