@@ -238,60 +238,64 @@ if __name__ == "__main__":
             detected_keypoints_r, annotated_right_img = segmentColorAndGetKeyPoints(non_annotated_right_img, draw_contours = draw_contours)
             new_detected_keypoints_r = np.copy(detected_keypoints_r)
 
-            annotated_left_ref_img, annotated_left_img = makeShaftAssociations(
-                                        new_img = annotated_left_img, 
-                                        ref_tensor = crop_ref_l_tensor,
-                                        ref_img = crop_ref_l_img,
-                                        crop_ref_lines = crop_ref_lines_l,
-                                        crop_ref_lines_sorted = crop_ref_lines_l_sorted,
-                                        crop_ref_lines_selected = crop_ref_lines_l_selected,
-                                        crop_ref_lines_idx = crop_ref_lines_l_idx,
-                                        model = model
-                                        )
-            #cv2.imshow('ref_img_l', ref_img_l)
-            #cv2.imshow('new_left_img', new_left_img)
-            
-            annotated_right_ref_img, annotated_right_img = makeShaftAssociations(
-                                        new_img = annotated_right_img, 
-                                        ref_tensor = crop_ref_r_tensor,
-                                        ref_img = crop_ref_r_img,
-                                        crop_ref_lines = crop_ref_lines_r,
-                                        crop_ref_lines_sorted = crop_ref_lines_r_sorted,
-                                        crop_ref_lines_selected = crop_ref_lines_r_selected,
-                                        crop_ref_lines_idx = crop_ref_lines_r_idx,
-                                        model = model
-                                        )
-            #cv2.imshow('ref_img_r', ref_img_r)
-            #cv2.imshow('new_right_img', new_right_img)
-    
-            output_l  = detectShaftLines(
-                                        non_annotated_img = non_annotated_left_img,
-                                        annotated_img = annotated_left_img,
-                                        ref_img = crop_ref_l_img,
-                                        ref_tensor = crop_ref_l_tensor,
-                                        crop_ref_lines = crop_ref_lines_l,
-                                        crop_ref_lines_idx = crop_ref_lines_l_idx,
-                                        crop_ref_lines_selected = crop_ref_lines_l_selected,
-                                        model = model,
-                                        draw_lines = draw_lines,
-                                        canny_params = canny_params,
-                                        kornia_params = kornia_params
-                                        )
-            output_r  = detectShaftLines(
-                                        non_annotated_img = non_annotated_right_img,
-                                        annotated_img = annotated_right_img,
-                                        ref_img = crop_ref_r_img,
-                                        ref_tensor = crop_ref_r_tensor,
-                                        crop_ref_lines = crop_ref_lines_r,
-                                        crop_ref_lines_idx = crop_ref_lines_r_idx,
-                                        crop_ref_lines_selected = crop_ref_lines_r_selected,
-                                        model = model,
-                                        draw_lines = draw_lines,
-                                        canny_params = canny_params,
-                                        kornia_params = kornia_params
-                                        )
-           
-           
+            try: 
+                annotated_left_ref_img, annotated_left_img = makeShaftAssociations(
+                                            new_img = annotated_left_img, 
+                                            ref_tensor = crop_ref_l_tensor,
+                                            ref_img = crop_ref_l_img,
+                                            crop_ref_lines = crop_ref_lines_l,
+                                            crop_ref_lines_sorted = crop_ref_lines_l_sorted,
+                                            crop_ref_lines_selected = crop_ref_lines_l_selected,
+                                            crop_ref_lines_idx = crop_ref_lines_l_idx,
+                                            model = model
+                                            )
+                #cv2.imshow('ref_img_l', ref_img_l)
+                #cv2.imshow('new_left_img', new_left_img)
+                
+                annotated_right_ref_img, annotated_right_img = makeShaftAssociations(
+                                            new_img = annotated_right_img, 
+                                            ref_tensor = crop_ref_r_tensor,
+                                            ref_img = crop_ref_r_img,
+                                            crop_ref_lines = crop_ref_lines_r,
+                                            crop_ref_lines_sorted = crop_ref_lines_r_sorted,
+                                            crop_ref_lines_selected = crop_ref_lines_r_selected,
+                                            crop_ref_lines_idx = crop_ref_lines_r_idx,
+                                            model = model
+                                            )
+                #cv2.imshow('ref_img_r', ref_img_r)
+                #cv2.imshow('new_right_img', new_right_img)
+        
+                output_l  = detectShaftLines(
+                                            non_annotated_img = non_annotated_left_img,
+                                            annotated_img = annotated_left_img,
+                                            ref_img = crop_ref_l_img,
+                                            ref_tensor = crop_ref_l_tensor,
+                                            crop_ref_lines = crop_ref_lines_l,
+                                            crop_ref_lines_idx = crop_ref_lines_l_idx,
+                                            crop_ref_lines_selected = crop_ref_lines_l_selected,
+                                            model = model,
+                                            draw_lines = draw_lines,
+                                            canny_params = canny_params,
+                                            kornia_params = kornia_params
+                                            )
+                output_r  = detectShaftLines(
+                                            non_annotated_img = non_annotated_right_img,
+                                            annotated_img = annotated_right_img,
+                                            ref_img = crop_ref_r_img,
+                                            ref_tensor = crop_ref_r_tensor,
+                                            crop_ref_lines = crop_ref_lines_r,
+                                            crop_ref_lines_idx = crop_ref_lines_r_idx,
+                                            crop_ref_lines_selected = crop_ref_lines_r_selected,
+                                            model = model,
+                                            draw_lines = draw_lines,
+                                            canny_params = canny_params,
+                                            kornia_params = kornia_params
+                                            )
+            except:
+                print('Error in makeAssociation or detectShaftLines.')
+                print('Breaking while rospy loop')
+                break
+
             # copy new images to avoid overwriting by callback
             new_left_img  = np.copy(output_l['new_img']) # cropped img w/detected lines
             new_left_ref_img = np.copy(output_l['ref_img']) # cropped img w/ref line segments
@@ -416,10 +420,12 @@ if __name__ == "__main__":
                 out_file = out_dir + str(record_particles_counter) + '.npy'
                 out_data = [pf._particles, pf._weights]
                 np.save(out_file, out_data)
-                
+
             cv2.waitKey(1)
         rate.sleep()
     
+    print('Broke rospy loop')
+    print('Releasing video capture')
     if (record_video):
         left_video_out.release()
         right_video_out.release()
