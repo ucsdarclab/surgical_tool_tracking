@@ -143,6 +143,10 @@ if __name__ == "__main__":
         out_file = source_dir + 'right_video.avi'
         right_video_out = cv2.VideoWriter(out_file, cv2.VideoWriter_fourcc('M','J','P','G'), fps, img_dims)
 
+    # particle recording
+    record_particles = False
+    record_particles_counter = 1
+
     # parameters for shaft detection
     canny_params = {
         'use_canny': True,
@@ -400,9 +404,19 @@ if __name__ == "__main__":
             img_list = drawShaftLines(robot_arm.getShaftFeatures(), cam, np.dot(cam_T_b, T), img_list)
             cv2.imshow("Left Img",  img_list[0])
             cv2.imshow("Right Img", img_list[1])
+
+            # video recording
             if (record_video):
                 left_video_out.write(img_list[0])
                 right_video_out.write(img_list[1])
+
+            # particle recording
+            if (record_particles):
+                out_dir = 'kornia_dev/particle_data/'
+                out_file = out_dir + str(record_particles_counter) + '.npy'
+                out_data = [pf._particles, pf._weights]
+                np.save(out_file, out_data)
+                
             cv2.waitKey(1)
         rate.sleep()
     
