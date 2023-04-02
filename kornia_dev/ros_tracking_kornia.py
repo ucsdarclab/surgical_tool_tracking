@@ -290,11 +290,6 @@ if __name__ == "__main__":
             new_right_img = np.copy(output_r['new_img']) # cropped img w/detected lines
             new_right_ref_img = np.copy(output_r['ref_img']) # cropped img w/ref line segments
             
-            cv2.imshow("Ref L Image", new_left_ref_img)
-            cv2.imshow("Ref R Image", new_right_ref_img)
-            cv2.imshow("New L Image", new_left_img)
-            cv2.imshow("New R Image", new_right_img)
-            
             # Nx2 array [[rho, theta], [rho, theta], ...]
             new_canny_lines_l = np.copy(output_l['canny_lines']) 
             new_detected_endpoint_lines_l = np.copy(output_l['polar_lines_detected_endpoints']) # Nx2 array [[rho, theta], [rho, theta], ...]
