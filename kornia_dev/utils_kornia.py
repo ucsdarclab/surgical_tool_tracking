@@ -122,7 +122,8 @@ def detectCannyShaftLines(img = None,
                           hough_theta_accumulator = None, 
                           hough_vote_threshold = None,
                           rho_cluster_distance = None,
-                          theta_cluster_distance = None 
+                          theta_cluster_distance = None,
+                          draw_lines = False
                           ):
 
     # pre-processing
@@ -176,7 +177,8 @@ def detectCannyShaftLines(img = None,
 
     # draw all detected and clustered edges
     # (B, G, R)
-    img = drawPolarLines(img, best_lines[:, 0:2], color = (0, 0, 255))
+    if (draw_lines):
+        img = drawPolarLines(img, best_lines[:, 0:2], color = (0, 0, 255))
 
     # returns Nx2 array of # N detected lines x [rho, theta], img with lines drawn, edges and mask
     return best_lines[:, 0:2], img
@@ -281,16 +283,18 @@ def fitRansacLines(point_clouds, ransac_params):
                 pass
     return lines
 
-def detectShaftLines(new_img = None, 
+def detectShaftLines(annotated_img = None, 
+                    non_annotated_img = None,
                     ref_img = None,
-                    orig_ref_img = None,
+                    ref_tensor = None,
                     crop_ref_lines = None,
                     crop_ref_lines_idx = None,
-                    img_dims = None, 
+                    crop_ref_lines_selected = None,
                     model = None, 
+                    draw_lines = None,
                     canny_params = {},
                     kornia_params = {}):
-
+    
     # use canny edge detection
     canny_lines = None
     polar_lines_detected_endpoints = None
@@ -311,26 +315,26 @@ def detectShaftLines(new_img = None,
         
         # returns Nx2 array of # N detected lines x [rho, theta]
         # img with lines drawn in color (0, 0, 255)
-        canny_lines, new_img = detectCannyShaftLines(
-                        img = new_img, 
+        canny_lines, annotated_img = detectCannyShaftLines(
+                        img = non_annotated_img, 
                         hough_rho_accumulator = hough_rho_accumulator, 
                         hough_theta_accumulator = hough_theta_accumulator, 
                         hough_vote_threshold = hough_vote_threshold,
                         rho_cluster_distance = rho_cluster_distance,
-                        theta_cluster_distance = theta_cluster_distance
+                        theta_cluster_distance = theta_cluster_distance,
+                        draw_lines = draw_lines
                         )
     else: # use kornia
         assert((kornia_params is not None) and (kornia_params['use_kornia']))
 
         # process input image
-        orig_new_img = new_img.copy()
-        img_height = new_img.shape[1]
-        img_width = new_img.shape[2]
-        new_img = K.image_to_tensor(new_img).float() / 255.0  # [0, 1] [3, crop_dims] float32
-        new_img = K.color.rgb_to_grayscale(new_img) # [0, 1] [1, crop_dims] float32
-        imgs = torch.stack([ref_img, new_img], )
+        img_height = non_annotated_img.shape[0]
+        img_width = non_annotated_img.shape[1]
+        non_annotated_tensor = K.image_to_tensor(non_annotated_img).float() / 255.0  # [0, 1] [3, crop_dims] float32
+        non_annotated_tensor = K.color.rgb_to_grayscale(non_annotated_tensor) # [0, 1] [1, crop_dims] float32
+        tensors = torch.stack([ref_tensor, non_annotated_tensor], )
         with torch.inference_mode():
-            outputs = model(imgs)
+            outputs = model(tensors)
         
         # detect line segments
         line_seg1 = outputs["line_segments"][0]
@@ -348,23 +352,31 @@ def detectShaftLines(new_img = None,
         match_indices = matches[valid_matches]
 
         matched_lines1 = line_seg1[valid_matches]
+        #assert(np.allclose(np.asarray(matched_lines1), np.asarray(crop_ref_lines)))
         matched_lines2 = line_seg2[match_indices]
 
-        # sort matched line segments from ref_img by y-coordinate
-        #sort_column = 0
-        #values, indices = matched_lines1[:, :, sort_column].sort()
-        #sorted_matched_lines1 = matched_lines1[[[x] for x in range(matched_lines1.shape[0])], indices]
+        # sort
+        sort_column = 0
+        values, indices = matched_lines1[:, :, sort_column].sort()
+        sorted_matched_lines1 = matched_lines1[[[x] for x in range(matched_lines1.shape[0])], indices]
+        #assert(np.allclose(np.asarray(sorted_matched_lines1), np.asarray(crop_ref_lines_sorted)))
+        values, indices = matched_lines2[:, :, sort_column].sort()
+        sorted_matched_lines2 = matched_lines2[[[x] for x in range(matched_lines2.shape[0])], indices]
 
-        # load ref lines and find only those lines in ref_img line segments (matched_lines1)
-        # using y coordinate
-        #dist_matrix = torch.cdist(torch.flatten(crop_ref_lines, start_dim = 1), torch.flatten(sorted_matched_lines1, start_dim = 1))
-        #ind = torch.argmin(dist_matrix, dim = 1)
+        # find matches to target reference lines
+        print('crop_ref_lines_selected: {}'.format(crop_ref_lines_selected))
+        dist_matrix = torch.cdist(torch.flatten(torch.as_tensor(crop_ref_lines_selected), start_dim = 1), torch.flatten(sorted_matched_lines1, start_dim = 1))
+        ind = torch.argmin(dist_matrix, dim = 1)
+        selected_lines1 = sorted_matched_lines1[ind]
+        print('selected_lines1: {}'.format(selected_lines1))
+        #assert(np.allclose(np.asarray(selected_lines1), np.asarray(crop_ref_lines_selected), atol = 1.0, rtol = 0))
+        #assert(np.allclose(np.asarray(ind), np.asarray(crop_ref_lines_idx)))
+        selected_lines2 = sorted_matched_lines2[ind]
 
         # select only matching line segments that correspond to ref lines
-        selected_lines1 = matched_lines1[crop_ref_lines_idx] # ref lines torch[2, 2, 2]
-        orig_ref_img = drawLineSegments(orig_ref_img, selected_lines1)
-        selected_lines2 = matched_lines2[crop_ref_lines_idx] # matched lines in new_img torch[2, 2, 2]
-        orig_new_img = drawLineSegments(orig_new_img, selected_lines2)
+        if (draw_lines):
+            ref_img = drawLineSegments(ref_img, selected_lines1)
+            annotated_img = drawLineSegments(annotated_img, selected_lines2)
 
         # new image detected endpoints
         detected_endpoints = np.asarray(np.around(np.asarray(selected_lines2), decimals = 0), dtype = int) # [[y, x], [y, x]]
@@ -383,7 +395,8 @@ def detectShaftLines(new_img = None,
                 theta = np.arctan2((x1 - x2), (y2 - y1))
                 rho = x1 * np.cos(theta) + y1 * np.sin(theta)
                 polar_lines_detected_endpoints.append([rho, theta])
-                orig_new_img = drawPolarLines(orig_new_img, np.asarray([rho, theta]))
+                if (draw_lines):
+                    annotated_img = drawPolarLines(annotated_img, np.asarray([rho, theta]))
 
         # search region around detected endpoints for all pixels
         # that meet intensity threshold
@@ -436,7 +449,8 @@ def detectShaftLines(new_img = None,
 
                 if (endpoint_intensities_to_polar):
                     intensity_endpoint_lines = fitRansacLines(intensity_endpoint_clouds, ransac_params)
-                    orig_new_img = drawPolarLines(orig_new_img, np.asarray(intensity_endpoint_lines))
+                    if (draw_lines):
+                        annotated_img = drawPolarLines(annotated_img, np.asarray(intensity_endpoint_lines))
         
         # search region between detected endpoints for all pixels
         # that meet intensity threshold
@@ -483,11 +497,12 @@ def detectShaftLines(new_img = None,
 
                 if (line_intensities_to_polar):
                     intensity_line_lines = fitRansacLines(intensity_line_clouds, ransac_params)
-                    orig_new_img = drawPolarLines(orig_new_img, np.asarray(intensity_line_lines))
+                    if (draw_lines):
+                        annotated_img = drawPolarLines(annotated_img, np.asarray(intensity_line_lines))
     
     output = {
-        'ref_img': orig_ref_img,
-        'new_img': orig_new_img,
+        'ref_img': ref_img,
+        'new_img': annotated_img,
         'canny_lines': canny_lines,
         'polar_lines_detected_endpoints': polar_lines_detected_endpoints,
         'intensity_endpoint_clouds': intensity_endpoint_clouds,

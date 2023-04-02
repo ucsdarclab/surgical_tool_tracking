@@ -85,6 +85,8 @@ if __name__ == "__main__":
     else:
         source_dir = 'kornia_dev/ref_data/no_contour/'
 
+    draw_lines = True
+
     # crop parameters
     in_file = source_dir + 'crop_scale.npy'
     crop_scale = np.load(in_file)
@@ -219,13 +221,16 @@ if __name__ == "__main__":
 
             # process callback images
             new_left_img, new_right_img = cam.processImage(new_left_img, new_right_img, crop_scale = crop_scale)
-            detected_keypoints_l, new_left_img  = segmentColorAndGetKeyPoints(new_left_img,  draw_contours = draw_contours)
+            non_annotated_left_img = new_left_img.copy()
+            non_annotated_right_img = new_right_img.copy()
+            detected_keypoints_l, annotated_left_img  = segmentColorAndGetKeyPoints(non_annotated_left_img,  draw_contours = draw_contours)
             new_detected_keypoints_l = np.copy(detected_keypoints_l)
-            detected_keypoints_r, new_right_img = segmentColorAndGetKeyPoints(new_right_img, draw_contours = draw_contours)
+            detected_keypoints_r, annotated_right_img = segmentColorAndGetKeyPoints(non_annotated_right_img, draw_contours = draw_contours)
             new_detected_keypoints_r = np.copy(detected_keypoints_r)
 
+            '''
             ref_img_l, new_left_img = makeShaftAssociations(
-                                        new_img = new_left_img, 
+                                        new_img = annotated_left_img, 
                                         ref_tensor = crop_ref_l_tensor,
                                         ref_img = crop_ref_l_img,
                                         crop_ref_lines = crop_ref_lines_l,
@@ -238,7 +243,7 @@ if __name__ == "__main__":
             cv2.imshow('new_left_img', new_left_img)
             
             ref_img_r, new_right_img = makeShaftAssociations(
-                                        new_img = new_right_img, 
+                                        new_img = annotated_right_img, 
                                         ref_tensor = crop_ref_r_tensor,
                                         ref_img = crop_ref_r_img,
                                         crop_ref_lines = crop_ref_lines_r,
@@ -250,24 +255,35 @@ if __name__ == "__main__":
             cv2.imshow('ref_img_r', ref_img_r)
             cv2.imshow('new_right_img', new_right_img)
             '''
-            output_l  = detectShaftLines(new_img = new_left_img, 
-                                        ref_img = crop_ref_l,
-                                        orig_ref_img = orig_ref_l,
+    
+            output_l  = detectShaftLines(
+                                        non_annotated_img = non_annotated_left_img,
+                                        annotated_img = annotated_left_img,
+                                        ref_img = crop_ref_l_img,
+                                        ref_tensor = crop_ref_l_tensor,
                                         crop_ref_lines = crop_ref_lines_l,
                                         crop_ref_lines_idx = crop_ref_lines_l_idx,
+                                        crop_ref_lines_selected = crop_ref_lines_l_selected,
                                         img_dims = img_dims,
                                         model = model,
+                                        draw_lines = draw_lines,
                                         canny_params = canny_params,
-                                        kornia_params = kornia_params)
-            output_r  = detectShaftLines(new_img = new_right_img, 
-                                        ref_img = crop_ref_r,
-                                        orig_ref_img = orig_ref_r,
+                                        kornia_params = kornia_params
+                                        )
+            output_r  = detectShaftLines(
+                                        non_annotated_img = non_annotated_right_img,
+                                        annotated_img = annotated_right_img,
+                                        ref_img = crop_ref_r_img,
+                                        ref_tensor = crop_ref_r_tensor,
                                         crop_ref_lines = crop_ref_lines_r,
                                         crop_ref_lines_idx = crop_ref_lines_r_idx,
+                                        crop_ref_lines_selected = crop_ref_lines_r_selected,
                                         img_dims = img_dims,
                                         model = model,
+                                        draw_lines = draw_lines,
                                         canny_params = canny_params,
-                                        kornia_params = kornia_params)
+                                        kornia_params = kornia_params
+                                        )
            
            
             # copy new images to avoid overwriting by callback
@@ -387,7 +403,6 @@ if __name__ == "__main__":
             img_list = drawShaftLines(robot_arm.getShaftFeatures(), cam, np.dot(cam_T_b, T), img_list)
             cv2.imshow("Left Img",  img_list[0])
             cv2.imshow("Right Img", img_list[1])
-            '''
             cv2.waitKey(1)
             
         
