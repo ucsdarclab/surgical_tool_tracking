@@ -135,7 +135,7 @@ if __name__ == "__main__":
     model = KF.SOLD2(pretrained=True, config=None)
 
     # video recording
-    record_video = False
+    record_video = True
     fps = 60
     if (record_video):
         out_file = source_dir + 'left_video.avi'
