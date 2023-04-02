@@ -85,6 +85,7 @@ if __name__ == "__main__":
     else:
         source_dir = 'kornia_dev/ref_data/no_contour/'
 
+    # annotate output with detected lines
     draw_lines = True
 
     # crop parameters
@@ -120,9 +121,7 @@ if __name__ == "__main__":
     # left camera
     in_file = source_dir + 'crop_ref_l_img.npy'
     crop_ref_l_img = np.load(in_file) # (404, 720, 3) RGB uint8
-    #print('crop_ref_l_img.shape: {}'.format(crop_ref_l_img.shape))
-    img_dims = [crop_ref_l_img.shape[0], crop_ref_l_img.shape[1]]
-    #print('img_dims: {}'.format(img_dims))
+    
     crop_ref_l_tensor = K.image_to_tensor(crop_ref_l_img).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
     crop_ref_l_tensor = K.color.rgb_to_grayscale(crop_ref_l_tensor) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
     # right camera
@@ -135,7 +134,15 @@ if __name__ == "__main__":
     # Load kornia model
     model = KF.SOLD2(pretrained=True, config=None)
 
-    # show reference image with reference lines
+    # video recording
+    record_video = False
+    fps = 60
+    if (record_video):
+        img_dims = (crop_ref_l_img.shape[0], crop_ref_l_img.shape[1])
+        out_file = source_dir + 'left_video.avi'
+        left_video_out = cv2.VideoWriter(out_file, cv2.VideoWriter_fourcc('M','J','P','G'), fps, img_dims)
+        out_file = source_dir + 'right_video.avi'
+        right_video_out = cv2.VideoWriter(out_file, cv2.VideoWriter_fourcc('M','J','P','G'), fps, img_dims)
 
     # parameters for shaft detection
     canny_params = {
@@ -394,7 +401,12 @@ if __name__ == "__main__":
             img_list = drawShaftLines(robot_arm.getShaftFeatures(), cam, np.dot(cam_T_b, T), img_list)
             cv2.imshow("Left Img",  img_list[0])
             cv2.imshow("Right Img", img_list[1])
+            if (record_video):
+                left_video_out.write(img_list[0])
+                right_video_out.write(img_list[1])
             cv2.waitKey(1)
-            
-        
         rate.sleep()
+    
+    if (record_video):
+        left_video_out.release()
+        right_video_out.release()
