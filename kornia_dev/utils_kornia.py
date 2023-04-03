@@ -137,6 +137,7 @@ def detectCannyShaftLines(img = None,
     lines = cv2.HoughLinesWithAccumulator(edges_and_mask, rho = hough_rho_accumulator, theta = hough_theta_accumulator, threshold = hough_vote_threshold) 
     lines = np.squeeze(lines)
     # sort by max votes
+    print('in canny shaft lines')
     sorted_lines = lines[(-lines[:, 2]).argsort()]
 
     # sort by max votes

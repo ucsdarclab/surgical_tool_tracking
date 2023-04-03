@@ -422,6 +422,7 @@ if __name__ == "__main__":
             else:
                 rate.sleep()
     except IndexError:
+        print(IndexError)
         pass
 
     except KeyboardInterrupt: 
