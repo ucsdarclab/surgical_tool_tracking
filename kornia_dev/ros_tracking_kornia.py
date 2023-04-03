@@ -221,24 +221,24 @@ if __name__ == "__main__":
     rate = rospy.Rate(30) # 30hz
     prev_joint_angles = None
 
-    while not rospy.is_shutdown():
-        if new_cb_data:
-            start_t = time.time()
+    try: 
+        while not rospy.is_shutdown():
+            if new_cb_data:
+                start_t = time.time()
 
-            # copy l/r images so not overwritten by callback
-            new_left_img = _cb_left_img.copy()
-            new_right_img = _cb_right_img.copy()
+                # copy l/r images so not overwritten by callback
+                new_left_img = _cb_left_img.copy()
+                new_right_img = _cb_right_img.copy()
 
-            # process callback images
-            new_left_img, new_right_img = cam.processImage(new_left_img, new_right_img, crop_scale = crop_scale)
-            non_annotated_left_img = new_left_img.copy()
-            non_annotated_right_img = new_right_img.copy()
-            detected_keypoints_l, annotated_left_img  = segmentColorAndGetKeyPoints(non_annotated_left_img,  draw_contours = draw_contours)
-            new_detected_keypoints_l = np.copy(detected_keypoints_l)
-            detected_keypoints_r, annotated_right_img = segmentColorAndGetKeyPoints(non_annotated_right_img, draw_contours = draw_contours)
-            new_detected_keypoints_r = np.copy(detected_keypoints_r)
+                # process callback images
+                new_left_img, new_right_img = cam.processImage(new_left_img, new_right_img, crop_scale = crop_scale)
+                non_annotated_left_img = new_left_img.copy()
+                non_annotated_right_img = new_right_img.copy()
+                detected_keypoints_l, annotated_left_img  = segmentColorAndGetKeyPoints(non_annotated_left_img,  draw_contours = draw_contours)
+                new_detected_keypoints_l = np.copy(detected_keypoints_l)
+                detected_keypoints_r, annotated_right_img = segmentColorAndGetKeyPoints(non_annotated_right_img, draw_contours = draw_contours)
+                new_detected_keypoints_r = np.copy(detected_keypoints_r)
 
-            try: 
                 annotated_left_ref_img, annotated_left_img = makeShaftAssociations(
                                             new_img = annotated_left_img, 
                                             ref_tensor = crop_ref_l_tensor,
@@ -291,141 +291,140 @@ if __name__ == "__main__":
                                             canny_params = canny_params,
                                             kornia_params = kornia_params
                                             )
-            except:
-                print('Error in makeAssociation or detectShaftLines.')
-                print('Breaking while rospy loop')
-                break
 
-            # copy new images to avoid overwriting by callback
-            new_left_img  = np.copy(output_l['new_img']) # cropped img w/detected lines
-            new_left_ref_img = np.copy(output_l['ref_img']) # cropped img w/ref line segments
-            new_right_img = np.copy(output_r['new_img']) # cropped img w/detected lines
-            new_right_ref_img = np.copy(output_r['ref_img']) # cropped img w/ref line segments
-            
-            # Nx2 array [[rho, theta], [rho, theta], ...]
-            new_canny_lines_l = np.copy(output_l['canny_lines']) 
-            new_detected_endpoint_lines_l = np.copy(output_l['polar_lines_detected_endpoints']) # Nx2 array [[rho, theta], [rho, theta], ...]
-            new_endpoint_clouds_l =  np.copy(output_l['intensity_endpoint_clouds'])
-            new_endpoint_cloud_lines_l = np.copy(output_l['intensity_endpoint_lines'])
-            new_line_clouds_l = np.copy(output_l['intensity_line_clouds'])
-            new_line_cloud_lines_l = np.copy(output_l['intensity_line_lines'])
 
-            new_canny_lines_r = np.copy(output_r['canny_lines']) 
-            new_detected_endpoint_lines_r = np.copy(output_r['polar_lines_detected_endpoints']) # Nx2 array [[rho, theta], [rho, theta], ...]
-            new_endpoint_clouds_r =  np.copy(output_r['intensity_endpoint_clouds'])
-            new_endpoint_cloud_lines_r = np.copy(output_r['intensity_endpoint_lines'])
-            new_line_clouds_r = np.copy(output_r['intensity_line_clouds'])
-            new_line_cloud_lines_r = np.copy(output_r['intensity_line_lines'])
-            
-            # copy new joint angles to ensure no overwrite
-            new_joint_angles = np.copy(cb_joint_angles)
-            
-            # update callback flag
-            new_cb_data = False
+                # copy new images to avoid overwriting by callback
+                new_left_img  = np.copy(output_l['new_img']) # cropped img w/detected lines
+                new_left_ref_img = np.copy(output_l['ref_img']) # cropped img w/ref line segments
+                new_right_img = np.copy(output_r['new_img']) # cropped img w/detected lines
+                new_right_ref_img = np.copy(output_r['ref_img']) # cropped img w/ref line segments
+                
+                # Nx2 array [[rho, theta], [rho, theta], ...]
+                new_canny_lines_l = np.copy(output_l['canny_lines']) 
+                new_detected_endpoint_lines_l = np.copy(output_l['polar_lines_detected_endpoints']) # Nx2 array [[rho, theta], [rho, theta], ...]
+                new_endpoint_clouds_l =  np.copy(output_l['intensity_endpoint_clouds'])
+                new_endpoint_cloud_lines_l = np.copy(output_l['intensity_endpoint_lines'])
+                new_line_clouds_l = np.copy(output_l['intensity_line_clouds'])
+                new_line_cloud_lines_l = np.copy(output_l['intensity_line_lines'])
 
-            # First time
-            if prev_joint_angles is None:
-                prev_joint_angles = new_joint_angles
-            
-            # Predict Particle Filter
-            robot_arm.updateJointAngles(new_joint_angles)
-            #j_change = new_joint_angles - prev_joint_angles
+                new_canny_lines_r = np.copy(output_r['canny_lines']) 
+                new_detected_endpoint_lines_r = np.copy(output_r['polar_lines_detected_endpoints']) # Nx2 array [[rho, theta], [rho, theta], ...]
+                new_endpoint_clouds_r =  np.copy(output_r['intensity_endpoint_clouds'])
+                new_endpoint_cloud_lines_r = np.copy(output_r['intensity_endpoint_lines'])
+                new_line_clouds_r = np.copy(output_r['intensity_line_clouds'])
+                new_line_cloud_lines_r = np.copy(output_r['intensity_line_lines'])
+                
+                # copy new joint angles to ensure no overwrite
+                new_joint_angles = np.copy(cb_joint_angles)
+                
+                # update callback flag
+                new_cb_data = False
 
-            #std_j = np.abs(j_change)*0.01
-            #std_j[-3:] = 0.0
+                # First time
+                if prev_joint_angles is None:
+                    prev_joint_angles = new_joint_angles
+                
+                # Predict Particle Filter
+                robot_arm.updateJointAngles(new_joint_angles)
+                #j_change = new_joint_angles - prev_joint_angles
 
-            # pred_kwargs = {
-            #                 "std_pos": 2.5e-5, # in Meters
-            #                 "std_ori": 1.0e-4,
-            #                 "robot_arm": robot_arm, 
-            #                 "std_j": std_j,
-            #                 "nb": 4
-            #               }
+                #std_j = np.abs(j_change)*0.01
+                #std_j[-3:] = 0.0
 
-            pred_kwargs = {
-                            "std": [2.5e-5, 2.5e-5, 2.5e-5,  # in Meters THESE ARE THE MAIN TUNING PARAMETERS!
-                                    1.0e-4, 1.0e-4, 1.0e-4] # in radians
-                          }
-            
-            pf.predictionStep(**pred_kwargs)
-            
-            # Update Particle Filter
-            upd_args = [  
-                        # pointFeatureObs arguments
-                        {
-                            'point_detections': (new_detected_keypoints_l, new_detected_keypoints_r),
-                            'robot_arm': robot_arm, 
-                            'cam': cam, 
-                            'cam_T_b': cam_T_b,
-                            'joint_angle_readings': new_joint_angles,
-                            'gamma': 0.5, # THIS IS A MAIN TUNING PARAMETER FOR FILTER PERFORMANCE https://github.com/ucsdarclab/dvrk_particle_filter/blob/master/config/ex_vivo_dataset_configure_filter.json
-                        },
-                        
-                        #shaftFeatureObs_kornia arguments
-                        {
-                            'use_lines': 'canny',
-                            'use_clouds': None,
-                            'detected_lines': {
-                                'canny': (new_canny_lines_l, new_canny_lines_r),
-                                'detected_endpoint_lines': (new_detected_endpoint_lines_l, new_detected_endpoint_lines_r),
-                                'endpoint_cloud_lines': (new_endpoint_cloud_lines_l, new_endpoint_cloud_lines_r),
-                                'line_cloud_lines': (new_line_cloud_lines_l, new_line_cloud_lines_r)
-                            },
-                            'intensity_clouds': {
-                                'endpoint_clouds': (new_endpoint_clouds_l, new_endpoint_clouds_r),
-                                'line_clouds': (new_line_clouds_l, new_line_clouds_r)
-                            },
-                            'robot_arm': robot_arm, 
-                            'cam': cam, 
-                            'cam_T_b': cam_T_b,
-                            'joint_angle_readings': new_joint_angles,
-                            'cost_assoc_params': {
-                                'gamma_rho': 0.05,  # THIS IS A MAIN TUNING PARAMETER FOR FILTER PERFORMANCE https://github.com/ucsdarclab/dvrk_particle_filter/blob/master/config/ex_vivo_dataset_configure_filter.json
-                                'gamma_theta': 7.5, # THIS IS A MAIN TUNING PARAMETER FOR FILTER PERFORMANCE https://github.com/ucsdarclab/dvrk_particle_filter/blob/master/config/ex_vivo_dataset_configure_filter.json
-                                'rho_thresh': 75,
-                                'theta_thresh': 0.5
-                            },
-                            'pixel_probability_params': {
-                                'sigma2_x': 0.5,
-                                'sigma2_y': 0.5,
+                # pred_kwargs = {
+                #                 "std_pos": 2.5e-5, # in Meters
+                #                 "std_ori": 1.0e-4,
+                #                 "robot_arm": robot_arm, 
+                #                 "std_j": std_j,
+                #                 "nb": 4
+                #               }
+
+                pred_kwargs = {
+                                "std": [2.5e-5, 2.5e-5, 2.5e-5,  # in Meters THESE ARE THE MAIN TUNING PARAMETERS!
+                                        1.0e-4, 1.0e-4, 1.0e-4] # in radians
                             }
-                        }
-            ]
+                
+                pf.predictionStep(**pred_kwargs)
+                
+                # Update Particle Filter
+                upd_args = [  
+                            # pointFeatureObs arguments
+                            {
+                                'point_detections': (new_detected_keypoints_l, new_detected_keypoints_r),
+                                'robot_arm': robot_arm, 
+                                'cam': cam, 
+                                'cam_T_b': cam_T_b,
+                                'joint_angle_readings': new_joint_angles,
+                                'gamma': 0.5, # THIS IS A MAIN TUNING PARAMETER FOR FILTER PERFORMANCE https://github.com/ucsdarclab/dvrk_particle_filter/blob/master/config/ex_vivo_dataset_configure_filter.json
+                            },
+                            
+                            #shaftFeatureObs_kornia arguments
+                            {
+                                'use_lines': 'canny',
+                                'use_clouds': None,
+                                'detected_lines': {
+                                    'canny': (new_canny_lines_l, new_canny_lines_r),
+                                    'detected_endpoint_lines': (new_detected_endpoint_lines_l, new_detected_endpoint_lines_r),
+                                    'endpoint_cloud_lines': (new_endpoint_cloud_lines_l, new_endpoint_cloud_lines_r),
+                                    'line_cloud_lines': (new_line_cloud_lines_l, new_line_cloud_lines_r)
+                                },
+                                'intensity_clouds': {
+                                    'endpoint_clouds': (new_endpoint_clouds_l, new_endpoint_clouds_r),
+                                    'line_clouds': (new_line_clouds_l, new_line_clouds_r)
+                                },
+                                'robot_arm': robot_arm, 
+                                'cam': cam, 
+                                'cam_T_b': cam_T_b,
+                                'joint_angle_readings': new_joint_angles,
+                                'cost_assoc_params': {
+                                    'gamma_rho': 0.05,  # THIS IS A MAIN TUNING PARAMETER FOR FILTER PERFORMANCE https://github.com/ucsdarclab/dvrk_particle_filter/blob/master/config/ex_vivo_dataset_configure_filter.json
+                                    'gamma_theta': 7.5, # THIS IS A MAIN TUNING PARAMETER FOR FILTER PERFORMANCE https://github.com/ucsdarclab/dvrk_particle_filter/blob/master/config/ex_vivo_dataset_configure_filter.json
+                                    'rho_thresh': 75,
+                                    'theta_thresh': 0.5
+                                },
+                                'pixel_probability_params': {
+                                    'sigma2_x': 0.5,
+                                    'sigma2_y': 0.5,
+                                }
+                            }
+                ]
 
-            pf.updateStep(upd_args)
-            prev_joint_angles = new_joint_angles
+                pf.updateStep(upd_args)
+                prev_joint_angles = new_joint_angles
 
-            correction_estimation = pf.getMeanParticle()
+                correction_estimation = pf.getMeanParticle()
 
-            rospy.loginfo("Time to predict & update {}".format(time.time() - start_t))
+                rospy.loginfo("Time to predict & update {}".format(time.time() - start_t))
 
-            # Project and draw skeleton
-            T = poseToMatrix(correction_estimation[:6])  
-            if correction_estimation.shape[0] > 6:
-                new_joint_angles[-(correction_estimation.shape[0]-6):] += correction_estimation[6:]
-            robot_arm.updateJointAngles(new_joint_angles)
-            img_list = projectSkeleton(robot_arm.getSkeletonPoints(), np.dot(cam_T_b, T), [new_left_img, new_right_img], cam.projectPoints)
-            img_list = drawShaftLines(robot_arm.getShaftFeatures(), cam, np.dot(cam_T_b, T), img_list)
-            cv2.imshow("Left Img",  img_list[0])
-            cv2.imshow("Right Img", img_list[1])
+                # Project and draw skeleton
+                T = poseToMatrix(correction_estimation[:6])  
+                if correction_estimation.shape[0] > 6:
+                    new_joint_angles[-(correction_estimation.shape[0]-6):] += correction_estimation[6:]
+                robot_arm.updateJointAngles(new_joint_angles)
+                img_list = projectSkeleton(robot_arm.getSkeletonPoints(), np.dot(cam_T_b, T), [new_left_img, new_right_img], cam.projectPoints)
+                img_list = drawShaftLines(robot_arm.getShaftFeatures(), cam, np.dot(cam_T_b, T), img_list)
+                cv2.imshow("Left Img",  img_list[0])
+                cv2.imshow("Right Img", img_list[1])
 
-            # video recording
-            if (record_video):
-                left_video_out.write(img_list[0])
-                right_video_out.write(img_list[1])
+                # video recording
+                if (record_video):
+                    left_video_out.write(img_list[0])
+                    right_video_out.write(img_list[1])
 
-            # particle recording
-            if (record_particles):
-                out_dir = 'kornia_dev/particle_data/'
-                out_file = out_dir + str(record_particles_counter) + '.npy'
-                out_data = [pf._particles, pf._weights]
-                np.save(out_file, out_data)
+                # particle recording
+                if (record_particles):
+                    out_dir = 'kornia_dev/particle_data/'
+                    out_file = out_dir + str(record_particles_counter) + '.npy'
+                    out_data = [pf._particles, pf._weights]
+                    np.save(out_file, out_data)
 
-            cv2.waitKey(1)
-        rate.sleep()
-    
-    print('Broke rospy loop')
-    print('Releasing video capture')
-    if (record_video):
-        left_video_out.release()
-        right_video_out.release()
+                cv2.waitKey(1)
+            else:
+                rate.sleep()
+
+    except KeyboardInterrupt: 
+        print('Broke rospy loop')
+        print('Releasing video capture')
+        if (record_video):
+            left_video_out.release()
+            right_video_out.release()
