@@ -138,6 +138,8 @@ def detectCannyShaftLines(img = None,
     lines = np.squeeze(lines)
     # sort by max votes
     print('in canny shaft lines')
+    print(lines)
+    cv2.imwrite('error_img.jpg', img)
     sorted_lines = lines[(-lines[:, 2]).argsort()]
 
     # sort by max votes
