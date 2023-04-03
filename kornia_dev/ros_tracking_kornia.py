@@ -421,6 +421,8 @@ if __name__ == "__main__":
                 cv2.waitKey(1)
             else:
                 rate.sleep()
+    except IndexError:
+        pass
 
     except KeyboardInterrupt: 
         print('Broke rospy loop')
