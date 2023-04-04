@@ -141,7 +141,7 @@ def detectCannyShaftLines(img = None,
     #print('in canny shaft lines')
     #print(lines)
     #print(lines.shape)
-    #cv2.imwrite('error_img.jpg', img)
+    cv2.imwrite('error_img.jpg', img)
     lines = np.reshape(lines, (-1, 3))
     sorted_lines = lines[(-lines[:, 2]).argsort()]
 
