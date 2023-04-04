@@ -420,11 +420,14 @@ if __name__ == "__main__":
                     out_data = [pf._particles, pf._weights]
                     np.save(out_file, out_data)
 
+                record_particles_counter += 1
                 cv2.waitKey(1)
             else:
                 rate.sleep()
     
     except ValueError:
+        print('value error')
+        print(record_particles_counter)
         pass
 
     except KeyboardInterrupt: 
