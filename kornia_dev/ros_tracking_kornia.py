@@ -408,6 +408,8 @@ if __name__ == "__main__":
 
                 # video recording
                 if (record_video):
+                    print('img_list[0].shape: {}'.format(img_list[0].shape))
+                    print('type(img_list[0]): {}'.format(type(img_list[0])))
                     left_video_out.write(img_list[0])
                     right_video_out.write(img_list[1])
 
