@@ -87,15 +87,15 @@ class StereoCamera():
         self.T[:3, -1] = self.translation
         
     def processImage(self, left_image = None, right_image = None, crop_scale = None):
-        print('processImage: {}, {}'.format(left_image.shape, right_image.shape))
+        #print('processImage: {}, {}'.format(left_image.shape, right_image.shape))
         left_image  = cv2.resize(left_image,  (self.down_scaled_img_size[1], self.down_scaled_img_size[0]))
         right_image = cv2.resize(right_image, (self.down_scaled_img_size[1], self.down_scaled_img_size[0]))
         left_image  = cv2.remap(left_image,  self.left_map1,  self.left_map2,  interpolation=cv2.INTER_LINEAR)
         right_image = cv2.remap(right_image, self.right_map1, self.right_map2, interpolation=cv2.INTER_LINEAR)
-        print('left_image.shape: {}, right_image.shape: {}'.format(left_image.shape, right_image.shape))
+        #print('left_image.shape: {}, right_image.shape: {}'.format(left_image.shape, right_image.shape))
         left_image, _, _ = centerCrop(left_image, crop_scale = crop_scale)
         right_image, _, _ = centerCrop(right_image, crop_scale = crop_scale)
-        print('left_image.shape: {}, right_image.shape: {}'.format(left_image.shape, right_image.shape))
+        #print('left_image.shape: {}, right_image.shape: {}'.format(left_image.shape, right_image.shape))
         
         return left_image, right_image
 
