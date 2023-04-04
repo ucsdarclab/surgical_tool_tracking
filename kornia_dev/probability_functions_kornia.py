@@ -136,14 +136,14 @@ def pointFeatureObsRightLumpedError(state, point_detections, robot_arm, cam,
     return prob
 
 def shaftFeatureObs(state, detected_lines, robot_arm, cam, cam_T_b, joint_angle_readings, gamma_rho, gamma_theta, rho_thresh, theta_thresh):
-    print('in shaftFeatureObs')
-    print('state: {}'.format(state))
-    print('detected_lines: {}'.format(detected_lines))
-    print('cam: {}'.format(cam))
+    #print('in shaftFeatureObs')
+    #print('state: {}'.format(state))
+    #print('detected_lines: {}'.format(detected_lines))
+    #print('cam: {}'.format(cam))
     
     # Get lumped error
     T = poseToMatrix(state[:6])
-    print('T: {}'.format(T))
+    #print('T: {}'.format(T))
 
     # Add estimated joint errors to the robot link
     if state.shape[0] > 6:
@@ -153,22 +153,22 @@ def shaftFeatureObs(state, detected_lines, robot_arm, cam, cam_T_b, joint_angle_
     # Project points from base to 2D L/R camera image planes
     # Get shaft feature points and lines from FK transform in base frame
     p_b, d_b, _, r = robot_arm.getShaftFeatures()
-    print('p_b: {}'.format(p_b))
-    print('p_b.shape: {}'.format(p_b.shape))
-    print('d_b: {}'.format(d_b))
-    print('d_b.shape: {}'.format(d_b.shape))
-    print('r: {}'.format(r))
+    #print('p_b: {}'.format(p_b))
+    #print('p_b.shape: {}'.format(p_b.shape))
+    #print('d_b: {}'.format(d_b))
+    #print('d_b.shape: {}'.format(d_b.shape))
+    #print('r: {}'.format(r))
     # Transform shaft featurepoints from base frame to camera-to-base frame
     p_c = np.dot(np.dot(cam_T_b, T), np.transpose(np.concatenate((p_b, np.ones((p_b.shape[0], 1))), axis=1)))
     p_c = np.transpose(p_c)[:, :-1]
-    print('p_c: {}'.format(p_c))
-    print('p_c.shape: {}'.format(p_c.shape))
+    #print('p_c: {}'.format(p_c))
+    #print('p_c.shape: {}'.format(p_c.shape))
     
     # Rotate directions from base to camera frame (no translation)
     d_c = np.dot(np.dot(cam_T_b, T)[0:3, 0:3], np.transpose(d_b))
     d_c = np.transpose(d_c)
-    print('d_c: {}'.format(d_c))
-    print('d_c.shape: {}'.format(d_c.shape))
+    #print('d_c: {}'.format(d_c))
+    #print('d_c.shape: {}'.format(d_c.shape))
     
     
     # Project shaft lines from L and R camera-to-base frames onto 2D camera image plane
@@ -186,9 +186,9 @@ def shaftFeatureObs(state, detected_lines, robot_arm, cam, cam_T_b, joint_angle_
     association_threshold = gamma_rho * rho_thresh + gamma_theta * theta_thresh
     # len(projected_points) = # of cameras
     # each list in projected points (2x for R/L cameras) is also a list of projected points
-    print('entering cost association calculation')
-    print('projected_lines: {}'.format(projected_lines))
-    print('detected_lines: {}'.format(detected_lines))
+    #print('entering cost association calculation')
+    #print('projected_lines: {}'.format(projected_lines))
+    #print('detected_lines: {}'.format(detected_lines))
     
     for cam_idx, proj_lines in enumerate(projected_lines):
         # Use hungarian algorithm to match projected and detected points
@@ -225,8 +225,8 @@ def shaftFeatureObs_kornia(
     if (use_lines):
         algo = use_lines
         detected_lines = detected_lines[algo]
-        print('shaftfeatureobs detected_lines: {}'.format(detected_lines))
-        #print('shaftfeatureobs detected_lines.shape: {}'.format(detected_lines.shape))
+        #print('shaftfeatureobs detected_lines: {}'.format(detected_lines))
+        ##print('shaftfeatureobs detected_lines.shape: {}'.format(detected_lines.shape))
         
     elif (use_clouds):
         algo = use_clouds
@@ -234,7 +234,7 @@ def shaftFeatureObs_kornia(
 
     # Get lumped error
     T = poseToMatrix(state[:6])
-    print('T: {}'.format(T))
+    #print('T: {}'.format(T))
 
     # Add estimated joint errors to the robot link
     if state.shape[0] > 6:
@@ -244,28 +244,28 @@ def shaftFeatureObs_kornia(
     # Project points from base to 2D L/R camera image planes
     # Get shaft feature points and lines from FK transform in base frame
     p_b, d_b, _, r = robot_arm.getShaftFeatures()
-    print('p_b: {}'.format(p_b))
-    print('p_b.shape: {}'.format(p_b.shape))
-    print('d_b: {}'.format(d_b))
-    print('d_b.shape: {}'.format(d_b.shape))
-    print('r: {}'.format(r))
+    #print('p_b: {}'.format(p_b))
+    #print('p_b.shape: {}'.format(p_b.shape))
+    #print('d_b: {}'.format(d_b))
+    #print('d_b.shape: {}'.format(d_b.shape))
+    #print('r: {}'.format(r))
     # Transform shaft featurepoints from base frame to camera-to-base frame
     p_c = np.dot(np.dot(cam_T_b, T), np.transpose(np.concatenate((p_b, np.ones((p_b.shape[0], 1))), axis=1)))
     p_c = np.transpose(p_c)[:, :-1]
-    print('p_c: {}'.format(p_c))
-    print('p_c.shape: {}'.format(p_c.shape))
+    #print('p_c: {}'.format(p_c))
+    #print('p_c.shape: {}'.format(p_c.shape))
     
     # Rotate directions from base to camera frame (no translation)
     d_c = np.dot(np.dot(cam_T_b, T)[0:3, 0:3], np.transpose(d_b))
     d_c = np.transpose(d_c)
-    print('d_c: {}'.format(d_c))
-    print('d_c.shape: {}'.format(d_c.shape))
+    #print('d_c: {}'.format(d_c))
+    #print('d_c.shape: {}'.format(d_c.shape))
     
     
     # Project shaft lines from L and R camera-to-base frames onto 2D camera image plane
     assert(cam is not None)
     projected_lines = cam.projectShaftLines(p_c, d_c, r)
-    print('shaftfeatureobs projected lines: {}'.format(projected_lines))
+    #print('shaftfeatureobs projected lines: {}'.format(projected_lines))
 
         # Raise error if number of cameras doesn't line up
     if len(projected_lines) != len(detected_lines):
@@ -282,7 +282,7 @@ def shaftFeatureObs_kornia(
         # len(projected_points) = # of cameras
         # each list in projected points (2x for R/L cameras) is also a list of projected points
         for cam_idx, proj_lines in enumerate(projected_lines):
-            print('shaftfeatureobs hungarian proj_lines.shape: {}'.format(proj_lines.shape))
+            #print('shaftfeatureobs hungarian proj_lines.shape: {}'.format(proj_lines.shape))
             # Use hungarian algorithm to match projected and detected points
             C_rho = cost_assoc_params['gamma_rho'] * distance_matrix(proj_lines[:, 0, None], detected_lines[cam_idx][:, 0, None])
             C_theta = cost_assoc_params['gamma_theta'] * distance_matrix(proj_lines[:, 1, None], detected_lines[cam_idx][:, 1, None])

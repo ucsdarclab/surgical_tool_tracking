@@ -29,7 +29,7 @@ class ParticleFilter:
         for obsModelFunc_idx in range(len(self._obsModelFunc)):
             obsModelFunc = self._obsModelFunc[obsModelFunc_idx]
             obsModelParams = args[obsModelFunc_idx]
-            print('obsModelParams: {}'.format(obsModelParams))
+            #print('obsModelParams: {}'.format(obsModelParams))
             # Update particle weights here, the kwargs is passed to obsModelFunc
             for p_idx, particle in enumerate(self._particles):
                 obs_prob = obsModelFunc(particle, **obsModelParams)

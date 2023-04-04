@@ -139,6 +139,7 @@ def detectCannyShaftLines(img = None,
     # sort by max votes
     print('in canny shaft lines')
     print(lines)
+    print(lines.shape)
     cv2.imwrite('error_img.jpg', img)
     sorted_lines = lines[(-lines[:, 2]).argsort()]
 
@@ -367,11 +368,11 @@ def detectShaftLines(annotated_img = None,
         sorted_matched_lines2 = matched_lines2[[[x] for x in range(matched_lines2.shape[0])], indices]
 
         # find matches to target reference lines
-        print('crop_ref_lines_selected: {}'.format(crop_ref_lines_selected))
+        #print('crop_ref_lines_selected: {}'.format(crop_ref_lines_selected))
         dist_matrix = torch.cdist(torch.flatten(torch.as_tensor(crop_ref_lines_selected), start_dim = 1), torch.flatten(sorted_matched_lines1, start_dim = 1))
         ind = torch.argmin(dist_matrix, dim = 1)
         selected_lines1 = sorted_matched_lines1[ind]
-        print('selected_lines1: {}'.format(selected_lines1))
+        #print('selected_lines1: {}'.format(selected_lines1))
         #assert(np.allclose(np.asarray(selected_lines1), np.asarray(crop_ref_lines_selected), atol = 1.0, rtol = 0))
         #assert(np.allclose(np.asarray(ind), np.asarray(crop_ref_lines_idx)))
         selected_lines2 = sorted_matched_lines2[ind]
@@ -584,11 +585,11 @@ def makeShaftAssociations(
     sorted_matched_lines2 = matched_lines2[[[x] for x in range(matched_lines2.shape[0])], indices]
 
     # find matches to target reference lines
-    print('crop_ref_lines_selected: {}'.format(crop_ref_lines_selected))
+    #print('crop_ref_lines_selected: {}'.format(crop_ref_lines_selected))
     dist_matrix = torch.cdist(torch.flatten(torch.as_tensor(crop_ref_lines_selected), start_dim = 1), torch.flatten(sorted_matched_lines1, start_dim = 1))
     ind = torch.argmin(dist_matrix, dim = 1)
     selected_lines1 = sorted_matched_lines1[ind]
-    print('selected_lines1: {}'.format(selected_lines1))
+    #print('selected_lines1: {}'.format(selected_lines1))
     #assert(np.allclose(np.asarray(selected_lines1), np.asarray(crop_ref_lines_selected), atol = 1.0, rtol = 0))
     #assert(np.allclose(np.asarray(ind), np.asarray(crop_ref_lines_idx)))
     selected_lines2 = sorted_matched_lines2[ind]
