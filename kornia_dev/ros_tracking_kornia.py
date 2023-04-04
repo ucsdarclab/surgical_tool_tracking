@@ -91,7 +91,7 @@ if __name__ == "__main__":
     # crop parameters
     in_file = source_dir + 'crop_scale.npy'
     crop_scale = np.load(in_file)
-    print('crop_scale: {}'.format(crop_scale))
+    #print('crop_scale: {}'.format(crop_scale))
 
     # reference lines
     in_file = source_dir + 'crop_ref_lines_l.npy'
@@ -408,8 +408,8 @@ if __name__ == "__main__":
 
                 # video recording
                 if (record_video):
-                    print('img_list[0].shape: {}'.format(img_list[0].shape))
-                    print('type(img_list[0]): {}'.format(type(img_list[0])))
+                    #print('img_list[0].shape: {}'.format(img_list[0].shape))
+                    #print('type(img_list[0]): {}'.format(type(img_list[0])))
                     left_video_out.write(img_list[0])
                     right_video_out.write(img_list[1])
 
@@ -423,6 +423,9 @@ if __name__ == "__main__":
                 cv2.waitKey(1)
             else:
                 rate.sleep()
+    
+    except ValueError:
+        pass
 
     except KeyboardInterrupt: 
         print('Broke rospy loop')
