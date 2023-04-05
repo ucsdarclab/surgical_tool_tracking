@@ -121,7 +121,7 @@ if __name__ == "__main__":
     # left camera
     in_file = source_dir + 'crop_ref_l_img.npy'
     crop_ref_l_img = np.load(in_file) # (404, 720, 3) RGB uint8
-    img_dims = (crop_ref_l_img.shape[0], crop_ref_l_img.shape[1])
+    img_dims = (int(crop_ref_l_img.shape[1]), int(crop_ref_l_img.shape[0]))
     crop_ref_l_tensor = K.image_to_tensor(crop_ref_l_img).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
     crop_ref_l_tensor = K.color.rgb_to_grayscale(crop_ref_l_tensor) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
     # right camera
