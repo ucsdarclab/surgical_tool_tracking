@@ -139,19 +139,38 @@ def detectCannyShaftLines(img = None,
     lines = np.squeeze(lines)
     # sort by max votes
     print('in canny shaft lines')
-    print(lines)
-    print(lines.shape)
+    print('lines: {}'.format(lines))
+    print('lines.shape: {}'.format(lines.shape))
     cv2.imwrite('error_img.jpg', img)
     lines = np.reshape(lines, (-1, 3))
+    print('lines: {}'.format(lines))
+    print('lines.shape: {}'.format(lines.shape))
     sorted_lines = lines[(-lines[:, 2]).argsort()]
+    print('sorted_lines: {}'.format(sorted_lines))
+    print('sorted_lines.shape: {}'.format(sorted_lines.shape))
 
     # sort by max votes
     sorted_lines = lines[(-lines[:, 2]).argsort()]
+    print('sorted_lines: {}'.format(sorted_lines))
+    print('sorted_lines.shape: {}'.format(sorted_lines.shape))
+    rhos = sorted_lines[:, 0].reshape(-1, 1)
+    print('rhos: {}'.format(rhos))
+    print('rhos.shape: {}'.format(rhos.shape))
+    thetas = sorted_lines[:, 1].reshape(-1, 1)
+    print('thetas: {}'.format(thetas))
+    print('thetas: {}'.format(thetas.shape))
 
-    rho_clusters = fclusterdata(sorted_lines[:, 0].reshape(-1, 1), t = rho_cluster_distance, criterion = 'distance', method = 'complete')
-    theta_clusters = fclusterdata(sorted_lines[:, 1].reshape(-1, 1), t = theta_cluster_distance, criterion = 'distance', method = 'complete')
+    rho_clusters = fclusterdata(rhos, t = rho_cluster_distance, criterion = 'distance', method = 'complete')
+    print('rho_clusters: {}'.format(rho_clusters))
+    print('rhos_clusters.shape: {}'.format(rho_clusters.shape))
+    theta_clusters = fclusterdata(thetas, t = theta_cluster_distance, criterion = 'distance', method = 'complete')
+    print('theta_clusters: {}'.format(theta_clusters))
+    print('theta_clusters.shape: {}'.format(theta_clusters.shape))
 
     best_lines = []
+    #if (rhos.shape[0] == 1):
+        #best_lines.append([rho, theta])
+    #else:
     checked_clusters = []
     for i in range(sorted_lines.shape[0]):
         rho_cluster = rho_clusters[i]
