@@ -425,10 +425,10 @@ if __name__ == "__main__":
             else:
                 rate.sleep()
     
-    except ValueError:
-        print('value error')
-        print(record_particles_counter)
-        pass
+    #except ValueError:
+        #print('value error')
+        #print(record_particles_counter)
+        #pass
 
     except KeyboardInterrupt: 
         print('Broke rospy loop')
