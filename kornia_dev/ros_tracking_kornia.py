@@ -136,12 +136,13 @@ if __name__ == "__main__":
 
     # video recording
     record_video = True
-    fps = 30
+    fps = 1
     if (record_video):
-        out_file = source_dir + 'left_video.mp4'
-        left_video_out  = cv2.VideoWriter(out_file,  cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, img_dims)
-        out_file = source_dir + 'right_video.mp4'
-        right_video_out = cv2.VideoWriter(out_file, cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, img_dims)
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        out_file = source_dir + 'left_video.avi'
+        left_video_out  = cv2.VideoWriter(out_file,  fourcc, fps, (480, 270))
+        out_file = source_dir + 'right_video.avi'
+        right_video_out = cv2.VideoWriter(out_file,  fourcc, fps, (480, 270))
 
     # particle recording
     record_particles = False
