@@ -135,7 +135,7 @@ def detectCannyShaftLines(img = None,
 
    # detect lines
     lines = cv2.HoughLinesWithAccumulator(edges_and_mask, rho = hough_rho_accumulator, theta = hough_theta_accumulator, threshold = hough_vote_threshold) 
-    if (len(lines) == 0):
+    if (lines is None):
         return [], img
     print(lines.shape)
     lines = np.squeeze(lines)
