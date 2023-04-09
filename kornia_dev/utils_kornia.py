@@ -160,26 +160,26 @@ def detectCannyShaftLines(img = None,
     print('thetas: {}'.format(thetas))
     print('thetas: {}'.format(thetas.shape))
 
-    rho_clusters = fclusterdata(rhos, t = rho_cluster_distance, criterion = 'distance', method = 'complete')
-    print('rho_clusters: {}'.format(rho_clusters))
-    print('rhos_clusters.shape: {}'.format(rho_clusters.shape))
-    theta_clusters = fclusterdata(thetas, t = theta_cluster_distance, criterion = 'distance', method = 'complete')
-    print('theta_clusters: {}'.format(theta_clusters))
-    print('theta_clusters.shape: {}'.format(theta_clusters.shape))
-
     best_lines = []
-    #if (rhos.shape[0] == 1):
-        #best_lines.append([rho, theta])
-    #else:
-    checked_clusters = []
-    for i in range(sorted_lines.shape[0]):
-        rho_cluster = rho_clusters[i]
-        theta_cluster = theta_clusters[i]
-        cluster = (rho_cluster, theta_cluster)
-        if (cluster in checked_clusters):
-            continue
-        best_lines.append([lines[i, 0], lines[i, 1]])
-        checked_clusters.append(cluster)
+    if ((rhos.shape == (1, 1)) and (thetas.shape == (1, 1))):
+        best_lines.append([float(rhos), float(thetas)])
+    else:
+        rho_clusters = fclusterdata(rhos, t = rho_cluster_distance, criterion = 'distance', method = 'complete')
+        print('rho_clusters: {}'.format(rho_clusters))
+        print('rhos_clusters.shape: {}'.format(rho_clusters.shape))
+        theta_clusters = fclusterdata(thetas, t = theta_cluster_distance, criterion = 'distance', method = 'complete')
+        print('theta_clusters: {}'.format(theta_clusters))
+        print('theta_clusters.shape: {}'.format(theta_clusters.shape))
+
+        checked_clusters = []
+        for i in range(sorted_lines.shape[0]):
+            rho_cluster = rho_clusters[i]
+            theta_cluster = theta_clusters[i]
+            cluster = (rho_cluster, theta_cluster)
+            if (cluster in checked_clusters):
+                continue
+            best_lines.append([lines[i, 0], lines[i, 1]])
+            checked_clusters.append(cluster)
 
     best_lines = np.asarray(best_lines)
 
