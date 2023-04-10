@@ -290,7 +290,10 @@ def shaftFeatureObs_kornia(
         # len(projected_points) = # of cameras
         # each list in projected points (2x for R/L cameras) is also a list of projected points
         for cam_idx, proj_lines in enumerate(projected_lines):
-            #print('shaftfeatureobs hungarian proj_lines.shape: {}'.format(proj_lines.shape))
+            print('shaftfeatureobs hungarian proj_lines: {}'.format(proj_lines))
+            print('shaftfeatureobs hungarian proj_lines.shape: {}'.format(proj_lines.shape))
+            print('shaftfeatureobs hungarian detected_lines[cam_idx]: {}'.format(detected_lines[cam_idx]))
+            print('shaftfeatureobs hungarian detected_lines[cam_idx].shape: {}'.format(detected_lines[cam_idx].shape))
             # Use hungarian algorithm to match projected and detected points
             C_rho = cost_assoc_params['gamma_rho'] * distance_matrix(proj_lines[:, 0, None], detected_lines[cam_idx][:, 0, None])
             C_theta = cost_assoc_params['gamma_theta'] * distance_matrix(proj_lines[:, 1, None], detected_lines[cam_idx][:, 1, None])
