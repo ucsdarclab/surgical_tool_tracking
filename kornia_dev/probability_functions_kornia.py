@@ -223,11 +223,6 @@ def shaftFeatureObs_kornia(
         pixel_probability_params = None
         ):
     
-    # no lines detected
-    if ((len(detected_lines) == 0) or (detected_lines is None)):
-        prob = 1
-        return prob
-    
     # determine metric
     if (use_lines):
         algo = use_lines
@@ -238,6 +233,11 @@ def shaftFeatureObs_kornia(
     elif (use_clouds):
         algo = use_clouds
         intensity_clouds = intensity_clouds[algo]
+    
+    # no lines detected
+    if ((len(detected_lines) == 0) or (detected_lines is None)):
+        prob = 1
+        return prob
 
     # Get lumped error
     T = poseToMatrix(state[:6])
