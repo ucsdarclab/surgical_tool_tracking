@@ -273,7 +273,7 @@ def shaftFeatureObs_kornia(
     assert(cam is not None)
     projected_lines = cam.projectShaftLines(p_c, d_c, r)
     print('shaftfeatureobs projected lines: {}'.format(projected_lines))
-    print('shaftfeatureobs projected lines.shape: {}'.format(projected_lines.shape))
+    #print('shaftfeatureobs projected lines.shape: {}'.format(projected_lines.shape))
 
         # Raise error if number of cameras doesn't line up
     if len(projected_lines) != len(detected_lines):
