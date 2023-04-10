@@ -221,6 +221,11 @@ def shaftFeatureObs_kornia(
         pixel_probability_params = None
         ):
     
+    # no lines detected
+    if ((len(detected_lines) == 0) or (detected_lines is None)):
+        prob = 1
+        return prob
+    
     # determine metric
     if (use_lines):
         algo = use_lines
