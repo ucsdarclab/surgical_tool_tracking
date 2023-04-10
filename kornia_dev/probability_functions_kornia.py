@@ -238,6 +238,9 @@ def shaftFeatureObs_kornia(
     if ((len(detected_lines) == 0) or (detected_lines is None)):
         prob = 1
         return prob
+    
+    print('shaftfeatureobs detected_lines: {}'.format(detected_lines))
+    print('shaftfeatureobs detected_lines.shape: {}'.format(detected_lines.shape))
 
     # Get lumped error
     T = poseToMatrix(state[:6])
