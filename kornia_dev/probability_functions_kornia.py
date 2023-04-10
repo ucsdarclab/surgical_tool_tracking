@@ -175,6 +175,8 @@ def shaftFeatureObs(state, detected_lines, robot_arm, cam, cam_T_b, joint_angle_
     assert(cam is not None)
     projected_lines = cam.projectShaftLines(p_c, d_c, r)
 
+
+
         # Raise error if number of cameras doesn't line up
     if len(projected_lines) != len(detected_lines):
         raise ValueError("Length of projected_lines is {} but length of line_detections is {}.\n".format(len(projected_lines), 
@@ -270,7 +272,8 @@ def shaftFeatureObs_kornia(
     # Project shaft lines from L and R camera-to-base frames onto 2D camera image plane
     assert(cam is not None)
     projected_lines = cam.projectShaftLines(p_c, d_c, r)
-    #print('shaftfeatureobs projected lines: {}'.format(projected_lines))
+    print('shaftfeatureobs projected lines: {}'.format(projected_lines))
+    print('shaftfeatureobs projected lines.shape: {}'.format(projected_lines.shape))
 
         # Raise error if number of cameras doesn't line up
     if len(projected_lines) != len(detected_lines):
