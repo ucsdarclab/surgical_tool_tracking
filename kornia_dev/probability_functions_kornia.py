@@ -240,7 +240,8 @@ def shaftFeatureObs_kornia(
         return prob
     
     print('shaftfeatureobs detected_lines: {}'.format(detected_lines))
-    print('shaftfeatureobs detected_lines.shape: {}'.format(detected_lines.shape))
+    print('shaftfeatureobs detected_lines[0].shape: {}'.format(detected_lines[0].shape))
+    print('shaftfeatureobs detected_lines[1].shape: {}'.format(detected_lines[1].shape))
 
     # Get lumped error
     T = poseToMatrix(state[:6])
