@@ -134,19 +134,6 @@ if __name__ == "__main__":
     # Load kornia model
     model = KF.SOLD2(pretrained=True, config=None)
 
-    # video recording
-    record_video = True
-    fps = 30
-    if (record_video):
-        out_file = source_dir + 'left_video.mp4'
-        left_video_out  = cv2.VideoWriter(out_file,  cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, img_dims)
-        out_file = source_dir + 'right_video.mp4'
-        right_video_out = cv2.VideoWriter(out_file, cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, img_dims)
-
-    # particle recording
-    record_particles = False
-    record_particles_counter = 1
-
     # parameters for shaft detection
     canny_params = {
         'use_canny': True,
@@ -178,6 +165,41 @@ if __name__ == "__main__":
         'use_line_intensities_only': False,
         'line_intensities_to_polar': False
     } 
+
+    # output director for recordings
+    video_out_dir = source_dir + 'video_recordings/'
+    particle_out_dir = source_dir + 'particle_data/'
+    if (canny_params['use_canny']):
+        video_out_dir += 'use_canny/'
+        particle_out_dir += 'use_canny/'
+    elif (kornia_params['use_kornia'] and kornia_params['endpoints_to_polar']):
+        video_out_dir += 'endpoints_to_polar/'
+        particle_out_dir += 'endpoints_to_polar/'
+    elif (kornia_params['use_kornia'] and kornia_params['use_endpoint_intensities_only']):
+        video_out_dir += 'use_endpoint_intensities_only/'
+        particle_out_dir += 'use_endpoint_intensities_only/'
+    elif (kornia_params['use_kornia'] and kornia_params['endpoint_intensities_to_polar']):
+        video_out_dir += 'endpoint_intensities_to_polar/'
+        particle_out_dir += 'endpoint_intensities_to_polar/'
+    elif (kornia_params['use_kornia'] and kornia_params['use_line_intensities_only']):
+        video_out_dir += 'use_line_intensities_only/'
+        particle_out_dir += 'use_line_intensities_only/'
+    elif (kornia_params['use_kornia'] and kornia_params['line_intensities_to_polar']):
+        video_out_dir += 'line_intensities_to_polar/'
+        particle_out_dir += 'line_intensities_to_polar/'
+
+    # video recording
+    record_video = True
+    fps = 30
+    if (record_video):
+        out_file = video_out_dir + 'left_video.mp4'
+        left_video_out  = cv2.VideoWriter(out_file,  cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, img_dims)
+        out_file = video_out_dir + 'right_video.mp4'
+        right_video_out = cv2.VideoWriter(out_file, cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, img_dims)
+
+    # particle recording
+    record_particles = True
+    record_particles_counter = 1
 
     robot_arm = RobotLink(robot_file, use_dh_offset=False) # position / orientation in Meters
     cam = StereoCamera(camera_file, rectify = True, crop_scale = crop_scale, downscale_factor = 2, scale_baseline=1e-3)
@@ -415,9 +437,8 @@ if __name__ == "__main__":
 
                 # particle recording
                 if (record_particles):
-                    out_dir = 'kornia_dev/particle_data/'
-                    out_file = out_dir + str(record_particles_counter) + '.npy'
-                    out_data = [pf._particles, pf._weights]
+                    out_file = particle_out_dir + str(record_particles_counter) + '.npy'
+                    out_data = [pf._particles, pf._weights, np.dot(pf._particles, pf._weights)]
                     np.save(out_file, out_data)
 
                 record_particles_counter += 1
