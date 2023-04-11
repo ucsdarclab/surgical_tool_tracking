@@ -136,7 +136,7 @@ if __name__ == "__main__":
 
     # parameters for shaft detection
     canny_params = {
-        'use_canny': True,
+        'use_canny': False,
         'hough_rho_accumulator': 5.0,
         'hough_theta_accumulator': 0.09,
         'hough_vote_threshold': 100,
@@ -145,7 +145,7 @@ if __name__ == "__main__":
     }
 
     kornia_params = {
-        'use_kornia': False,
+        'use_kornia': True,
         'endpoints_to_polar': False,
         'use_endpoint_intensities_only': False,
         'endpoint_intensities_to_polar': False,
