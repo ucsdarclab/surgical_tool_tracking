@@ -79,7 +79,7 @@ if __name__ == "__main__":
     ats.registerCallback(gotData)
 
     # reference image w vs. without contours
-    draw_contours = True
+    draw_contours = False
     if (draw_contours):
         source_dir = 'kornia_dev/ref_data/contour/'
     else:
