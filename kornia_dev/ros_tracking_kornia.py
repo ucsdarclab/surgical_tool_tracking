@@ -438,13 +438,13 @@ if __name__ == "__main__":
                 # particle recording
                 if (record_particles):
                     out_file = particle_out_dir + str(record_particles_counter) + '.npy'
-                    particles = pf._particles
+                    particles = pf._particles.copy()
                     print('particles: {}'.format(particles))
                     print('particles.shape: {}'.format(particles.shape))
-                    weights = pf._weights
+                    weights = pf._weights.copy()
                     print('weights: {}'.format(weights))
                     print('weights.shape: {}'.format(weights.shape))
-                    out_data = [pf._particles, pf._weights, np.dot(pf._particles, pf._weights)]
+                    out_data = [particles, weights, np.dot(weights, particles)]
                     np.save(out_file, out_data)
 
                 record_particles_counter += 1
