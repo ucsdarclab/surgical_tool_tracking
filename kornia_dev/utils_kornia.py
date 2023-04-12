@@ -249,13 +249,19 @@ def drawLineSegments(img = None, lines = None, colors = [(0, 0, 0), (255, 255, 2
     return img
 
 # annotate image with pixels
-def drawPixels(img = None, pixels = None):
-    
-    # BGR (255, 0, 0) = Blue
-    for i in range(pixels.shape[0]):
-        y = pixels[i, 0]
-        x = pixels[i, 1]
-        img[y, x] = (255, 255, 255)
+def drawPointCloud(img = None, point_clouds = None):
+
+    for cloud in point_clouds:
+        
+        # data
+        X = cloud[:, 1].reshape(-1, 1)
+        Y = cloud[:, 0].reshape(-1, 1)
+
+        for i in range(X.shape[0]):
+            x = X[i, 0]
+            y = Y[i, 0]
+
+            img = cv2.circle(img, center = (x, y), radius = 2, color = (100, 0, 100), thickness = -1)
     
     return img
 
@@ -474,6 +480,9 @@ def detectShaftLines(annotated_img = None,
                 thresholded_dilated_points = np.asarray(dilated_points)[intensity_mask]
                 intensity_endpoint_clouds.append(thresholded_dilated_points)
 
+                # draw point clouds
+                annotated_img = drawPointCloud(annotated_img, intensity_endpoint_clouds)
+
                 if (endpoint_intensities_to_polar):
                     intensity_endpoint_lines = fitRansacLines(intensity_endpoint_clouds, ransac_params)
                     if (draw_lines):
@@ -521,6 +530,9 @@ def detectShaftLines(annotated_img = None,
 
                 thresholded_dilated_line = np.asarray(dilated_line)[intensity_mask]
                 intensity_line_clouds.append(thresholded_dilated_line)
+
+                # draw point clouds
+                annotated_img = drawPointCloud(annotated_img, intensity_endpoint_clouds)
 
                 if (line_intensities_to_polar):
                     intensity_line_lines = fitRansacLines(intensity_line_clouds, ransac_params)
