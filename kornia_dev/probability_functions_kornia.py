@@ -235,7 +235,7 @@ def shaftFeatureObs_kornia(
         intensity_clouds = intensity_clouds[algo]
     
     # no lines detected
-    if ((len(detected_lines) == 0) or (detected_lines is None)):
+    if ((detected_lines is None) or (len(detected_lines) == 0)):
         prob = 1
         return prob
 
