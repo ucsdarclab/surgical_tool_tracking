@@ -249,7 +249,7 @@ def drawLineSegments(img = None, lines = None, colors = [(0, 0, 0), (255, 255, 2
     return img
 
 # annotate image with pixels
-def drawPointCloud(img = None, point_clouds = None):
+def drawPoints(img = None, point_clouds = None):
 
     for cloud in point_clouds:
         
@@ -258,8 +258,8 @@ def drawPointCloud(img = None, point_clouds = None):
         Y = cloud[:, 0].reshape(-1, 1)
 
         for i in range(X.shape[0]):
-            x = X[i, 0]
-            y = Y[i, 0]
+            x = int(X[i])
+            y = int(Y[i])
 
             img = cv2.circle(img, center = (x, y), radius = 2, color = (100, 0, 100), thickness = -1)
     
@@ -428,8 +428,12 @@ def detectShaftLines(annotated_img = None,
                 theta = np.arctan2((x1 - x2), (y2 - y1))
                 rho = x1 * np.cos(theta) + y1 * np.sin(theta)
                 polar_lines_detected_endpoints.append([rho, theta])
+                
+                annotated_img = drawPoints(annotated_img, detected_endpoints)
+                
                 if (draw_lines):
                     annotated_img = drawPolarLines(annotated_img, np.asarray([rho, theta]))
+                
 
         # search region around detected endpoints for all pixels
         # that meet intensity threshold
@@ -481,7 +485,7 @@ def detectShaftLines(annotated_img = None,
                 intensity_endpoint_clouds.append(thresholded_dilated_points)
 
                 # draw point clouds
-                annotated_img = drawPointCloud(annotated_img, intensity_endpoint_clouds)
+                annotated_img = drawPoints(annotated_img, intensity_endpoint_clouds)
 
                 if (endpoint_intensities_to_polar):
                     intensity_endpoint_lines = fitRansacLines(intensity_endpoint_clouds, ransac_params)
@@ -532,7 +536,7 @@ def detectShaftLines(annotated_img = None,
                 intensity_line_clouds.append(thresholded_dilated_line)
 
                 # draw point clouds
-                annotated_img = drawPointCloud(annotated_img, intensity_endpoint_clouds)
+                annotated_img = drawPoints(annotated_img, intensity_endpoint_clouds)
 
                 if (line_intensities_to_polar):
                     intensity_line_lines = fitRansacLines(intensity_line_clouds, ransac_params)

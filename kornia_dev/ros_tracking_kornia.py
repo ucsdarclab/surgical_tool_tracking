@@ -146,7 +146,7 @@ if __name__ == "__main__":
 
     kornia_params = {
         'use_kornia': True,
-        'endpoints_to_polar': False,
+        'endpoints_to_polar': True,
         'use_endpoint_intensities_only': False,
         'endpoint_intensities_to_polar': False,
         'search_radius': 25.0,
