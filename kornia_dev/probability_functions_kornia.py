@@ -243,7 +243,7 @@ def shaftFeatureObs_kornia(
     print('shaftfeatureobs detected_lines[0].shape: {}'.format(detected_lines[0].shape))
     print('shaftfeatureobs detected_lines[1].shape: {}'.format(detected_lines[1].shape))
     for detected_line in detected_lines:
-        if len(detected_line) == 0:
+        if ((detected_line is None) or (len(detected_line) == 0)):
             prob = 1
             return prob
 
