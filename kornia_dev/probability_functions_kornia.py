@@ -246,7 +246,7 @@ def shaftFeatureObs_kornia(
         if (detected_line is None):
             prob = 1
             return prob
-        if (len(detected_line) == 0):
+        if (detected_line.size == 0):
             prob = 1
             return prob
 
