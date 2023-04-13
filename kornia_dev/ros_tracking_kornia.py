@@ -261,6 +261,7 @@ if __name__ == "__main__":
                 detected_keypoints_r, annotated_right_img = segmentColorAndGetKeyPoints(non_annotated_right_img, draw_contours = draw_contours)
                 new_detected_keypoints_r = np.copy(detected_keypoints_r)
 
+                '''
                 annotated_left_ref_img, annotated_left_img = makeShaftAssociations(
                                             new_img = annotated_left_img, 
                                             ref_tensor = crop_ref_l_tensor,
@@ -271,8 +272,8 @@ if __name__ == "__main__":
                                             crop_ref_lines_idx = crop_ref_lines_l_idx,
                                             model = model
                                             )
-                #cv2.imshow('ref_img_l', ref_img_l)
-                #cv2.imshow('new_left_img', new_left_img)
+                cv2.imshow('ref_img_l', ref_img_l)
+                cv2.imshow('new_left_img', new_left_img)
                 
                 annotated_right_ref_img, annotated_right_img = makeShaftAssociations(
                                             new_img = annotated_right_img, 
@@ -284,9 +285,10 @@ if __name__ == "__main__":
                                             crop_ref_lines_idx = crop_ref_lines_r_idx,
                                             model = model
                                             )
-                #cv2.imshow('ref_img_r', ref_img_r)
-                #cv2.imshow('new_right_img', new_right_img)
-        
+                cv2.imshow('ref_img_r', ref_img_r)
+                cv2.imshow('new_right_img', new_right_img)
+                '''
+                
                 output_l  = detectShaftLines(
                                             non_annotated_img = non_annotated_left_img,
                                             annotated_img = annotated_left_img,
