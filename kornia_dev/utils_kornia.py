@@ -261,7 +261,7 @@ def drawPoints(img = None, point_clouds = None):
             x = int(X[i])
             y = int(Y[i])
 
-            img = cv2.circle(img, center = (x, y), radius = 2, color = (70, 40, 100), thickness = -1)
+            img = cv2.circle(img, center = (x, y), radius = 2, color = (255, 255, 0), thickness = -1)
     
     return img
 
@@ -316,6 +316,19 @@ def fitRansacLines(point_clouds, ransac_params):
                 pass
     return lines
 
+def findReferenceLines(ref_lines = None, det_lines = None):
+    ref_lines = np.asarray(ref_lines, dtype = int)
+    det_lines = np.asarray(det_lines, dtype = int)
+
+    ind = []
+    for i in range(ref_lines.shape[0]):
+        ref_line = ref_lines[i]
+        for j in range(det_lines.shape[0]):
+            det_line = det_lines[j]
+            if (np.allclose(ref_line, det_line)):
+                ind.append(j)
+    return ind
+
 def detectShaftLines(annotated_img = None, 
                     non_annotated_img = None,
                     ref_img = None,
@@ -328,6 +341,9 @@ def detectShaftLines(annotated_img = None,
                     canny_params = {},
                     kornia_params = {}):
     
+    #cv2.imwrite('ref_img.png', ref_img)
+
+
     # use canny edge detection
     canny_lines = None
     polar_lines_detected_endpoints = None
@@ -397,16 +413,18 @@ def detectShaftLines(annotated_img = None,
         sorted_matched_lines2 = matched_lines2[[[x] for x in range(matched_lines2.shape[0])], indices]
 
         # find matches to target reference lines
+        ind = findReferenceLines(crop_ref_lines_selected, sorted_matched_lines1)
         #print('crop_ref_lines_selected: {}'.format(crop_ref_lines_selected))
-        dist_matrix = torch.cdist(torch.flatten(torch.as_tensor(crop_ref_lines_selected), start_dim = 1), torch.flatten(sorted_matched_lines1, start_dim = 1))
-        ind = torch.argmin(dist_matrix, dim = 1)
+        #dist_matrix = torch.cdist(torch.flatten(torch.as_tensor(crop_ref_lines_selected), start_dim = 1), torch.flatten(sorted_matched_lines1, start_dim = 1))
+        #ind = torch.argmin(dist_matrix, dim = 1)
         selected_lines1 = sorted_matched_lines1[ind]
-        print('crop_ref_lines_selected {}'.format(crop_ref_lines_selected))
-        print('selected_lines1: {}'.format(selected_lines1))
-        assert(np.allclose(np.asarray(selected_lines1, dtype = int), np.asarray(crop_ref_lines_selected, dtype = int)))
+        #print('crop_ref_lines_selected {}'.format(crop_ref_lines_selected))
+        #print('selected_lines1: {}'.format(selected_lines1))
+        #print('sorted_matched_lines1: {}'.format(sorted_matched_lines1))
+        #assert(np.allclose(np.asarray(selected_lines1, dtype = int), np.asarray(crop_ref_lines_selected, dtype = int)))
         #assert(np.allclose(np.asarray(ind), np.asarray(crop_ref_lines_idx)))
         selected_lines2 = sorted_matched_lines2[ind]
-        print('selected_lines2: {}'.format(selected_lines2))
+        #print('selected_lines2: {}'.format(selected_lines2))
 
         # select only matching line segments that correspond to ref lines
         if (draw_lines):
