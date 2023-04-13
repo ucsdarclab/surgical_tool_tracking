@@ -288,7 +288,7 @@ if __name__ == "__main__":
                 cv2.imshow('ref_img_r', ref_img_r)
                 cv2.imshow('new_right_img', new_right_img)
                 '''
-                
+
                 output_l  = detectShaftLines(
                                             non_annotated_img = non_annotated_left_img,
                                             annotated_img = annotated_left_img,
@@ -441,11 +441,11 @@ if __name__ == "__main__":
                 if (record_particles):
                     out_file = particle_out_dir + str(record_particles_counter) + '.npy'
                     particles = pf._particles.copy()
-                    print('particles: {}'.format(particles))
-                    print('particles.shape: {}'.format(particles.shape))
+                    #print('particles: {}'.format(particles))
+                    #print('particles.shape: {}'.format(particles.shape))
                     weights = pf._weights.copy()
-                    print('weights: {}'.format(weights))
-                    print('weights.shape: {}'.format(weights.shape))
+                    #print('weights: {}'.format(weights))
+                    #print('weights.shape: {}'.format(weights.shape))
                     out_data = [particles, weights, np.dot(weights, particles)]
                     np.save(out_file, out_data)
 

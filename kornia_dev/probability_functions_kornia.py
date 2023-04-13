@@ -239,9 +239,9 @@ def shaftFeatureObs_kornia(
         prob = 1
         return prob
 
-    print('shaftfeatureobs detected_lines: {}'.format(detected_lines))
-    print('shaftfeatureobs detected_lines[0].shape: {}'.format(detected_lines[0].shape))
-    print('shaftfeatureobs detected_lines[1].shape: {}'.format(detected_lines[1].shape))
+    #print('shaftfeatureobs detected_lines: {}'.format(detected_lines))
+    #print('shaftfeatureobs detected_lines[0].shape: {}'.format(detected_lines[0].shape))
+    #print('shaftfeatureobs detected_lines[1].shape: {}'.format(detected_lines[1].shape))
     for detected_line in detected_lines:
         if (detected_line is None):
             prob = 1
@@ -290,7 +290,7 @@ def shaftFeatureObs_kornia(
     # Project shaft lines from L and R camera-to-base frames onto 2D camera image plane
     assert(cam is not None)
     projected_lines = cam.projectShaftLines(p_c, d_c, r)
-    print('shaftfeatureobs projected lines: {}'.format(projected_lines))
+    #print('shaftfeatureobs projected lines: {}'.format(projected_lines))
     #print('shaftfeatureobs projected lines.shape: {}'.format(projected_lines.shape))
 
         # Raise error if number of cameras doesn't line up
@@ -308,10 +308,10 @@ def shaftFeatureObs_kornia(
         # len(projected_points) = # of cameras
         # each list in projected points (2x for R/L cameras) is also a list of projected points
         for cam_idx, proj_lines in enumerate(projected_lines):
-            print('shaftfeatureobs hungarian proj_lines: {}'.format(proj_lines))
-            print('shaftfeatureobs hungarian proj_lines.shape: {}'.format(proj_lines.shape))
-            print('shaftfeatureobs hungarian detected_lines[cam_idx]: {}'.format(detected_lines[cam_idx]))
-            print('shaftfeatureobs hungarian detected_lines[cam_idx].shape: {}'.format(detected_lines[cam_idx].shape))
+            #print('shaftfeatureobs hungarian proj_lines: {}'.format(proj_lines))
+            #print('shaftfeatureobs hungarian proj_lines.shape: {}'.format(proj_lines.shape))
+            #print('shaftfeatureobs hungarian detected_lines[cam_idx]: {}'.format(detected_lines[cam_idx]))
+            #print('shaftfeatureobs hungarian detected_lines[cam_idx].shape: {}'.format(detected_lines[cam_idx].shape))
             # Use hungarian algorithm to match projected and detected points
             C_rho = cost_assoc_params['gamma_rho'] * distance_matrix(proj_lines[:, 0, None], detected_lines[cam_idx][:, 0, None])
             C_theta = cost_assoc_params['gamma_theta'] * distance_matrix(proj_lines[:, 1, None], detected_lines[cam_idx][:, 1, None])

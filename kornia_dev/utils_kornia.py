@@ -401,6 +401,7 @@ def detectShaftLines(annotated_img = None,
         dist_matrix = torch.cdist(torch.flatten(torch.as_tensor(crop_ref_lines_selected), start_dim = 1), torch.flatten(sorted_matched_lines1, start_dim = 1))
         ind = torch.argmin(dist_matrix, dim = 1)
         selected_lines1 = sorted_matched_lines1[ind]
+        print('crop_ref_lines_selected {}'.format(crop_ref_lines_selected))
         print('selected_lines1: {}'.format(selected_lines1))
         #assert(np.allclose(np.asarray(selected_lines1), np.asarray(crop_ref_lines_selected), atol = 1.0, rtol = 0))
         #assert(np.allclose(np.asarray(ind), np.asarray(crop_ref_lines_idx)))
