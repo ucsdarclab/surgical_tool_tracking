@@ -261,7 +261,7 @@ def drawPoints(img = None, point_clouds = None):
             x = int(X[i])
             y = int(Y[i])
 
-            img = cv2.circle(img, center = (x, y), radius = 2, color = (100, 0, 100), thickness = -1)
+            img = cv2.circle(img, center = (x, y), radius = 2, color = (70, 40, 100), thickness = -1)
     
     return img
 
