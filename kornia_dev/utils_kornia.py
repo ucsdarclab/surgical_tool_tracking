@@ -403,7 +403,7 @@ def detectShaftLines(annotated_img = None,
         selected_lines1 = sorted_matched_lines1[ind]
         print('crop_ref_lines_selected {}'.format(crop_ref_lines_selected))
         print('selected_lines1: {}'.format(selected_lines1))
-        #assert(np.allclose(np.asarray(selected_lines1), np.asarray(crop_ref_lines_selected), atol = 1.0, rtol = 0))
+        assert(np.allclose(np.asarray(selected_lines1, dtype = int), np.asarray(crop_ref_lines_selected, dtype = int)))
         #assert(np.allclose(np.asarray(ind), np.asarray(crop_ref_lines_idx)))
         selected_lines2 = sorted_matched_lines2[ind]
         print('selected_lines2: {}'.format(selected_lines2))
