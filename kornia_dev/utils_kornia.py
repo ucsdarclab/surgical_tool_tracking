@@ -244,7 +244,7 @@ def drawLineSegments(img = None, lines = None, colors = [(0, 0, 0), (255, 255, 2
         x2 = int(endpoints[1, 1])
         pt1 = (x1, y1)
         pt2 = (x2, y2)
-        cv2.line(img, pt1, pt2, colors[i], 5)
+        cv2.line(img, pt1, pt2, colors[i], 2)
     
     return img
 
@@ -401,10 +401,11 @@ def detectShaftLines(annotated_img = None,
         dist_matrix = torch.cdist(torch.flatten(torch.as_tensor(crop_ref_lines_selected), start_dim = 1), torch.flatten(sorted_matched_lines1, start_dim = 1))
         ind = torch.argmin(dist_matrix, dim = 1)
         selected_lines1 = sorted_matched_lines1[ind]
-        #print('selected_lines1: {}'.format(selected_lines1))
+        print('selected_lines1: {}'.format(selected_lines1))
         #assert(np.allclose(np.asarray(selected_lines1), np.asarray(crop_ref_lines_selected), atol = 1.0, rtol = 0))
         #assert(np.allclose(np.asarray(ind), np.asarray(crop_ref_lines_idx)))
         selected_lines2 = sorted_matched_lines2[ind]
+        print('selected_lines2: {}'.format(selected_lines2))
 
         # select only matching line segments that correspond to ref lines
         if (draw_lines):
@@ -629,10 +630,11 @@ def makeShaftAssociations(
     dist_matrix = torch.cdist(torch.flatten(torch.as_tensor(crop_ref_lines_selected), start_dim = 1), torch.flatten(sorted_matched_lines1, start_dim = 1))
     ind = torch.argmin(dist_matrix, dim = 1)
     selected_lines1 = sorted_matched_lines1[ind]
-    #print('selected_lines1: {}'.format(selected_lines1))
-    #assert(np.allclose(np.asarray(selected_lines1), np.asarray(crop_ref_lines_selected), atol = 1.0, rtol = 0))
+    print('selected_lines1: {}'.format(selected_lines1))
+    assert(np.allclose(np.asarray(selected_lines1), np.asarray(crop_ref_lines_selected), atol = 1.0, rtol = 0))
     #assert(np.allclose(np.asarray(ind), np.asarray(crop_ref_lines_idx)))
     selected_lines2 = sorted_matched_lines2[ind]
+    print('selected_lines2: {}'.format(selected_lines2))
     
     # pick only shaft lines in reference image by length (largest 2x lines)
     #reference_line_lengths = []
