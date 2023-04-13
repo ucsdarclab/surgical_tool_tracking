@@ -429,10 +429,11 @@ def detectShaftLines(annotated_img = None,
                 rho = x1 * np.cos(theta) + y1 * np.sin(theta)
                 polar_lines_detected_endpoints.append([rho, theta])
                 
-                annotated_img = drawPoints(annotated_img, detected_endpoints)
-                
                 if (draw_lines):
                     annotated_img = drawPolarLines(annotated_img, np.asarray([rho, theta]))
+                
+                # draw endpoints
+                annotated_img = drawPoints(annotated_img, detected_endpoints)
                 
 
         # search region around detected endpoints for all pixels
@@ -484,13 +485,13 @@ def detectShaftLines(annotated_img = None,
                 thresholded_dilated_points = np.asarray(dilated_points)[intensity_mask]
                 intensity_endpoint_clouds.append(thresholded_dilated_points)
 
-                # draw point clouds
-                annotated_img = drawPoints(annotated_img, intensity_endpoint_clouds)
-
                 if (endpoint_intensities_to_polar):
                     intensity_endpoint_lines = fitRansacLines(intensity_endpoint_clouds, ransac_params)
                     if (draw_lines):
                         annotated_img = drawPolarLines(annotated_img, np.asarray(intensity_endpoint_lines))
+                
+                # draw point clouds
+                annotated_img = drawPoints(annotated_img, intensity_endpoint_clouds)
         
         # search region between detected endpoints for all pixels
         # that meet intensity threshold
@@ -535,13 +536,13 @@ def detectShaftLines(annotated_img = None,
                 thresholded_dilated_line = np.asarray(dilated_line)[intensity_mask]
                 intensity_line_clouds.append(thresholded_dilated_line)
 
-                # draw point clouds
-                annotated_img = drawPoints(annotated_img, intensity_endpoint_clouds)
-
                 if (line_intensities_to_polar):
                     intensity_line_lines = fitRansacLines(intensity_line_clouds, ransac_params)
                     if (draw_lines):
                         annotated_img = drawPolarLines(annotated_img, np.asarray(intensity_line_lines))
+                
+                # draw point clouds
+                annotated_img = drawPoints(annotated_img, intensity_endpoint_clouds)
     
     output = {
         'ref_img': ref_img,
