@@ -378,7 +378,9 @@ def detectShaftLines(annotated_img = None,
 
         # process input image
         img_height = non_annotated_img.shape[0]
+        print('img_height: {}'.format(img_height))
         img_width = non_annotated_img.shape[1]
+        print('img_width: {}'.format(img_width))
         non_annotated_tensor = K.image_to_tensor(non_annotated_img).float() / 255.0  # [0, 1] [3, crop_dims] float32
         non_annotated_tensor = K.color.rgb_to_grayscale(non_annotated_tensor) # [0, 1] [1, crop_dims] float32
         tensors = torch.stack([ref_tensor, non_annotated_tensor], )
@@ -392,6 +394,7 @@ def detectShaftLines(annotated_img = None,
         desc2 = outputs["dense_desc"][1]
         line_heatmap1 = np.asarray(outputs['line_heatmap'][0])
         line_heatmap2 = np.asarray(outputs['line_heatmap'][1])
+        print('line_heatmap2.shape: {}'.format(line_heatmap2.shape))
 
         # perform association between All line segments 
         # in ref_img and new_img
@@ -472,22 +475,29 @@ def detectShaftLines(annotated_img = None,
             
             intensity_endpoint_clouds = []
             kernel = np.ones((search_radius, search_radius), np.uint8)
-
+            print('detected_endpoints: {}'.format(detected_endpoints))
+            print('line: {}'.format(line))
             for line in detected_endpoints:
                 y1 = line[0][0]
                 x1 = line[0][1]
                 y2 = line[1][0]
                 x2 = line[1][1]
+                print('y1: {}, x1: {}, y2: {}, x2: {}'.format(y1, x1, y2, x2))
 
                 # convert detected endpoints to endpoint intensity clouds
                 blank = np.zeros((img_height, img_width))
                 dotted = blank.copy()
+                print('dotted.shape: {}'.format(dotted.shape))
                 dotted[y1, x1] = 255.0
                 dotted[y2, x2] = 255.0
 
                 dotted_dilation = cv2.dilate(dotted, kernel, iterations = 1)
+                print('dotted_dilation.shape: {}'.format(dotted_dilation.shape))
                 ys, xs = np.where(dotted_dilation)
                 dilated_points = list(zip(list(ys), list(xs)))
+                print('dilated_points: {}'.format(dilated_points))
+                print('len(dilated_points): {}'.format(len(dilated_points)))
+                print('line_heatmap2.shape: {}'.format(line_heatmap2.shape))
                 dilated_points_intensities = np.asarray([line_heatmap2[coord[0], coord[1]] for coord in dilated_points])
 
                 metric = intensity_params['use_metric']
