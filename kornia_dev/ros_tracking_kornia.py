@@ -147,7 +147,7 @@ if __name__ == "__main__":
     kornia_params = {
         'use_kornia': True,
         'endpoints_to_polar': False,
-        'use_endpoint_intensities_only': True,
+        'use_endpoint_intensities_only': False,
         'endpoint_intensities_to_polar': False,
         'search_radius': 25.0,
         'intensity_params': {
@@ -163,7 +163,7 @@ if __name__ == "__main__":
             'img_dims': img_dims
         },
         'use_line_intensities_only': False,
-        'line_intensities_to_polar': False
+        'line_intensities_to_polar': True
     } 
 
     # output director for recordings

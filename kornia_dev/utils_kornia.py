@@ -137,41 +137,41 @@ def detectCannyShaftLines(img = None,
     lines = cv2.HoughLinesWithAccumulator(edges_and_mask, rho = hough_rho_accumulator, theta = hough_theta_accumulator, threshold = hough_vote_threshold) 
     if (lines is None):
         return [], img
-    print(lines.shape)
+    #print(lines.shape)
     lines = np.squeeze(lines)
     # sort by max votes
-    print('in canny shaft lines')
-    print('lines: {}'.format(lines))
-    print('lines.shape: {}'.format(lines.shape))
+    #print('in canny shaft lines')
+    #print('lines: {}'.format(lines))
+    #print('lines.shape: {}'.format(lines.shape))
     cv2.imwrite('error_img.jpg', img)
     lines = np.reshape(lines, (-1, 3))
-    print('lines: {}'.format(lines))
-    print('lines.shape: {}'.format(lines.shape))
+    #print('lines: {}'.format(lines))
+    #print('lines.shape: {}'.format(lines.shape))
     sorted_lines = lines[(-lines[:, 2]).argsort()]
-    print('sorted_lines: {}'.format(sorted_lines))
-    print('sorted_lines.shape: {}'.format(sorted_lines.shape))
+    #print('sorted_lines: {}'.format(sorted_lines))
+    #print('sorted_lines.shape: {}'.format(sorted_lines.shape))
 
     # sort by max votes
     sorted_lines = lines[(-lines[:, 2]).argsort()]
-    print('sorted_lines: {}'.format(sorted_lines))
-    print('sorted_lines.shape: {}'.format(sorted_lines.shape))
+    #print('sorted_lines: {}'.format(sorted_lines))
+    #print('sorted_lines.shape: {}'.format(sorted_lines.shape))
     rhos = sorted_lines[:, 0].reshape(-1, 1)
-    print('rhos: {}'.format(rhos))
-    print('rhos.shape: {}'.format(rhos.shape))
+    #print('rhos: {}'.format(rhos))
+    #print('rhos.shape: {}'.format(rhos.shape))
     thetas = sorted_lines[:, 1].reshape(-1, 1)
-    print('thetas: {}'.format(thetas))
-    print('thetas: {}'.format(thetas.shape))
+    #print('thetas: {}'.format(thetas))
+    #print('thetas: {}'.format(thetas.shape))
 
     best_lines = []
     if ((rhos.shape == (1, 1)) and (thetas.shape == (1, 1))):
         best_lines.append([float(rhos), float(thetas)])
     else:
         rho_clusters = fclusterdata(rhos, t = rho_cluster_distance, criterion = 'distance', method = 'complete')
-        print('rho_clusters: {}'.format(rho_clusters))
-        print('rhos_clusters.shape: {}'.format(rho_clusters.shape))
+        #print('rho_clusters: {}'.format(rho_clusters))
+        #print('rhos_clusters.shape: {}'.format(rho_clusters.shape))
         theta_clusters = fclusterdata(thetas, t = theta_cluster_distance, criterion = 'distance', method = 'complete')
-        print('theta_clusters: {}'.format(theta_clusters))
-        print('theta_clusters.shape: {}'.format(theta_clusters.shape))
+        #print('theta_clusters: {}'.format(theta_clusters))
+        #print('theta_clusters.shape: {}'.format(theta_clusters.shape))
 
         checked_clusters = []
         for i in range(sorted_lines.shape[0]):
@@ -378,9 +378,9 @@ def detectShaftLines(annotated_img = None,
 
         # process input image
         img_height = non_annotated_img.shape[0]
-        print('img_height: {}'.format(img_height))
+        #print('img_height: {}'.format(img_height))
         img_width = non_annotated_img.shape[1]
-        print('img_width: {}'.format(img_width))
+        #print('img_width: {}'.format(img_width))
         non_annotated_tensor = K.image_to_tensor(non_annotated_img).float() / 255.0  # [0, 1] [3, crop_dims] float32
         non_annotated_tensor = K.color.rgb_to_grayscale(non_annotated_tensor) # [0, 1] [1, crop_dims] float32
         tensors = torch.stack([ref_tensor, non_annotated_tensor], )
@@ -394,7 +394,7 @@ def detectShaftLines(annotated_img = None,
         desc2 = outputs["dense_desc"][1]
         line_heatmap1 = np.asarray(outputs['line_heatmap'][0])
         line_heatmap2 = np.asarray(outputs['line_heatmap'][1])
-        print('line_heatmap2.shape: {}'.format(line_heatmap2.shape))
+        #print('line_heatmap2.shape: {}'.format(line_heatmap2.shape))
 
         # perform association between All line segments 
         # in ref_img and new_img
@@ -475,30 +475,29 @@ def detectShaftLines(annotated_img = None,
             
             intensity_endpoint_clouds = []
             kernel = np.ones((search_radius, search_radius), np.uint8)
-            print('detected_endpoints: {}'.format(detected_endpoints))
-            print('line: {}'.format(line))
+            #print('detected_endpoints: {}'.format(detected_endpoints))
             for line in detected_endpoints:
+                #print('line: {}'.format(line))
                 y1 = line[0][0]
                 x1 = line[0][1]
                 y2 = line[1][0]
                 x2 = line[1][1]
-                print('y1: {}, x1: {}, y2: {}, x2: {}'.format(y1, x1, y2, x2))
+                #print('y1: {}, x1: {}, y2: {}, x2: {}'.format(y1, x1, y2, x2))
 
                 # convert detected endpoints to endpoint intensity clouds
                 blank = np.zeros((img_height, img_width))
                 dotted = blank.copy()
-                print('dotted.shape: {}'.format(dotted.shape))
+                #print('dotted.shape: {}'.format(dotted.shape))
                 dotted[y1, x1] = 255.0
                 dotted[y2, x2] = 255.0
 
                 dotted_dilation = cv2.dilate(dotted, kernel, iterations = 1)
-                print('dotted_dilation.shape: {}'.format(dotted_dilation.shape))
+                #print('dotted_dilation.shape: {}'.format(dotted_dilation.shape))
                 ys, xs = np.where(dotted_dilation)
                 dilated_points = list(zip(list(ys), list(xs)))
-                print('dilated_points: {}'.format(dilated_points))
-                print('len(dilated_points): {}'.format(len(dilated_points)))
-                print('line_heatmap2.shape: {}'.format(line_heatmap2.shape))
-                dilated_points_intensities = np.asarray([line_heatmap2[coord[0], coord[1]] for coord in dilated_points])
+                bounded_dilated_points = [(coord[0], coord[1]) for coord in dilated_points if (coord[0] < line_heatmap2.shape[0]) and (coord[1] < line_heatmap2.shape[1])]
+                #print('dilated_points: {}'.format(dilated_points))
+                dilated_points_intensities = np.asarray([line_heatmap2[coord[0], coord[1]] for coord in bounded_dilated_points])
 
                 metric = intensity_params['use_metric']
                 if (metric == 'mean'):
@@ -512,7 +511,7 @@ def detectShaftLines(annotated_img = None,
                 
                 intensity_mask = dilated_points_intensities >= intensity_threshold
 
-                thresholded_dilated_points = np.asarray(dilated_points)[intensity_mask]
+                thresholded_dilated_points = np.asarray(bounded_dilated_points)[intensity_mask]
                 intensity_endpoint_clouds.append(thresholded_dilated_points)
 
                 if (endpoint_intensities_to_polar):
@@ -549,7 +548,8 @@ def detectShaftLines(annotated_img = None,
                 lined_dilation = cv2.dilate(lined, kernel, iterations=1)
                 ys, xs = np.where(lined_dilation)
                 dilated_line = list(zip(list(ys), list(xs)))
-                dilated_line_intensities = np.asarray([line_heatmap2[coord[0], coord[1]] for coord in dilated_line])
+                bounded_dilated_line = [(coord[0], coord[1]) for coord in dilated_line if (coord[0] < line_heatmap2.shape[0]) and (coord[1] < line_heatmap2.shape[1])]
+                dilated_line_intensities = np.asarray([line_heatmap2[coord[0], coord[1]] for coord in bounded_dilated_line])
 
                 metric = intensity_params['use_metric']
                 if (metric == 'mean'):
@@ -563,7 +563,7 @@ def detectShaftLines(annotated_img = None,
 
                 intensity_mask = dilated_line_intensities >= intensity_threshold
 
-                thresholded_dilated_line = np.asarray(dilated_line)[intensity_mask]
+                thresholded_dilated_line = np.asarray(bounded_dilated_line)[intensity_mask]
                 intensity_line_clouds.append(thresholded_dilated_line)
 
                 if (line_intensities_to_polar):
@@ -572,7 +572,7 @@ def detectShaftLines(annotated_img = None,
                         annotated_img = drawPolarLines(annotated_img, np.asarray(intensity_line_lines))
                 
                 # draw point clouds
-                annotated_img = drawPoints(annotated_img, intensity_endpoint_clouds)
+                annotated_img = drawPoints(annotated_img, intensity_line_clouds)
     
     output = {
         'ref_img': ref_img,
@@ -659,11 +659,11 @@ def makeShaftAssociations(
     dist_matrix = torch.cdist(torch.flatten(torch.as_tensor(crop_ref_lines_selected), start_dim = 1), torch.flatten(sorted_matched_lines1, start_dim = 1))
     ind = torch.argmin(dist_matrix, dim = 1)
     selected_lines1 = sorted_matched_lines1[ind]
-    print('selected_lines1: {}'.format(selected_lines1))
+    #print('selected_lines1: {}'.format(selected_lines1))
     assert(np.allclose(np.asarray(selected_lines1), np.asarray(crop_ref_lines_selected), atol = 1.0, rtol = 0))
     #assert(np.allclose(np.asarray(ind), np.asarray(crop_ref_lines_idx)))
     selected_lines2 = sorted_matched_lines2[ind]
-    print('selected_lines2: {}'.format(selected_lines2))
+    #print('selected_lines2: {}'.format(selected_lines2))
     
     # pick only shaft lines in reference image by length (largest 2x lines)
     #reference_line_lengths = []
