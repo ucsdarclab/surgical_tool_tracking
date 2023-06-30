@@ -268,6 +268,7 @@ def drawPoints(img = None, point_clouds = None):
 def fitRansacLines(point_clouds, ransac_params):
     
     # ransac params
+    num_iterations = int(ransac_params['num_iterations'])
     min_samples = int(ransac_params['min_samples'])
     residual_threshold = ransac_params['residual_threshold']
     max_trials = ransac_params['max_trials']
@@ -284,6 +285,7 @@ def fitRansacLines(point_clouds, ransac_params):
         ransac = linear_model.RANSACRegressor(min_samples = min_samples, residual_threshold = residual_threshold, max_trials = max_trials)
         
         # sequential ransac
+        iteration = 0
         while (True):
             try: 
                 ransac.fit(X, y)
@@ -314,6 +316,10 @@ def fitRansacLines(point_clouds, ransac_params):
                     break
             except:
                 pass
+            
+            iteration += 1
+            if (iteration >= num_iterations):
+                break
     return lines
 
 def findReferenceLines(ref_lines = None, det_lines = None):

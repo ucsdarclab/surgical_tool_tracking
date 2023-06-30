@@ -157,6 +157,7 @@ if __name__ == "__main__":
             'pct': 10.0
         },
         'ransac_params': {
+            'num_iterations': 5,
             'min_samples': 3.0,
             'residual_threshold': 0.75,
             'max_trials': 100,
@@ -166,7 +167,7 @@ if __name__ == "__main__":
         'line_intensities_to_polar': True
     } 
 
-    # output director for recordings
+    # output directory for recordings
     video_out_dir = source_dir + 'video_recordings/'
     particle_out_dir = source_dir + 'particle_data/'
     if (canny_params['use_canny']):
@@ -198,7 +199,7 @@ if __name__ == "__main__":
         right_video_out = cv2.VideoWriter(out_file, cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, img_dims)
 
     # particle recording
-    record_particles = True
+    record_particles = False
     record_particles_counter = 1
 
     robot_arm = RobotLink(robot_file, use_dh_offset=False) # position / orientation in Meters
