@@ -189,7 +189,7 @@ if __name__ == "__main__":
         particle_out_dir += 'line_intensities_to_polar/'
 
     # video recording
-    record_video = True
+    record_video = False
     fps = 30
     if (record_video):
         out_file = video_out_dir + 'left_video.mp4'
