@@ -172,6 +172,8 @@ class RobotLink:
             
             skeleton_3DPoints.append((pos1, pos2))
         
+        #print('skeleton_3DPoints: {}'.format(skeleton_3DPoints))
+        
         return skeleton_3DPoints
 
     

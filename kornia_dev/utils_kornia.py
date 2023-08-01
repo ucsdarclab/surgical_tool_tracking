@@ -21,6 +21,8 @@ def projectSkeleton(skeletonPts3D, cam_T_b, img_list, project_point_function):
         pt_pair = np.concatenate((pt_pair, np.ones((1, pt_pair.shape[1]))))
         pt_pair = np.transpose(np.dot(cam_T_b, pt_pair)[:-1,:])
         proj_pts_list = project_point_function(pt_pair)
+        #print('len(proj_pts_list): {}'.format(len(proj_pts_list)))
+        #print('proj_pts_list: {}'.format(proj_pts_list))
         
         if len(img_list) != len(proj_pts_list):
             raise ValueError("Number of imgs inputted must equal the project_point_function cameras")
@@ -31,6 +33,13 @@ def projectSkeleton(skeletonPts3D, cam_T_b, img_list, project_point_function):
                                    (int(proj_pts[1,0]), int(proj_pts[1,1])),  (0,255,0), 5)
             except:
                 continue
+        
+    
+    print('(x, y) tool tip skeleton in R camera: {}'.format((int(proj_pts[1,0]), int(proj_pts[1,1]))))
+    img_list[idx] = cv2.circle(image = img_list[idx], center_coordinates = (int(proj_pts[1,0]), int(proj_pts[1,1])),  radius = 3, color = (1, 190, 200), thickness = -1)
+
+
+
 
     return img_list
 

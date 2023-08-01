@@ -59,22 +59,38 @@ def pointFeatureObs(state, point_detections, robot_arm, joint_angle_readings, ca
     robot_arm.updateJointAngles(joint_angle_readings)
 
     # Project points
-    p_b,_ = robot_arm.getPointFeatures()
+    p_b, point_featuresNames = robot_arm.getPointFeatures()
+    #print('robot_arm.getPointFeatures()[1]: {}'.format(point_featuresNames))
+    #print('robot_arm.getPointFeatures()[0]: {}'.format(p_b))
+    holdout_point_name = 'yaw_1'
+    holdout_point_index = point_featuresNames.index(holdout_point_name)
+
     p_c = np.dot(np.dot(cam_T_b, T), np.transpose(np.concatenate((p_b, np.ones((p_b.shape[0], 1))), axis=1)))
     p_c = np.transpose(p_c)[:, :-1]
     projected_points = cam.projectPoints(p_c)
+
+    #print('len(projected_points): {}'.format(len(projected_points)))
+    #print('len(point_detections): {}'.format(len(point_detections)))
     
     # Raise error if number of cameras doesn't line up
     if len(projected_points) != len(point_detections):
-        raise ValueError("Length of projected_points is {} but length of points_detections is {}.\n".format(len(projected_points), 
-                                                                                                            len(point_detections)) \
-                        + "Note that these lengths represent the number of cameras being used.")
+        raise ValueError("Length of projected_points is {} but length of points_detections is {}.\n".format(len(projected_points), len(point_detections)) + "Note that these lengths represent the number of cameras being used.")
     
     # Make association between detected and projected & compute probability
     prob = 1
     # len(projected_points) = # of cameras
     # each list in projected points (2x for R/L cameras) is also a list of projected points
     for c_idx, proj_point in enumerate(projected_points):
+        #print('c_idx: {}'.format(c_idx))
+        #print('proj_point: {}'.format(proj_point))
+        if (c_idx == 1):
+            print('(x, y) tool tip projected point in R camera: {}'.format(proj_point[holdout_point_index, :]))
+        proj_point = np.delete(proj_point, obj = holdout_point_index, axis = 0).copy()
+        #print('proj_point: {}'.format(proj_point))
+
+        #print('point_detections[c_idx]: {}'.format(point_detections[c_idx]))
+        #point_detections[c_idx] = np.delete(point_detections[c_idx], obj = holdout_point_index, axis = 0).copy()
+        
         # Use hungarian algorithm to match projected and detected points
         C = np.linalg.norm(proj_point[:, None, :] - point_detections[c_idx][None, :,  :], axis=2)
         row_idx, col_idx = optimize.linear_sum_assignment(C)
@@ -84,6 +100,10 @@ def pointFeatureObs(state, point_detections, robot_arm, joint_angle_readings, ca
         row_idx = row_idx[idx_to_keep]
         col_idx = col_idx[idx_to_keep]
         
+        print('C: {}'.format(C))
+        print('row_idx: {}'.format(row_idx))
+        print('col_idx: {}'.format(col_idx))
+
         # Compute observation probability
         prob *= np.sum(np.exp(-gamma*C[row_idx, col_idx])) \
                 + (proj_point.shape[0] - len(row_idx))*np.exp(-gamma*association_threshold)
@@ -228,7 +248,7 @@ def shaftFeatureObs_kornia(
         algo = use_lines
         detected_lines = detected_lines[algo]
         #print('shaftfeatureobs detected_lines: {}'.format(detected_lines))
-        ##print('shaftfeatureobs detected_lines.shape: {}'.format(detected_lines.shape))
+        #print('shaftfeatureobs detected_lines.shape: {}'.format(detected_lines.shape))
         
     elif (use_clouds):
         algo = use_clouds
