@@ -17,6 +17,8 @@ def projectSkeleton(skeletonPts3D, cam_T_b, img_list, project_point_function):
     # skeletonPts3D should be in the same format as getSkeletonPoints from RobotLink
     # img_list
     for skeletonPairs in skeletonPts3D:
+        #print('skeletonPairs: {}'.format(np.asarray(skeletonPairs)))
+        #print('skeletonPts3D[-1]: {}'.format(np.asarray(skeletonPts3D[-1])))
         pt_pair = np.transpose(np.array(skeletonPairs))
         pt_pair = np.concatenate((pt_pair, np.ones((1, pt_pair.shape[1]))))
         pt_pair = np.transpose(np.dot(cam_T_b, pt_pair)[:-1,:])
@@ -31,15 +33,12 @@ def projectSkeleton(skeletonPts3D, cam_T_b, img_list, project_point_function):
             try:
                 img_list[idx] = cv2.line(img_list[idx], (int(proj_pts[0,0]), int(proj_pts[0,1])), 
                                    (int(proj_pts[1,0]), int(proj_pts[1,1])),  (0,255,0), 5)
+
+                if ((np.allclose(np.asarray(skeletonPairs), np.asarray(skeletonPts3D[-1]))) and (idx == 1)):
+                    print('(x, y) tool tip skeleton in R camera: {}'.format((int(proj_pts[1,0]), int(proj_pts[1,1]))))
+                    img_list[idx] = cv2.circle(img_list[idx], (int(proj_pts[1,0]), int(proj_pts[1,1])), 10, (1, 190, 200), -1)
             except:
                 continue
-        
-    
-    print('(x, y) tool tip skeleton in R camera: {}'.format((int(proj_pts[1,0]), int(proj_pts[1,1]))))
-    img_list[idx] = cv2.circle(image = img_list[idx], center_coordinates = (int(proj_pts[1,0]), int(proj_pts[1,1])),  radius = 3, color = (1, 190, 200), thickness = -1)
-
-
-
 
     return img_list
 

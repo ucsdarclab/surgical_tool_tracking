@@ -83,26 +83,47 @@ def pointFeatureObs(state, point_detections, robot_arm, joint_angle_readings, ca
     for c_idx, proj_point in enumerate(projected_points):
         #print('c_idx: {}'.format(c_idx))
         #print('proj_point: {}'.format(proj_point))
-        if (c_idx == 1):
-            print('(x, y) tool tip projected point in R camera: {}'.format(proj_point[holdout_point_index, :]))
+        #print('proj_point.shape: {}'. format(proj_point.shape))
+        #if (c_idx == 1):
+            #print('(x, y) tool tip projected point in R camera: {}'.format(proj_point[holdout_point_index, :]))
         proj_point = np.delete(proj_point, obj = holdout_point_index, axis = 0).copy()
         #print('proj_point: {}'.format(proj_point))
 
         #print('point_detections[c_idx]: {}'.format(point_detections[c_idx]))
-        #point_detections[c_idx] = np.delete(point_detections[c_idx], obj = holdout_point_index, axis = 0).copy()
+        #print('point_detections[c_idx].shape: {}'.format(point_detections[c_idx].shape))
         
         # Use hungarian algorithm to match projected and detected points
         C = np.linalg.norm(proj_point[:, None, :] - point_detections[c_idx][None, :,  :], axis=2)
         row_idx, col_idx = optimize.linear_sum_assignment(C)
+        #print('C: {}'.format(C))
+        #print('C.shape: {}'.format(C.shape))
+        #print('row_idx: {}'.format(row_idx))
+        #print('col_idx: {}'.format(col_idx))
         
         # Use threshold to remove outliers
         idx_to_keep = C[row_idx, col_idx] < association_threshold
         row_idx = row_idx[idx_to_keep]
         col_idx = col_idx[idx_to_keep]
         
-        print('C: {}'.format(C))
-        print('row_idx: {}'.format(row_idx))
-        print('col_idx: {}'.format(col_idx))
+        #print('C: {}'.format(C))
+        #print('C.shape: {}'.format(C.shape))
+        #print('row_idx: {}'.format(row_idx))
+        #print('row_idx.shape: {}'.format(row_idx.shape))
+        #print('col_idx: {}'.format(col_idx))
+        #print('col_idx.shape: {}'.format(col_idx.shape))
+        #try: 
+            #print('holdout point index: {}'.format(list(row_idx).index(holdout_point_index)))
+            #detected_holdout_point_index = list(col_idx)[holdout_point_index]
+            #print('detected_holdout_point_index: {}'.format(detected_holdout_point_index))
+            #detected_holdout_point = point_detections[c_idx][detected_holdout_point_index, :]
+            #print('detected_holdout_point: {}'.format(detected_holdout_point))
+            #print('projected holdout point: {}'.format(proj_point[holdout_point_index, :]))
+        #except ValueError as e:
+            #print(e)
+            #continue
+
+        #print('C[row_idx, col_idx]: {}'.format(C[row_idx, col_idx]))
+        #print('C[row_idx, col_idx].shape: {}'.format(C[row_idx, col_idx].shape))
 
         # Compute observation probability
         prob *= np.sum(np.exp(-gamma*C[row_idx, col_idx])) \
@@ -110,6 +131,9 @@ def pointFeatureObs(state, point_detections, robot_arm, joint_angle_readings, ca
         
     return prob
 
+# associate a point projected onto 2d image with point feature
+def associatePoint(projected_point):
+    
 
 
 # State is: [pos_x, pos_y, pos_z, ori_x, ori_y, ori_z, e_nb, ..., e_n]
