@@ -3,8 +3,7 @@ import math
 from scipy import optimize
 from scipy.stats import norm
 from scipy.spatial import distance_matrix
-#from utils_kornia import *
-from utils_kornia import poseToMatrix
+from utils_kornia import *
 
 
 # Example initialization function for ParticleFilter class, kwargs would include std
