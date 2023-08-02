@@ -202,6 +202,9 @@ if __name__ == "__main__":
     record_particles = False
     record_particles_counter = 1
 
+    # evaluation recording
+    accuracy_file = open('accuracy.txt', 'w')
+
     robot_arm = RobotLink(robot_file, use_dh_offset=False) # position / orientation in Meters
     cam = StereoCamera(camera_file, rectify = True, crop_scale = crop_scale, downscale_factor = 2, scale_baseline=1e-3)
 
@@ -426,7 +429,7 @@ if __name__ == "__main__":
                 if correction_estimation.shape[0] > 6:
                     new_joint_angles[-(correction_estimation.shape[0]-6):] += correction_estimation[6:]
                 robot_arm.updateJointAngles(new_joint_angles)
-                img_list = projectSkeleton(robot_arm.getSkeletonPoints(), np.dot(cam_T_b, T), [new_left_img, new_right_img], cam.projectPoints, (new_detected_keypoints_l, new_detected_keypoints_r))
+                img_list = projectSkeleton(robot_arm.getSkeletonPoints(), np.dot(cam_T_b, T), [new_left_img, new_right_img], cam.projectPoints, (new_detected_keypoints_l, new_detected_keypoints_r), accuracy_file)
                 img_list = drawShaftLines(robot_arm.getShaftFeatures(), cam, np.dot(cam_T_b, T), img_list)
                 cv2.imshow("Left Img",  img_list[0])
                 cv2.imshow("Right Img", img_list[1])
@@ -460,7 +463,8 @@ if __name__ == "__main__":
         #print(record_particles_counter)
         #pass
 
-    except KeyboardInterrupt: 
+    except KeyboardInterrupt:
+        accuracy_file.close()
         print('Broke rospy loop')
         print('Releasing video capture')
         if (record_video):
