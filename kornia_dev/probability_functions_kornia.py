@@ -3,7 +3,8 @@ import math
 from scipy import optimize
 from scipy.stats import norm
 from scipy.spatial import distance_matrix
-from utils_kornia import *
+#from utils_kornia import *
+from utils_kornia import poseToMatrix
 
 
 # Example initialization function for ParticleFilter class, kwargs would include std
@@ -141,13 +142,16 @@ def associatePoint(projected_point, cam_idx, point_detections, association_thres
 
     # Use threshold to remove outliers
     idx_to_keep = C[row_idx, col_idx] < association_threshold
-    row_idx = row_idx[idx_to_keep]
-    col_idx = col_idx[idx_to_keep]
-    print('len(list(row_idx)): {}'.format(len(list(row_idx))))
-    print('len(list(col_idx)): {}'.format(len(list(col_idx))))
-    associated_point_index = col_idx[0]
-    associated_point = point_detections[associated_point_index]
-    print('associated detected_point: {}'.format(associated_point))
+    try:
+        row_idx = row_idx[idx_to_keep]
+        col_idx = col_idx[idx_to_keep]
+        print('len(list(row_idx)): {}'.format(len(list(row_idx))))
+        print('len(list(col_idx)): {}'.format(len(list(col_idx))))
+        associated_point_index = col_idx[0]
+        associated_point = point_detections[associated_point_index]
+        print('associated detected_point: {}'.format(associated_point))
+    except:
+        pass
 
 # State is: [pos_x, pos_y, pos_z, ori_x, ori_y, ori_z, e_nb, ..., e_n]
 # where pos, ori is position and axis/angle rep of lumped error
