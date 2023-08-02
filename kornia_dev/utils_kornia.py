@@ -12,8 +12,9 @@ import kornia.feature as KF
 #from PIL import Image
 import pandas as pd
 import copy
+from probability_functions_kornia import associatePoint
 
-def projectSkeleton(skeletonPts3D, cam_T_b, img_list, project_point_function):
+def projectSkeleton(skeletonPts3D, cam_T_b, img_list, project_point_function, point_detections):
     # skeletonPts3D should be in the same format as getSkeletonPoints from RobotLink
     # img_list
     for skeletonPairs in skeletonPts3D:
@@ -37,6 +38,8 @@ def projectSkeleton(skeletonPts3D, cam_T_b, img_list, project_point_function):
                 if ((np.allclose(np.asarray(skeletonPairs), np.asarray(skeletonPts3D[-1]))) and (idx == 1)):
                     print('(x, y) tool tip skeleton in R camera: {}'.format((int(proj_pts[1,0]), int(proj_pts[1,1]))))
                     img_list[idx] = cv2.circle(img_list[idx], (int(proj_pts[1,0]), int(proj_pts[1,1])), 10, (1, 190, 200), -1)
+                    associated_point = associatePoint((int(proj_pts[1,0]), int(proj_pts[1,1])), idx, point_detections)
+
             except:
                 continue
 

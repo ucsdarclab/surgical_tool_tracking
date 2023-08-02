@@ -132,9 +132,10 @@ def pointFeatureObs(state, point_detections, robot_arm, joint_angle_readings, ca
     return prob
 
 # associate a point projected onto 2d image with point feature
-def associatePoint(projected_point):
-    
-
+def associatePoint(projected_point, cam_idx, point_detections):
+    # Use hungarian algorithm to match projected and detected points
+    C = np.linalg.norm(projected_point[:, None, :] - point_detections[cam_idx][None, :,  :], axis=2)
+    row_idx, col_idx = optimize.linear_sum_assignment(C)
 
 # State is: [pos_x, pos_y, pos_z, ori_x, ori_y, ori_z, e_nb, ..., e_n]
 # where pos, ori is position and axis/angle rep of lumped error

@@ -426,8 +426,7 @@ if __name__ == "__main__":
                 if correction_estimation.shape[0] > 6:
                     new_joint_angles[-(correction_estimation.shape[0]-6):] += correction_estimation[6:]
                 robot_arm.updateJointAngles(new_joint_angles)
-                img_list = projectSkeleton(robot_arm.getSkeletonPoints(), np.dot(cam_T_b, T), [new_left_img, new_right_img], cam.projectPoints)
-                # associate skeleton points with detections and calculate error
+                img_list = projectSkeleton(robot_arm.getSkeletonPoints(), np.dot(cam_T_b, T), [new_left_img, new_right_img], cam.projectPoints, (new_detected_keypoints_l, new_detected_keypoints_r))
                 img_list = drawShaftLines(robot_arm.getShaftFeatures(), cam, np.dot(cam_T_b, T), img_list)
                 cv2.imshow("Left Img",  img_list[0])
                 cv2.imshow("Right Img", img_list[1])
