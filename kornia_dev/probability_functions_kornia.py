@@ -149,8 +149,6 @@ def associatePoint(projected_point, cam_idx, point_detections, association_thres
     associated_point = point_detections[associated_point_index]
     print('associated detected_point: {}'.format(associated_point))
 
-
-
 # State is: [pos_x, pos_y, pos_z, ori_x, ori_y, ori_z, e_nb, ..., e_n]
 # where pos, ori is position and axis/angle rep of lumped error
 # e_nb+1, ..., e_n are the errors of the tracked joint angles
