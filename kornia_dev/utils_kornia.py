@@ -38,7 +38,7 @@ def projectSkeleton(skeletonPts3D, cam_T_b, img_list, project_point_function, po
                 if ((np.allclose(np.asarray(skeletonPairs), np.asarray(skeletonPts3D[-1]))) and (idx == 1)):
                     print('(x, y) tool tip skeleton in R camera: {}'.format((int(proj_pts[1,0]), int(proj_pts[1,1]))))
                     img_list[idx] = cv2.circle(img_list[idx], (int(proj_pts[1,0]), int(proj_pts[1,1])), 10, (1, 190, 200), -1)
-                    associated_point = associatePoint((int(proj_pts[1,0]), int(proj_pts[1,1])), idx, point_detections)
+                    associated_point = associatePoint([int(proj_pts[1,0]), int(proj_pts[1,1])], idx, point_detections, 20)
 
             except:
                 continue
