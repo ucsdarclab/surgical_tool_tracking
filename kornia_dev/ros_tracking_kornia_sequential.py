@@ -4,15 +4,6 @@ import cv2
 import kornia as K
 import kornia.feature as KF
 import rosbag
-import signal
-global SENTRY
-SENTRY = False
-
-def SignalHandler_SIGINT(SignalNumber,Frame):
-    global Sentry 
-    Sentry = True
-
-signal.signal(signal.SIGINT,SignalHandler_SIGINT) 
 
 from sensor_msgs.msg import Image, JointState
 from message_filters import ApproximateTimeSynchronizer, Subscriber
@@ -44,7 +35,6 @@ right_camera_topic = '/stereo/right/image'
 robot_joint_topic  = '/dvrk/PSM1/state_joint_current'
 robot_gripper_topic = '/dvrk/PSM1/state_jaw_current'
 
-'''
 # Globals for callback function
 global _cb_left_img
 _cb_left_img = None
@@ -74,12 +64,11 @@ def gotData(l_img_msg, r_img_msg, j_msg, g_msg):
     
     cb_joint_angles = np.array(j_msg.position + g_msg.position)
     new_cb_data = True
-'''
 
 # main function
 if __name__ == "__main__":
     # Initalize ROS stuff here
-    #rospy.init_node('robot_tool_tracking', anonymous=True)
+    rospy.init_node('robot_tool_tracking', anonymous=True)
     
     # reference image w vs. without contours
     draw_contours = False

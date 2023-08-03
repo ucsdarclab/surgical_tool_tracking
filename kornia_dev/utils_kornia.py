@@ -82,8 +82,7 @@ def projectSkeleton(skeletonPts3D, cam_T_b, img_list, project_point_function, po
                         text_string = str(int(proj_pts[1,0])) + ',' + str(int(proj_pts[1,1])) + ',' + str(int(associated_point[0])) + ',' + str(int(associated_point[1])) + '\n'
                     else:
                         text_string = str(int(proj_pts[1,0])) + ',' + str(int(proj_pts[1,1])) + ',' + ',' + '\n'
-                    #print('text_string: {}'.format(text_string))
-                    # write to file for tracking RESUME HERE
+                    print('text_string: {}'.format(text_string))
                     accuracy_file.write(text_string)
 
             except:
