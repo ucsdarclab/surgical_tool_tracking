@@ -264,11 +264,14 @@ if __name__ == "__main__":
         if topic == '/dvrk/PSM1/state_jaw_current':
             g_msg = copy.deepcopy(msg)
         
-        if ((l_img_msg != None) and (r_img_msg != None)) and ((l_img_msg != old_l_img_msg) or (r_img_msg != old_r_img_msg)) and (j_msg) and (g_msg):
-            _cb_left_img  = np.ndarray(shape=(l_img_msg.height, l_img_msg.width, 3), dtype=np.uint8, buffer=l_img_msg.data)
-            _cb_right_img = np.ndarray(shape=(r_img_msg.height, r_img_msg.width, 3), dtype=np.uint8, buffer=r_img_msg.data)
-            cb_joint_angles = np.array(j_msg.position + g_msg.position)
-        else:
+        try: 
+            if ((l_img_msg != None) and (r_img_msg != None)) and ((l_img_msg != old_l_img_msg) or (r_img_msg != old_r_img_msg)) and (j_msg) and (g_msg):
+                _cb_left_img  = np.ndarray(shape=(l_img_msg.height, l_img_msg.width, 3), dtype=np.uint8, buffer=l_img_msg.data)
+                _cb_right_img = np.ndarray(shape=(r_img_msg.height, r_img_msg.width, 3), dtype=np.uint8, buffer=r_img_msg.data)
+                cb_joint_angles = np.array(j_msg.position + g_msg.position)
+            else:
+                continue
+        except:
             continue
 
         start_t = time.time()
