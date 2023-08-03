@@ -37,18 +37,18 @@ def associatePoint(projected_point, cam_idx, point_detections, association_thres
         idx_to_keep = C[row_idx, col_idx] < association_threshold
         row_idx = row_idx[idx_to_keep]
         col_idx = col_idx[idx_to_keep]
-        print('row_idx to keep: {}'.format(row_idx))
-        print('col_idx to keep: {}'.format(col_idx))
-        print('len(list(row_idx)): {}'.format(len(list(row_idx))))
-        print('len(list(col_idx)): {}'.format(len(list(col_idx))))
+        #print('row_idx to keep: {}'.format(row_idx))
+        #print('col_idx to keep: {}'.format(col_idx))
+        #print('len(list(row_idx)): {}'.format(len(list(row_idx))))
+        #print('len(list(col_idx)): {}'.format(len(list(col_idx))))
         associated_point_index = col_idx[0]
-        print('associated_point_index: {}'.format(associated_point_index))
+        #print('associated_point_index: {}'.format(associated_point_index))
         associated_point = point_detections[cam_idx][associated_point_index]
-        print('associated detected_point: {}'.format(associated_point))
-        print('associated detected_point.shape: {}'.format(associated_point.shape))
-        print('type(associated detected_point): {}'.format(type(associated_point)))
+        #print('associated detected_point: {}'.format(associated_point))
+        #print('associated detected_point.shape: {}'.format(associated_point.shape))
+        #print('type(associated detected_point): {}'.format(type(associated_point)))
     except:
-        print('associatePoint error')
+        #print('associatePoint error')
         return None
     return associated_point
 
@@ -74,7 +74,7 @@ def projectSkeleton(skeletonPts3D, cam_T_b, img_list, project_point_function, po
                                    (int(proj_pts[1,0]), int(proj_pts[1,1])),  (0,255,0), 5)
 
                 if ((np.allclose(np.asarray(skeletonPairs), np.asarray(skeletonPts3D[-1]))) and (idx == 1)):
-                    print('(x, y) tool tip skeleton in R camera: {}'.format((int(proj_pts[1,0]), int(proj_pts[1,1]))))
+                    #print('(x, y) tool tip skeleton in R camera: {}'.format((int(proj_pts[1,0]), int(proj_pts[1,1]))))
                     img_list[idx] = cv2.circle(img_list[idx], (int(proj_pts[1,0]), int(proj_pts[1,1])), 5, (0, 115, 255), -1)
                     associated_point = associatePoint([int(proj_pts[1,0]), int(proj_pts[1,1])], idx, point_detections, 20)
                     if (associated_point is not None):
@@ -82,7 +82,7 @@ def projectSkeleton(skeletonPts3D, cam_T_b, img_list, project_point_function, po
                         text_string = str(int(proj_pts[1,0])) + ',' + str(int(proj_pts[1,1])) + ',' + str(int(associated_point[0])) + ',' + str(int(associated_point[1])) + '\n'
                     else:
                         text_string = str(int(proj_pts[1,0])) + ',' + str(int(proj_pts[1,1])) + ',' + ',' + '\n'
-                    print('text_string: {}'.format(text_string))
+                    #print('text_string: {}'.format(text_string))
                     # write to file for tracking RESUME HERE
                     accuracy_file.write(text_string)
 
