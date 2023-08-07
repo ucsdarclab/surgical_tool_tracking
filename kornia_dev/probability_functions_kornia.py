@@ -9,7 +9,7 @@ from utils_kornia import *
 # Example initialization function for ParticleFilter class, kwargs would include std
 def sampleNormalDistribution(std):
     m = np.zeros(std.shape)
-    sample = norm.rvs(m, std)
+    sample = norm.rvs(m, std, random_state = 0)
     prob_individual = norm.pdf(sample, m, std)
     prob_individual[np.isnan(prob_individual)] = 1.0
     return sample, np.prod(prob_individual)

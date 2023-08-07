@@ -209,6 +209,8 @@ if __name__ == "__main__":
     cam_T_b[:-1, -1] = np.array(hand_eye_data['PSM1_tvec'])/1000.0 # convert to mm
     cam_T_b[:-1, :-1] = axisAngleToRotationMatrix(hand_eye_data['PSM1_rvec'])
 
+    # set random seed
+    np.random.seed(0)
 
     # Initialize filter
     pf = ParticleFilter(num_states=6, # originally 9 (6 for lumped error + 3 for endowrist pitch/yaw/squeeze) -> 6 for just lumped error
