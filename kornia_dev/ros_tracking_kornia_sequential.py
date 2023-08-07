@@ -128,7 +128,7 @@ if __name__ == "__main__":
 
     # parameters for shaft detection
     canny_params = {
-        'use_canny': False,
+        'use_canny': True,
         'hough_rho_accumulator': 5.0,
         'hough_theta_accumulator': 0.09,
         'hough_vote_threshold': 100,
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     }
 
     kornia_params = {
-        'use_kornia': True,
+        'use_kornia': False,
         'endpoints_to_polar': False,
         'use_endpoint_intensities_only': False,
         'endpoint_intensities_to_polar': False,
@@ -156,7 +156,7 @@ if __name__ == "__main__":
             'img_dims': img_dims
         },
         'use_line_intensities_only': False,
-        'line_intensities_to_polar': True
+        'line_intensities_to_polar': False
     } 
 
     # output directory for recordings
@@ -182,7 +182,7 @@ if __name__ == "__main__":
         particle_out_dir += 'line_intensities_to_polar/'
 
     # video recording
-    record_video = False
+    record_video = True
     fps = 30
     if (record_video):
         out_file = video_out_dir + 'left_video.mp4'
@@ -195,7 +195,12 @@ if __name__ == "__main__":
     record_particles_counter = 1
 
     # evaluation recording
-    accuracy_file = open('line_intensities_to_polar_accuracy.txt', 'w')
+    accuracy_file = open('canny_accuracy.txt', 'w')
+    #accuracy_file = open('endpoints_to_polar_accuracy.txt', 'w')
+    #accuracy_file = open('endpoint_intensities_only_accuracy.txt', 'w')
+    #accuracy_file = open('endpoint_intensities_to_polar_accuracy.txt', 'w')
+    #accuracy_file = open('line_intensities_only_accuracy.txt', 'w')
+    #accuracy_file = open('line_intensities_to_polar_accuracy.txt', 'w')
 
     robot_arm = RobotLink(robot_file, use_dh_offset=False) # position / orientation in Meters
     cam = StereoCamera(camera_file, rectify = True, crop_scale = crop_scale, downscale_factor = 2, scale_baseline=1e-3)
