@@ -17,21 +17,21 @@ from scipy import optimize
 # associate a point projected onto 2d image with point feature
 def associatePoint(projected_point, cam_idx, point_detections, association_threshold):
     projected_point = np.asarray(projected_point).reshape(-1, 2)
-    print(' in associatePoint projected_point: {}'.format(projected_point))
-    print('projected_point.shape: {}'.format(projected_point.shape))
-    print('type(projected_point): {}'.format(type(projected_point)))
+    #print(' in associatePoint projected_point: {}'.format(projected_point))
+    #print('projected_point.shape: {}'.format(projected_point.shape))
+    #print('type(projected_point): {}'.format(type(projected_point)))
     # Use hungarian algorithm to match projected and detected points
-    print('point_detections[1]: {}'.format(point_detections[1]))
-    print('point_detections[1].shape: {}'.format(point_detections[1].shape))
-    print('type(point_detections[1]): {}'.format(type(point_detections[1])))
+    #print('point_detections[1]: {}'.format(point_detections[1]))
+    #print('point_detections[1].shape: {}'.format(point_detections[1].shape))
+    #print('type(point_detections[1]): {}'.format(type(point_detections[1])))
 
     try: 
         C = np.linalg.norm(projected_point[:, None, :] - point_detections[cam_idx][None, :,  :], axis=2)
         row_idx, col_idx = optimize.linear_sum_assignment(C)
-        print('C: {}'.format(C))
-        print('C.shape: {}'.format(C.shape))
-        print('row_idx: {}'.format(row_idx))
-        print('col_idx: {}'.format(col_idx))
+        #print('C: {}'.format(C))
+        #print('C.shape: {}'.format(C.shape))
+        #print('row_idx: {}'.format(row_idx))
+        #print('col_idx: {}'.format(col_idx))
 
         # Use threshold to remove outliers
         idx_to_keep = C[row_idx, col_idx] < association_threshold
