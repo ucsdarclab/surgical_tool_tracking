@@ -18,14 +18,14 @@ if module_path not in sys.path:
 
 print(module_path)
 
-from RobotLink_kornia import *
+#from RobotLink_kornia import *
 from StereoCamera_kornia import *
-from ParticleFilter_kornia import *
-from probability_functions_kornia import *
+#from ParticleFilter_kornia import *
+#from probability_functions_kornia import *
 from utils_kornia import *
 
 # File inputs
-robot_file    = script_path + '/../../journal_dataset/LND.json'
+#robot_file    = script_path + '/../../journal_dataset/LND.json'
 camera_file   = script_path + '/../../journal_dataset/camera_calibration.yaml'
 hand_eye_file = script_path + '/../../journal_dataset/handeye.yaml'
 
@@ -35,6 +35,7 @@ right_camera_topic = '/stereo/right/image'
 robot_joint_topic  = '/dvrk/PSM1/state_joint_current'
 robot_gripper_topic = '/dvrk/PSM1/state_jaw_current'
 
+'''
 # Globals for callback function
 global _cb_left_img
 _cb_left_img = None
@@ -44,7 +45,6 @@ global cb_joint_angles
 cb_joint_angles = None
 global new_cb_data 
 new_cb_data = False
-
 
 # ROS Callback for images and joint observations
 def gotData(l_img_msg, r_img_msg, j_msg, g_msg):
@@ -64,11 +64,12 @@ def gotData(l_img_msg, r_img_msg, j_msg, g_msg):
     
     cb_joint_angles = np.array(j_msg.position + g_msg.position)
     new_cb_data = True
+'''
 
 # main function
 if __name__ == "__main__":
     # Initalize ROS stuff here
-    rospy.init_node('robot_tool_tracking', anonymous=True)
+    #rospy.init_node('robot_tool_tracking', anonymous=True)
     
     # reference image w vs. without contours
     draw_contours = False
@@ -78,7 +79,7 @@ if __name__ == "__main__":
         source_dir = 'kornia_dev/ref_data/no_contour/'
 
     # annotate output with detected lines
-    draw_lines = True
+    draw_lines = False
 
     # crop parameters
     in_file = source_dir + 'crop_scale.npy'
@@ -86,43 +87,44 @@ if __name__ == "__main__":
     #print('crop_scale: {}'.format(crop_scale))
 
     # reference lines
-    in_file = source_dir + 'crop_ref_lines_l.npy'
-    crop_ref_lines_l = torch.as_tensor(np.load(in_file)) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
-    in_file = source_dir + 'crop_ref_lines_r.npy'
-    crop_ref_lines_r = torch.as_tensor(np.load(in_file)) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
+    #in_file = source_dir + 'crop_ref_lines_l.npy'
+    #crop_ref_lines_l = torch.as_tensor(np.load(in_file)) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
+    #in_file = source_dir + 'crop_ref_lines_r.npy'
+    #crop_ref_lines_r = torch.as_tensor(np.load(in_file)) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
 
     # sorted reference lines
-    in_file = source_dir + 'crop_ref_lines_l_sorted.npy'
-    crop_ref_lines_l_sorted = torch.as_tensor(np.load(in_file)) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
-    in_file = source_dir + 'crop_ref_lines_r_sorted.npy'
-    crop_ref_lines_r_sorted = torch.as_tensor(np.load(in_file))
+    #in_file = source_dir + 'crop_ref_lines_l_sorted.npy'
+    #crop_ref_lines_l_sorted = torch.as_tensor(np.load(in_file)) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
+    #in_file = source_dir + 'crop_ref_lines_r_sorted.npy'
+    #crop_ref_lines_r_sorted = torch.as_tensor(np.load(in_file))
     
     # ref line indices
-    in_file = source_dir + 'crop_ref_lines_l_idx.npy'
-    crop_ref_lines_l_idx = np.load(in_file) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
-    in_file = source_dir + 'crop_ref_lines_r_idx.npy'
-    crop_ref_lines_r_idx = np.load(in_file) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
+    #in_file = source_dir + 'crop_ref_lines_l_idx.npy'
+    #crop_ref_lines_l_idx = np.load(in_file) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
+    #in_file = source_dir + 'crop_ref_lines_r_idx.npy'
+    #crop_ref_lines_r_idx = np.load(in_file) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
 
     # selected ref lines
-    in_file = source_dir + 'crop_ref_lines_l_selected.npy'
-    crop_ref_lines_l_selected = np.load(in_file)
-    in_file = source_dir + 'crop_ref_lines_r_selected.npy'
-    crop_ref_lines_r_selected = np.load(in_file)
+    #in_file = source_dir + 'crop_ref_lines_l_selected.npy'
+    #crop_ref_lines_l_selected = np.load(in_file)
+    #in_file = source_dir + 'crop_ref_lines_r_selected.npy'
+    #crop_ref_lines_r_selected = np.load(in_file)
 
     # reference images
     # left camera
     in_file = source_dir + 'crop_ref_l_img.npy'
     crop_ref_l_img = np.load(in_file) # (404, 720, 3) RGB uint8
     img_dims = (int(crop_ref_l_img.shape[1]), int(crop_ref_l_img.shape[0]))
-    crop_ref_l_tensor = K.image_to_tensor(crop_ref_l_img).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
-    crop_ref_l_tensor = K.color.rgb_to_grayscale(crop_ref_l_tensor) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
+    #crop_ref_l_tensor = K.image_to_tensor(crop_ref_l_img).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
+    #crop_ref_l_tensor = K.color.rgb_to_grayscale(crop_ref_l_tensor) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
     # right camera
-    in_file = source_dir + 'crop_ref_r_img.npy'
-    crop_ref_r_img = np.load(in_file) # (404, 720, 3) RGB uint8
+    #in_file = source_dir + 'crop_ref_r_img.npy'
+    #crop_ref_r_img = np.load(in_file) # (404, 720, 3) RGB uint8
     #print('crop_ref_r_img.shape: {}'.format(crop_ref_r_img.shape))
-    crop_ref_r_tensor = K.image_to_tensor(crop_ref_r_img).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
-    crop_ref_r_tensor = K.color.rgb_to_grayscale(crop_ref_r_tensor) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
+    #crop_ref_r_tensor = K.image_to_tensor(crop_ref_r_img).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
+    #crop_ref_r_tensor = K.color.rgb_to_grayscale(crop_ref_r_tensor) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
 
+    '''
     # Load kornia model
     model = KF.SOLD2(pretrained=True, config=None)
 
@@ -180,10 +182,12 @@ if __name__ == "__main__":
     elif (kornia_params['use_kornia'] and kornia_params['line_intensities_to_polar']):
         video_out_dir += 'line_intensities_to_polar/'
         particle_out_dir += 'line_intensities_to_polar/'
+    '''
 
     # video recording
     record_video = True
     fps = 30
+    video_out_dir = '../journal_dataset/'
     if (record_video):
         out_file = video_out_dir + 'left_video.mp4'
         left_video_out  = cv2.VideoWriter(out_file,  cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, img_dims)
@@ -191,8 +195,8 @@ if __name__ == "__main__":
         right_video_out = cv2.VideoWriter(out_file, cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, img_dims)
 
     # particle recording
-    record_particles = False
-    record_particles_counter = 1
+    #record_particles = False
+    #record_particles_counter = 1
 
     # evaluation recording
     #accuracy_file = open('canny_accuracy.txt', 'w')
@@ -202,7 +206,7 @@ if __name__ == "__main__":
     #accuracy_file = open('line_intensities_only_accuracy.txt', 'w')
     #accuracy_file = open('line_intensities_to_polar_accuracy.txt', 'w')
 
-    robot_arm = RobotLink(robot_file, use_dh_offset=False) # position / orientation in Meters
+    #robot_arm = RobotLink(robot_file, use_dh_offset=False) # position / orientation in Meters
     cam = StereoCamera(camera_file, rectify = True, crop_scale = crop_scale, downscale_factor = 2, scale_baseline=1e-3)
 
     # Load hand-eye transform 
@@ -214,6 +218,7 @@ if __name__ == "__main__":
     cam_T_b[:-1, -1] = np.array(hand_eye_data['PSM1_tvec'])/1000.0 # convert to mm
     cam_T_b[:-1, :-1] = axisAngleToRotationMatrix(hand_eye_data['PSM1_rvec'])
 
+    '''
     # set random seed
     np.random.seed(0)
 
@@ -240,11 +245,12 @@ if __name__ == "__main__":
 
     pf.initializeFilter(**init_kwargs)
     
-    rospy.loginfo("Initialized particle filter")
+    #rospy.loginfo("Initialized particle filter")
        
     # Main loop:
     #rate = rospy.Rate(30) # 30hz
-    prev_joint_angles = None
+    # prev_joint_angles = None
+    '''
 
     bag = rosbag.Bag('../journal_dataset/stationary_camera_2020-06-24-15-49-10.bag')
 
@@ -281,7 +287,7 @@ if __name__ == "__main__":
         except:
             continue
 
-        start_t = time.time()
+        #start_t = time.time()
 
         # copy l/r images so not overwritten by callback
         new_left_img = _cb_left_img.copy()
@@ -289,6 +295,7 @@ if __name__ == "__main__":
 
         # process callback images
         new_left_img, new_right_img = cam.processImage(new_left_img, new_right_img, crop_scale = crop_scale)
+        '''
         non_annotated_left_img = new_left_img.copy()
         non_annotated_right_img = new_right_img.copy()
         detected_keypoints_l, annotated_left_img  = segmentColorAndGetKeyPoints(non_annotated_left_img,  draw_contours = draw_contours)
@@ -436,14 +443,15 @@ if __name__ == "__main__":
         img_list = drawShaftLines(robot_arm.getShaftFeatures(), cam, np.dot(cam_T_b, T), img_list)
         cv2.imshow("Left Img",  img_list[0])
         cv2.imshow("Right Img", img_list[1])
-
+        '''
         # video recording
         if (record_video):
             #print('img_list[0].shape: {}'.format(img_list[0].shape))
             #print('type(img_list[0]): {}'.format(type(img_list[0])))
-            left_video_out.write(img_list[0])
-            right_video_out.write(img_list[1])
+            left_video_out.write(new_left_img)
+            right_video_out.write(new_right_img)
 
+        '''
         # particle recording
         if (record_particles):
             out_file = particle_out_dir + str(record_particles_counter) + '.npy'
@@ -458,8 +466,9 @@ if __name__ == "__main__":
 
         record_particles_counter += 1
         cv2.waitKey(1)
+        '''
 
-    accuracy_file.close()
+    #accuracy_file.close()
     print('end of bag, closing bag')
     bag.close()
     print('Releasing video capture')
