@@ -10,6 +10,7 @@
 !*.png
 !*.jpg
 !*.jpeg
+!keypoint_labels.csv
 
 !/aruco/
 !/core/
