@@ -68,7 +68,7 @@ def gotData(l_img_msg, r_img_msg, j_msg, g_msg):
 # main function
 if __name__ == "__main__":
     # Initalize ROS stuff here
-    rospy.init_node('robot_tool_tracking', anonymous=True)
+    #rospy.init_node('robot_tool_tracking', anonymous=True)
     
     # reference image w vs. without contours
     draw_contours = False
@@ -240,7 +240,7 @@ if __name__ == "__main__":
 
     pf.initializeFilter(**init_kwargs)
     
-    rospy.loginfo("Initialized particle filter")
+    #rospy.loginfo("Initialized particle filter")
        
     # Main loop:
     #rate = rospy.Rate(30) # 30hz
@@ -425,7 +425,7 @@ if __name__ == "__main__":
 
         correction_estimation = pf.getMeanParticle()
 
-        rospy.loginfo("Time to predict & update {}".format(time.time() - start_t))
+        #rospy.loginfo("Time to predict & update {}".format(time.time() - start_t))
 
         # Project and draw skeleton
         T = poseToMatrix(correction_estimation[:6])  
