@@ -138,12 +138,12 @@ if __name__ == "__main__":
 
     kornia_params = {
         'use_kornia': True,
-        'endpoints_to_polar': True,
+        'endpoints_to_polar': False,
         'use_endpoint_intensities_only': False,
         'endpoint_intensities_to_polar': False,
-        'search_radius': 25.0,
+        'search_radius': 10.0,
         'intensity_params': {
-            'use_metric': 'mean',
+            'use_metric': 'pct',
             'mean': 0,
             'std': 1.0,
             'pct': 10.0
@@ -155,7 +155,7 @@ if __name__ == "__main__":
             'max_trials': 100,
             'img_dims': img_dims
         },
-        'use_line_intensities_only': False,
+        'use_line_intensities_only': True,
         'line_intensities_to_polar': False
     } 
 
@@ -182,7 +182,7 @@ if __name__ == "__main__":
         particle_out_dir += 'line_intensities_to_polar/'
 
     # video recording
-    record_video = True
+    record_video = False
     fps = 30
     if (record_video):
         out_file = video_out_dir + 'left_video.mp4'
@@ -199,7 +199,7 @@ if __name__ == "__main__":
     #accuracy_file = open('endpoints_to_polar_accuracy.txt', 'w')
     #accuracy_file = open('endpoint_intensities_only_accuracy.txt', 'w')
     #accuracy_file = open('endpoint_intensities_to_polar_accuracy.txt', 'w')
-    #accuracy_file = open('line_intensities_only_accuracy.txt', 'w')
+    accuracy_file = open('line_intensities_only_accuracy.txt', 'w')
     #accuracy_file = open('line_intensities_to_polar_accuracy.txt', 'w')
 
     robot_arm = RobotLink(robot_file, use_dh_offset=False) # position / orientation in Meters
