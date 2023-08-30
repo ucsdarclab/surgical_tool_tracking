@@ -267,7 +267,7 @@ def shaftFeatureObs_kornia(
         algo = use_lines
         detected_lines = detected_lines[algo]
         print('shaftfeatureobs detected_lines: {}'.format(detected_lines))
-        print('shaftfeatureobs detected_lines.shape: {}'.format(detected_lines.shape))
+        #print('shaftfeatureobs detected_lines.shape: {}'.format(detected_lines.shape))
         
     elif (use_clouds):
         algo = use_clouds

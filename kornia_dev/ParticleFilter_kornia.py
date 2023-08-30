@@ -21,8 +21,6 @@ class ParticleFilter:
             except Warning as e:
                 self._weights = np.ones(self._particles.shape[0])/float(self._particles.shape[0])
 
-        
-    
     def initializeFilter(self, **kwargs):
         # Initialize particles here, the kwargs is passed to initialDistributionFunc
         for p_idx, _ in enumerate(self._particles):

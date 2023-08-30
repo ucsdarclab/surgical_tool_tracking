@@ -128,7 +128,7 @@ if __name__ == "__main__":
 
     # parameters for shaft detection
     canny_params = {
-        'use_canny': False,
+        'use_canny': True,
         'hough_rho_accumulator': 5.0,
         'hough_theta_accumulator': 0.09,
         'hough_vote_threshold': 100,
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     }
 
     kornia_params = {
-        'use_kornia': True,
+        'use_kornia': False,
         'endpoints_to_polar': False,
         'use_endpoint_intensities_only': False,
         'endpoint_intensities_to_polar': False,
@@ -155,7 +155,7 @@ if __name__ == "__main__":
             'max_trials': 100,
             'img_dims': img_dims
         },
-        'use_line_intensities_only': True,
+        'use_line_intensities_only': False,
         'line_intensities_to_polar': False
     } 
 
@@ -195,11 +195,11 @@ if __name__ == "__main__":
     record_particles_counter = 1
 
     # evaluation recording
-    #accuracy_file = open('canny_accuracy.txt', 'w')
+    accuracy_file = open('canny_accuracy.txt', 'w')
     #accuracy_file = open('endpoints_to_polar_accuracy.txt', 'w')
     #accuracy_file = open('endpoint_intensities_only_accuracy.txt', 'w')
     #accuracy_file = open('endpoint_intensities_to_polar_accuracy.txt', 'w')
-    accuracy_file = open('line_intensities_only_accuracy.txt', 'w')
+    #accuracy_file = open('line_intensities_only_accuracy.txt', 'w')
     #accuracy_file = open('line_intensities_to_polar_accuracy.txt', 'w')
 
     robot_arm = RobotLink(robot_file, use_dh_offset=False) # position / orientation in Meters
@@ -391,8 +391,8 @@ if __name__ == "__main__":
                     
                     #shaftFeatureObs_kornia arguments
                     {
-                        'use_lines': None,
-                        'use_clouds': 'line_clouds',
+                        'use_lines': 'canny',
+                        'use_clouds': None,
                         'detected_lines': {
                             'canny': (new_canny_lines_l, new_canny_lines_r),
                             'detected_endpoint_lines': (new_detected_endpoint_lines_l, new_detected_endpoint_lines_r),
@@ -434,8 +434,8 @@ if __name__ == "__main__":
         robot_arm.updateJointAngles(new_joint_angles)
         img_list = projectSkeleton(robot_arm.getSkeletonPoints(), np.dot(cam_T_b, T), [new_left_img, new_right_img], cam.projectPoints, (new_detected_keypoints_l, new_detected_keypoints_r), accuracy_file)
         img_list = drawShaftLines(robot_arm.getShaftFeatures(), cam, np.dot(cam_T_b, T), img_list)
-        cv2.imshow("Left Img",  img_list[0])
-        cv2.imshow("Right Img", img_list[1])
+        #cv2.imshow("Left Img",  img_list[0])
+        #cv2.imshow("Right Img", img_list[1])
 
         # video recording
         if (record_video):
@@ -457,7 +457,7 @@ if __name__ == "__main__":
             np.save(out_file, out_data)
 
         record_particles_counter += 1
-        cv2.waitKey(1)
+        #cv2.waitKey(1)
 
     accuracy_file.close()
     print('end of bag, closing bag')
