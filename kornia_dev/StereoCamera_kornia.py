@@ -217,6 +217,7 @@ class StereoCamera():
             projected_lines.append([rho, theta])
             
         projected_lines = np.asarray(projected_lines)
+        print('projected_lines: {}'.format(projected_lines))
         #print('projected_lines from projectShaftLines_SingleCam: {}'.format(projected_lines))
         return projected_lines # Nx2 [rho, theta] # theta in radians
 

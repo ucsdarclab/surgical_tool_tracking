@@ -1,4 +1,5 @@
 import numpy as np
+import warnings
         
 class ParticleFilter:
     def __init__(self, num_states, initialDistributionFunc, motionModelFunc, obsModelFunc, 
@@ -13,7 +14,14 @@ class ParticleFilter:
         self._obsModelFunc = obsModelFunc
     
     def normalizeWeights(self):
-        self._weights = self._weights/np.sum(self._weights)
+        with warnings.catch_warnings():
+            warnings.filterwarnings('error')
+            try:
+                self._weights = self._weights/np.sum(self._weights)
+            except Warning as e:
+                self._weights = np.ones(self._particles.shape[0])/float(self._particles.shape[0])
+
+        
     
     def initializeFilter(self, **kwargs):
         # Initialize particles here, the kwargs is passed to initialDistributionFunc

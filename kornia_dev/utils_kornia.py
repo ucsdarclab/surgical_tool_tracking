@@ -664,6 +664,7 @@ def drawShaftLines(shaftFeatures, cam, cam_T_b, img_list):
     
     # Project shaft lines from L and R camera-to-base frames onto 2D camera image plane
     projected_lines = cam.projectShaftLines(p_c, d_c, r)
+    print('projected_lines: {}'.format(projected_lines))
 
     # (B, G, R)
     img_l = drawPolarLines(img_list[0], projected_lines[0], (0, 255, 0))

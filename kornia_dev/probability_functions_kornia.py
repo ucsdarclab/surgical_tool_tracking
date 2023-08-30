@@ -266,13 +266,16 @@ def shaftFeatureObs_kornia(
     if (use_lines):
         algo = use_lines
         detected_lines = detected_lines[algo]
-        #print('shaftfeatureobs detected_lines: {}'.format(detected_lines))
-        #print('shaftfeatureobs detected_lines.shape: {}'.format(detected_lines.shape))
+        print('shaftfeatureobs detected_lines: {}'.format(detected_lines))
+        print('shaftfeatureobs detected_lines.shape: {}'.format(detected_lines.shape))
         
     elif (use_clouds):
         algo = use_clouds
         intensity_clouds = intensity_clouds[algo]
-    
+        print('shaftfeatureobs intensity_clouds: {}'.format(intensity_clouds))
+        #print('shaftfeatureobs intensity_clouds.shape: {}'.format(intensity_clouds.shape))
+
+    '''    
     # no lines detected
     if ((detected_lines is None) or (len(detected_lines) == 0)):
         prob = 1
@@ -294,7 +297,7 @@ def shaftFeatureObs_kornia(
         if (detected_line.shape == ()):
             prob = 1
             return prob
-        
+    '''
 
     # Get lumped error
     T = poseToMatrix(state[:6])
@@ -333,11 +336,12 @@ def shaftFeatureObs_kornia(
     #print('shaftfeatureobs projected lines.shape: {}'.format(projected_lines.shape))
 
         # Raise error if number of cameras doesn't line up
+    '''
     if len(projected_lines) != len(detected_lines):
         raise ValueError("Length of projected_lines is {} but length of line_detections is {}.\n".format(len(projected_lines), 
                                                                                                             len(detected_lines)) \
                         + "Note that these lengths represent the number of cameras being used.")
-    
+    '''
     # Make association between detected and projected lines
     # compute probability of detected lines
     if (use_lines):
