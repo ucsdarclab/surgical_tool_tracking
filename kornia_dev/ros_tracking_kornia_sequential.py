@@ -4,12 +4,15 @@ import cv2
 import kornia as K
 import kornia.feature as KF
 import rosbag
+import os
+import sys
+import numpy as np
 
 from sensor_msgs.msg import Image, JointState
 from message_filters import ApproximateTimeSynchronizer, Subscriber
 
-import os
-import sys
+# set random seed
+np.random.seed(0)
 
 script_path = os.path.dirname(os.path.abspath(__file__))
 module_path = os.path.dirname(script_path)
@@ -25,45 +28,15 @@ from probability_functions_kornia import *
 from utils_kornia import *
 
 # File inputs
-robot_file    = script_path + '/../../journal_dataset/LND.json'
-camera_file   = script_path + '/../../journal_dataset/camera_calibration.yaml'
-hand_eye_file = script_path + '/../../journal_dataset/handeye.yaml'
+robot_file    = script_path + '/../../fei_dataset/LND.json'
+camera_file   = script_path + '/../../fei_dataset/camera_calibration.yaml'
+hand_eye_file = script_path + '/../../fei_dataset/handeye.yaml'
 
 # ROS Topics
 left_camera_topic  = '/stereo/left/image'
 right_camera_topic = '/stereo/right/image'
-robot_joint_topic  = '/dvrk/PSM1/state_joint_current'
-robot_gripper_topic = '/dvrk/PSM1/state_jaw_current'
-
-# Globals for callback function
-global _cb_left_img
-_cb_left_img = None
-global _cb_right_img 
-_cb_right_img = None
-global cb_joint_angles 
-cb_joint_angles = None
-global new_cb_data 
-new_cb_data = False
-
-
-# ROS Callback for images and joint observations
-def gotData(l_img_msg, r_img_msg, j_msg, g_msg):
-    
-    global _cb_left_img
-    global _cb_right_img
-    global cb_joint_angles
-    global new_cb_data
-    
-    try:
-        _cb_left_img  = np.ndarray(shape=(l_img_msg.height, l_img_msg.width, 3),
-                                      dtype=np.uint8, buffer=l_img_msg.data)
-        _cb_right_img = np.ndarray(shape=(r_img_msg.height, r_img_msg.width, 3),
-                                      dtype=np.uint8, buffer=r_img_msg.data)
-    except:
-        return
-    
-    cb_joint_angles = np.array(j_msg.position + g_msg.position)
-    new_cb_data = True
+robot_joint_topic  = '/dvrk/PSM2/state_joint_current'
+robot_gripper_topic = '/dvrk/PSM2/state_jaw_current'
 
 # main function
 if __name__ == "__main__":
@@ -71,11 +44,7 @@ if __name__ == "__main__":
     #rospy.init_node('robot_tool_tracking', anonymous=True)
     
     # reference image w vs. without contours
-    draw_contours = False
-    if (draw_contours):
-        source_dir = 'kornia_dev/ref_data/contour/'
-    else:
-        source_dir = 'kornia_dev/ref_data/no_contour/'
+    source_dir = 'kornia_dev/fei_ref_data/'
 
     # annotate output with detected lines
     draw_lines = True
@@ -83,7 +52,7 @@ if __name__ == "__main__":
     # crop parameters
     in_file = source_dir + 'crop_scale.npy'
     crop_scale = np.load(in_file)
-    #print('crop_scale: {}'.format(crop_scale))
+    print('crop_scale: {}'.format(crop_scale))
 
     # reference lines
     in_file = source_dir + 'crop_ref_lines_l.npy'
@@ -128,7 +97,7 @@ if __name__ == "__main__":
 
     # parameters for shaft detection
     canny_params = {
-        'use_canny': True,
+        'use_canny': False,
         'hough_rho_accumulator': 5.0,
         'hough_theta_accumulator': 0.09,
         'hough_vote_threshold': 100,
@@ -137,8 +106,8 @@ if __name__ == "__main__":
     }
 
     kornia_params = {
-        'use_kornia': False,
-        'endpoints_to_polar': False,
+        'use_kornia': True,
+        'endpoints_to_polar': True,
         'use_endpoint_intensities_only': False,
         'endpoint_intensities_to_polar': False,
         'search_radius': 10.0,
@@ -195,8 +164,8 @@ if __name__ == "__main__":
     record_particles_counter = 1
 
     # evaluation recording
-    accuracy_file = open('canny_accuracy.txt', 'w')
-    #accuracy_file = open('endpoints_to_polar_accuracy.txt', 'w')
+    #accuracy_file = open('canny_accuracy.txt', 'w')
+    accuracy_file = open('endpoints_to_polar_accuracy.txt', 'w')
     #accuracy_file = open('endpoint_intensities_only_accuracy.txt', 'w')
     #accuracy_file = open('endpoint_intensities_to_polar_accuracy.txt', 'w')
     #accuracy_file = open('line_intensities_only_accuracy.txt', 'w')
@@ -213,9 +182,6 @@ if __name__ == "__main__":
     cam_T_b = np.eye(4)
     cam_T_b[:-1, -1] = np.array(hand_eye_data['PSM1_tvec'])/1000.0 # convert to mm
     cam_T_b[:-1, :-1] = axisAngleToRotationMatrix(hand_eye_data['PSM1_rvec'])
-
-    # set random seed
-    np.random.seed(0)
 
     # Initialize filter
     pf = ParticleFilter(num_states=6, # originally 9 (6 for lumped error + 3 for endowrist pitch/yaw/squeeze) -> 6 for just lumped error
@@ -257,6 +223,7 @@ if __name__ == "__main__":
     j_msg = None
     g_msg = None
 
+    msg_counter = 0
 
     for topic, msg, t in bag.read_messages(topics=[left_camera_topic, right_camera_topic, robot_joint_topic, robot_gripper_topic]):
 
@@ -391,8 +358,8 @@ if __name__ == "__main__":
                     
                     #shaftFeatureObs_kornia arguments
                     {
-                        'use_lines': 'canny',
-                        'use_clouds': None,
+                        'use_lines': 'detected_endpoint_lines',
+                        'use_clouds': False,
                         'detected_lines': {
                             'canny': (new_canny_lines_l, new_canny_lines_r),
                             'detected_endpoint_lines': (new_detected_endpoint_lines_l, new_detected_endpoint_lines_r),
@@ -434,8 +401,8 @@ if __name__ == "__main__":
         robot_arm.updateJointAngles(new_joint_angles)
         img_list = projectSkeleton(robot_arm.getSkeletonPoints(), np.dot(cam_T_b, T), [new_left_img, new_right_img], cam.projectPoints, (new_detected_keypoints_l, new_detected_keypoints_r), accuracy_file)
         img_list = drawShaftLines(robot_arm.getShaftFeatures(), cam, np.dot(cam_T_b, T), img_list)
-        #cv2.imshow("Left Img",  img_list[0])
-        #cv2.imshow("Right Img", img_list[1])
+        cv2.imshow("Left Img",  img_list[0])
+        cv2.imshow("Right Img", img_list[1])
 
         # video recording
         if (record_video):
@@ -457,11 +424,14 @@ if __name__ == "__main__":
             np.save(out_file, out_data)
 
         record_particles_counter += 1
-        #cv2.waitKey(1)
+        msg_counter += 1
+        print('msg_counter: {}'.format(msg_counter))
+        cv2.waitKey(1)
 
     accuracy_file.close()
     print('end of bag, closing bag')
     bag.close()
+    print('total number of messages: {}'.format(msg_counter))
     print('Releasing video capture')
     if (record_video):
         left_video_out.release()

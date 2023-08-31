@@ -34,6 +34,7 @@ def additiveGaussianNoise(state, std):
 #       e_nb+1, ..., e_n are the errors of the tracked joint angles
 #       For more details check: https://arxiv.org/pdf/2102.06235.pdf
 #   4. robot_arm is RobotLink that is being tracked
+@timeit
 def lumpedErrorMotionModel(state, std_pos, std_ori, robot_arm, std_j, nb):
     # Gaussian uncertainty in hand-eye transform and joint angles
     std = np.concatenate((np.array([std_pos, std_pos, std_pos, std_ori, std_ori, std_ori]), std_j))
@@ -49,6 +50,7 @@ def lumpedErrorMotionModel(state, std_pos, std_ori, robot_arm, std_j, nb):
 # State is: [pos_x, pos_y, pos_z, ori_x, ori_y, ori_z, e_nb, ..., e_n]
 # where pos, ori is position and axis/angle rep of lumped error
 # e_nb+1, ..., e_n are the errors of the tracked joint angles
+@timeit
 def pointFeatureObs(state, point_detections, robot_arm, joint_angle_readings, cam, cam_T_b, gamma, association_threshold=20):
     # Get lumped error
     T = poseToMatrix(state[:6])
@@ -134,6 +136,7 @@ def pointFeatureObs(state, point_detections, robot_arm, joint_angle_readings, ca
 # State is: [pos_x, pos_y, pos_z, ori_x, ori_y, ori_z, e_nb, ..., e_n]
 # where pos, ori is position and axis/angle rep of lumped error
 # e_nb+1, ..., e_n are the errors of the tracked joint angles
+@timeit
 def pointFeatureObsRightLumpedError(state, point_detections, robot_arm, cam, 
                                     cam_T_b, joint_angle_readings, gamma, association_threshold=20):
     # Get lumped error
@@ -174,6 +177,7 @@ def pointFeatureObsRightLumpedError(state, point_detections, robot_arm, cam,
         
     return prob
 
+@timeit
 def shaftFeatureObs(state, detected_lines, robot_arm, cam, cam_T_b, joint_angle_readings, gamma_rho, gamma_theta, rho_thresh, theta_thresh):
     #print('in shaftFeatureObs')
     #print('state: {}'.format(state))
@@ -248,6 +252,7 @@ def shaftFeatureObs(state, detected_lines, robot_arm, cam, cam_T_b, joint_angle_
         
     return prob
 
+@timeit
 def shaftFeatureObs_kornia(
         state, 
         use_lines = None, 
@@ -266,13 +271,13 @@ def shaftFeatureObs_kornia(
     if (use_lines):
         algo = use_lines
         detected_lines = detected_lines[algo]
-        print('shaftfeatureobs detected_lines: {}'.format(detected_lines))
+        #print('shaftfeatureobs detected_lines: {}'.format(detected_lines))
         #print('shaftfeatureobs detected_lines.shape: {}'.format(detected_lines.shape))
         
     elif (use_clouds):
         algo = use_clouds
         intensity_clouds = intensity_clouds[algo]
-        print('shaftfeatureobs intensity_clouds: {}'.format(intensity_clouds))
+        #print('shaftfeatureobs intensity_clouds: {}'.format(intensity_clouds))
         #print('shaftfeatureobs intensity_clouds.shape: {}'.format(intensity_clouds.shape))
 
     '''    
@@ -281,9 +286,9 @@ def shaftFeatureObs_kornia(
         prob = 1
         return prob
 
-    #print('shaftfeatureobs detected_lines: {}'.format(detected_lines))
-    #print('shaftfeatureobs detected_lines[0].shape: {}'.format(detected_lines[0].shape))
-    #print('shaftfeatureobs detected_lines[1].shape: {}'.format(detected_lines[1].shape))
+    print('shaftfeatureobs detected_lines: {}'.format(detected_lines))
+    print('shaftfeatureobs detected_lines[0].shape: {}'.format(detected_lines[0].shape))
+    print('shaftfeatureobs detected_lines[1].shape: {}'.format(detected_lines[1].shape))
     for detected_line in detected_lines:
         if (detected_line is None):
             prob = 1
@@ -335,13 +340,12 @@ def shaftFeatureObs_kornia(
     #print('shaftfeatureobs projected lines: {}'.format(projected_lines))
     #print('shaftfeatureobs projected lines.shape: {}'.format(projected_lines.shape))
 
-        # Raise error if number of cameras doesn't line up
-    '''
+    # Raise error if number of cameras doesn't line up
     if len(projected_lines) != len(detected_lines):
         raise ValueError("Length of projected_lines is {} but length of line_detections is {}.\n".format(len(projected_lines), 
                                                                                                             len(detected_lines)) \
                         + "Note that these lengths represent the number of cameras being used.")
-    '''
+    
     # Make association between detected and projected lines
     # compute probability of detected lines
     if (use_lines):
@@ -355,19 +359,22 @@ def shaftFeatureObs_kornia(
             #print('shaftfeatureobs hungarian proj_lines.shape: {}'.format(proj_lines.shape))
             #print('shaftfeatureobs hungarian detected_lines[cam_idx]: {}'.format(detected_lines[cam_idx]))
             #print('shaftfeatureobs hungarian detected_lines[cam_idx].shape: {}'.format(detected_lines[cam_idx].shape))
-            # Use hungarian algorithm to match projected and detected points
-            C_rho = cost_assoc_params['gamma_rho'] * distance_matrix(proj_lines[:, 0, None], detected_lines[cam_idx][:, 0, None])
-            C_theta = cost_assoc_params['gamma_theta'] * distance_matrix(proj_lines[:, 1, None], detected_lines[cam_idx][:, 1, None])
-            C = C_rho + C_theta
-            row_idx, col_idx = optimize.linear_sum_assignment(C)
-            
-            # Use threshold to remove outliers
-            idx_to_keep = C[row_idx, col_idx] < association_threshold
-            row_idx = row_idx[idx_to_keep]
-            col_idx = col_idx[idx_to_keep]
-            
-            # Compute observation probability
-            prob *= np.sum(np.exp(C[row_idx, col_idx])) + (proj_lines.shape[0] - len(row_idx))*np.exp(-1 * association_threshold)
+            try: 
+                # Use hungarian algorithm to match projected and detected points
+                C_rho = cost_assoc_params['gamma_rho'] * distance_matrix(proj_lines[:, 0, None], detected_lines[cam_idx][:, 0, None])
+                C_theta = cost_assoc_params['gamma_theta'] * distance_matrix(proj_lines[:, 1, None], detected_lines[cam_idx][:, 1, None])
+                C = C_rho + C_theta
+                row_idx, col_idx = optimize.linear_sum_assignment(C)
+                
+                # Use threshold to remove outliers
+                idx_to_keep = C[row_idx, col_idx] < association_threshold
+                row_idx = row_idx[idx_to_keep]
+                col_idx = col_idx[idx_to_keep]
+                
+                # Compute observation probability
+                prob *= np.sum(np.exp(C[row_idx, col_idx])) + (proj_lines.shape[0] - len(row_idx))*np.exp(-1 * association_threshold)
+            except:
+                prob *= 1
     
     # compute probability of intensity point clouds
     elif (use_clouds):

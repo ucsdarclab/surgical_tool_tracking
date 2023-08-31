@@ -13,6 +13,19 @@ import kornia.feature as KF
 import pandas as pd
 import copy
 from scipy import optimize
+from functools import wraps
+import time
+
+def timeit(func):
+    @wraps(func)
+    def timeit_wrapper(*args, **kwargs):
+        start_time = time.perf_counter()
+        result = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        total_time = end_time - start_time
+        print(f'Function {func.__name__} Took {total_time:.4f} seconds')
+        return result
+    return timeit_wrapper
 
 # associate a point projected onto 2d image with point feature
 def associatePoint(projected_point, cam_idx, point_detections, association_threshold):
@@ -52,6 +65,7 @@ def associatePoint(projected_point, cam_idx, point_detections, association_thres
         return None
     return associated_point
 
+@timeit
 def projectSkeleton(skeletonPts3D, cam_T_b, img_list, project_point_function, point_detections, accuracy_file):
     # skeletonPts3D should be in the same format as getSkeletonPoints from RobotLink
     # img_list
@@ -76,13 +90,14 @@ def projectSkeleton(skeletonPts3D, cam_T_b, img_list, project_point_function, po
                 if ((np.allclose(np.asarray(skeletonPairs), np.asarray(skeletonPts3D[-1]))) and (idx == 1)):
                     #print('(x, y) tool tip skeleton in R camera: {}'.format((int(proj_pts[1,0]), int(proj_pts[1,1]))))
                     img_list[idx] = cv2.circle(img_list[idx], (int(proj_pts[1,0]), int(proj_pts[1,1])), 5, (0, 115, 255), -1)
-                    associated_point = associatePoint([int(proj_pts[1,0]), int(proj_pts[1,1])], idx, point_detections, 20)
+                    associated_point = None
+                    #associated_point = associatePoint([int(proj_pts[1,0]), int(proj_pts[1,1])], idx, point_detections, 20)
                     if (associated_point is not None):
                         img_list[idx] = cv2.circle(img_list[idx], (int(associated_point[0]), int(associated_point[1])), 5, (148, 5, 100), -1)
                         text_string = str(int(proj_pts[1,0])) + ',' + str(int(proj_pts[1,1])) + ',' + str(int(associated_point[0])) + ',' + str(int(associated_point[1])) + '\n'
                     else:
                         text_string = str(int(proj_pts[1,0])) + ',' + str(int(proj_pts[1,1])) + ',' + ',' + '\n'
-                    print('text_string: {}'.format(text_string))
+                    #print('text_string: {}'.format(text_string))
                     accuracy_file.write(text_string)
 
             except:
@@ -130,6 +145,7 @@ def invertTransformMatrix(T):
     out[:-1,  -1] = -np.dot(out[:-1, :-1], T[:-1,  -1])
     return out
 
+@timeit
 def segmentColorAndGetKeyPoints(img, hsv_min=(90, 40, 40), hsv_max=(120, 255, 255), draw_contours=False):
     hsv = cv2.cvtColor(img,  cv2.COLOR_RGB2HSV)
     mask  = cv2.inRange(hsv , hsv_min, hsv_max)
@@ -173,6 +189,7 @@ def drawPolarLines(img = None, lines = None, color = (0, 0, 255)):
     
     return img
 
+@timeit
 def detectCannyShaftLines(img = None, 
                           hough_rho_accumulator = None, 
                           hough_theta_accumulator = None, 
@@ -199,7 +216,7 @@ def detectCannyShaftLines(img = None,
     #print('in canny shaft lines')
     #print('lines: {}'.format(lines))
     #print('lines.shape: {}'.format(lines.shape))
-    cv2.imwrite('error_img.jpg', img)
+    #cv2.imwrite('error_img.jpg', img)
     lines = np.reshape(lines, (-1, 3))
     #print('lines: {}'.format(lines))
     #print('lines.shape: {}'.format(lines.shape))
@@ -321,6 +338,7 @@ def drawPoints(img = None, point_clouds = None):
     
     return img
 
+@timeit
 def fitRansacLines(point_clouds, ransac_params):
     
     # ransac params
@@ -391,6 +409,7 @@ def findReferenceLines(ref_lines = None, det_lines = None):
                 ind.append(j)
     return ind
 
+@timeit
 def detectShaftLines(annotated_img = None, 
                     non_annotated_img = None,
                     ref_img = None,
@@ -403,8 +422,17 @@ def detectShaftLines(annotated_img = None,
                     canny_params = {},
                     kornia_params = {}):
     
-    #cv2.imwrite('ref_img.png', ref_img)
-
+    # returns
+    output = {
+        'ref_img': ref_img,
+        'new_img': annotated_img,
+        'canny_lines': None,
+        'polar_lines_detected_endpoints': None,
+        'intensity_endpoint_clouds': None,
+        'intensity_endpoint_lines': None,
+        'intensity_line_clouds': None,
+        'intensity_line_lines': None
+    }
 
     # use canny edge detection
     canny_lines = None
@@ -435,8 +463,12 @@ def detectShaftLines(annotated_img = None,
                         theta_cluster_distance = theta_cluster_distance,
                         draw_lines = draw_lines
                         )
-    else: # use kornia
-        assert((kornia_params is not None) and (kornia_params['use_kornia']))
+
+        output['new_img'] = annotated_img
+        output['canny_lines'] = canny_lines
+        return output
+    
+    elif ((kornia_params is not None) and (kornia_params['use_kornia'])):
 
         # process input image
         img_height = non_annotated_img.shape[0]
@@ -446,8 +478,14 @@ def detectShaftLines(annotated_img = None,
         non_annotated_tensor = K.image_to_tensor(non_annotated_img).float() / 255.0  # [0, 1] [3, crop_dims] float32
         non_annotated_tensor = K.color.rgb_to_grayscale(non_annotated_tensor) # [0, 1] [1, crop_dims] float32
         tensors = torch.stack([ref_tensor, non_annotated_tensor], )
+        
+        # line detection
+        start_time = time.perf_counter()
         with torch.inference_mode():
             outputs = model(tensors)
+        end_time = time.perf_counter()
+        total_time = end_time - start_time
+        print(f'sold2 line detection took {total_time:.4f} seconds')
         
         # detect line segments
         line_seg1 = outputs["line_segments"][0]
@@ -456,8 +494,48 @@ def detectShaftLines(annotated_img = None,
         desc2 = outputs["dense_desc"][1]
         line_heatmap1 = np.asarray(outputs['line_heatmap'][0])
         line_heatmap2 = np.asarray(outputs['line_heatmap'][1])
-        #print('line_heatmap2.shape: {}'.format(line_heatmap2.shape))
 
+        # perform association between All line segments 
+        # in ref_img and new_img
+        start_time = time.perf_counter()
+        with torch.inference_mode():
+            matches = model.match(line_seg1, line_seg2, desc1[None], desc2[None])
+        end_time = time.perf_counter()
+        total_time = end_time - start_time
+        print(f'sold2 line matching took {total_time:.4f} seconds')
+        valid_matches = matches != -1
+
+        # match by reference line index
+        ref_matches_indices = []
+        matched_lines1 = []
+        matched_lines2 = []
+        ref_line1_idx = crop_ref_lines_idx[0]
+        ref_line2_idx = crop_ref_lines_idx[1]
+        if (valid_matches[ref_line1_idx]):
+            ref_matches_indices.append(matches.numpy()[ref_line1_idx])
+            matched_lines1.append(line_seg1[ref_line1_idx, :, :])
+            
+        if (valid_matches[ref_line2_idx]):
+            ref_matches_indices.append(matches.numpy()[ref_line2_idx])
+            matched_lines1.append(line_seg1[ref_line2_idx, :, :])
+
+        if (matched_lines1):
+            matched_lines1 = torch.stack(matched_lines1)
+            matched_lines2 = line_seg2[ref_matches_indices]
+        # no matches found
+        else:
+            return output
+
+        # select only matching line segments that correspond to ref lines
+        if (draw_lines):
+            annotated_img = drawLineSegments(annotated_img, matched_lines2)
+
+        # kornia detected endpoints
+        detected_endpoints = np.asarray(np.around(np.asarray(matched_lines2), decimals = 0), dtype = int) # [[y, x], [y, x]]
+        # draw endpoints
+        annotated_img = drawPoints(annotated_img, detected_endpoints)
+
+        '''
         # perform association between All line segments 
         # in ref_img and new_img
         with torch.inference_mode():
@@ -498,6 +576,7 @@ def detectShaftLines(annotated_img = None,
 
         # new image detected endpoints
         detected_endpoints = np.asarray(np.around(np.asarray(selected_lines2), decimals = 0), dtype = int) # [[y, x], [y, x]]
+        '''
 
         # convert detected endpoints to rho, theta form
         endpoints_to_polar = kornia_params['endpoints_to_polar'] # boolean
@@ -519,7 +598,10 @@ def detectShaftLines(annotated_img = None,
                 
                 # draw endpoints
                 annotated_img = drawPoints(annotated_img, detected_endpoints)
-                
+
+                output['new_img'] = annotated_img
+                output['polar_lines_detected_endpoints'] = polar_lines_detected_endpoints
+                return output
 
         # search region around detected endpoints for all pixels
         # that meet intensity threshold
@@ -576,13 +658,23 @@ def detectShaftLines(annotated_img = None,
                 thresholded_dilated_points = np.asarray(bounded_dilated_points)[intensity_mask]
                 intensity_endpoint_clouds.append(thresholded_dilated_points)
 
-                if (endpoint_intensities_to_polar):
-                    intensity_endpoint_lines = fitRansacLines(intensity_endpoint_clouds, ransac_params)
-                    if (draw_lines):
-                        annotated_img = drawPolarLines(annotated_img, np.asarray(intensity_endpoint_lines))
-                
+            if (use_endpoint_intensities_only):
                 # draw point clouds
                 annotated_img = drawPoints(annotated_img, intensity_endpoint_clouds)
+                
+                output['new_img'] = annotated_img
+                output['intensity_endpoint_clouds'] = intensity_endpoint_clouds
+                return output
+            
+            elif (endpoint_intensities_to_polar):
+                intensity_endpoint_lines = fitRansacLines(intensity_endpoint_clouds, ransac_params)
+                if (draw_lines):
+                    annotated_img = drawPolarLines(annotated_img, np.asarray(intensity_endpoint_lines))
+                output['new_img'] = annotated_img
+                output['intensity_endpoint_lines'] = intensity_endpoint_lines
+                return output
+                
+
         
         # search region between detected endpoints for all pixels
         # that meet intensity threshold
@@ -628,14 +720,23 @@ def detectShaftLines(annotated_img = None,
                 thresholded_dilated_line = np.asarray(bounded_dilated_line)[intensity_mask]
                 intensity_line_clouds.append(thresholded_dilated_line)
 
-                if (line_intensities_to_polar):
-                    intensity_line_lines = fitRansacLines(intensity_line_clouds, ransac_params)
-                    if (draw_lines):
-                        annotated_img = drawPolarLines(annotated_img, np.asarray(intensity_line_lines))
-                
+            if (use_line_intensities_only):
                 # draw point clouds
                 annotated_img = drawPoints(annotated_img, intensity_line_clouds)
+                
+                output['new_img'] = annotated_img
+                output['intensity_line_clouds'] = intensity_line_clouds
+                return output
+            
+            elif (line_intensities_to_polar):
+                intensity_line_lines = fitRansacLines(intensity_line_clouds, ransac_params)
+                if (draw_lines):
+                    annotated_img = drawPolarLines(annotated_img, np.asarray(intensity_line_lines))
+                output['new_img'] = annotated_img
+                output['intensity_endpoint_lines'] = intensity_line_lines
+                return output
     
+    '''
     output = {
         'ref_img': ref_img,
         'new_img': annotated_img,
@@ -648,6 +749,7 @@ def detectShaftLines(annotated_img = None,
     }
 
     return output
+    '''
 
 def drawShaftLines(shaftFeatures, cam, cam_T_b, img_list):
 
@@ -664,7 +766,7 @@ def drawShaftLines(shaftFeatures, cam, cam_T_b, img_list):
     
     # Project shaft lines from L and R camera-to-base frames onto 2D camera image plane
     projected_lines = cam.projectShaftLines(p_c, d_c, r)
-    print('projected_lines: {}'.format(projected_lines))
+    #print('projected_lines: {}'.format(projected_lines))
 
     # (B, G, R)
     img_l = drawPolarLines(img_list[0], projected_lines[0], (0, 255, 0))
@@ -672,6 +774,7 @@ def drawShaftLines(shaftFeatures, cam, cam_T_b, img_list):
 
     return img_l, img_r
 
+@timeit
 def makeShaftAssociations(
                         new_img = None, 
                         ref_tensor = None,
