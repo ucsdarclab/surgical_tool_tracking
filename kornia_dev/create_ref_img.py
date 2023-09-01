@@ -42,6 +42,7 @@ source_dir = 'kornia_dev/fei_ref_data/'
 # crop parameters
 in_file = source_dir + 'crop_scale.npy'
 crop_scale = np.load(in_file)
+crop_scale = 1
 print('crop_scale: {}'.format(crop_scale))
 
 # Load kornia model
@@ -63,7 +64,7 @@ cam_T_b[:-1, :-1] = axisAngleToRotationMatrix(hand_eye_data['PSM2_rvec'])
 #rate = rospy.Rate(30) # 30hz
 prev_joint_angles = None
 
-bag = rosbag.Bag('../fei_dataset/image_t2_manual.bag')
+bag = rosbag.Bag('../fei_dataset/volume_4points_t2.bag')
 
 old_l_img_msg = None
 old_r_img_msg = None
@@ -73,6 +74,8 @@ l_img_msg = None
 r_img_msg = None
 j_msg = None
 g_msg = None
+
+msg_counter = 0
 
 for topic, msg, t in bag.read_messages(topics=[left_camera_topic, right_camera_topic, robot_joint_topic, robot_gripper_topic]):
 
@@ -105,10 +108,20 @@ for topic, msg, t in bag.read_messages(topics=[left_camera_topic, right_camera_t
     new_left_img, new_right_img = cam.processImage(new_left_img, new_right_img, crop_scale = crop_scale)
     non_annotated_left_img = new_left_img.copy()
     non_annotated_right_img = new_right_img.copy()
-    outfile = source_dir + 'ref_left_img.jpg'
-    print(outfile)
-    cv2.imwrite(outfile, new_left_img)
-    outfile = source_dir + 'ref_right_img.jpg'
-    cv2.imwrite(outfile, new_right_img)
 
-    break
+    if(msg_counter == 0):
+        outfile = source_dir + 'ref_left_img.jpg'
+        print(outfile)
+        cv2.imwrite(outfile, new_left_img)
+        outfile = source_dir + 'ref_right_img.jpg'
+        cv2.imwrite(outfile, new_right_img)
+
+    if(msg_counter == 100):
+        outfile = source_dir + 'test_left_img.jpg'
+        print(outfile)
+        cv2.imwrite(outfile, new_left_img)
+        outfile = source_dir + 'test_right_img.jpg'
+        cv2.imwrite(outfile, new_right_img)
+        break
+
+    msg_counter += 1

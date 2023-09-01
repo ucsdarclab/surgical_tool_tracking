@@ -43,8 +43,9 @@ if __name__ == "__main__":
     # Initalize ROS stuff here
     #rospy.init_node('robot_tool_tracking', anonymous=True)
     
-    # reference image w vs. without contours
+    # reference image directory
     source_dir = 'kornia_dev/fei_ref_data/'
+    draw_contours = False
 
     # annotate output with detected lines
     draw_lines = True
@@ -53,42 +54,33 @@ if __name__ == "__main__":
     in_file = source_dir + 'crop_scale.npy'
     crop_scale = np.load(in_file)
     print('crop_scale: {}'.format(crop_scale))
-
-    # reference lines
-    in_file = source_dir + 'crop_ref_lines_l.npy'
-    crop_ref_lines_l = torch.as_tensor(np.load(in_file)) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
-    in_file = source_dir + 'crop_ref_lines_r.npy'
-    crop_ref_lines_r = torch.as_tensor(np.load(in_file)) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
-
-    # sorted reference lines
-    in_file = source_dir + 'crop_ref_lines_l_sorted.npy'
-    crop_ref_lines_l_sorted = torch.as_tensor(np.load(in_file)) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
-    in_file = source_dir + 'crop_ref_lines_r_sorted.npy'
-    crop_ref_lines_r_sorted = torch.as_tensor(np.load(in_file))
-    
+ 
     # ref line indices
     in_file = source_dir + 'crop_ref_lines_l_idx.npy'
     crop_ref_lines_l_idx = np.load(in_file) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
     in_file = source_dir + 'crop_ref_lines_r_idx.npy'
     crop_ref_lines_r_idx = np.load(in_file) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
 
-    # selected ref lines
-    in_file = source_dir + 'crop_ref_lines_l_selected.npy'
-    crop_ref_lines_l_selected = np.load(in_file)
-    in_file = source_dir + 'crop_ref_lines_r_selected.npy'
-    crop_ref_lines_r_selected = np.load(in_file)
-
     # reference images
     # left camera
-    in_file = source_dir + 'crop_ref_l_img.npy'
-    crop_ref_l_img = np.load(in_file) # (404, 720, 3) RGB uint8
+    crop_ref_l_img = source_dir + 'ref_left_img.jpg'
+    crop_ref_l_img = cv2.imread(crop_ref_l_img, cv2.IMREAD_COLOR)
+    crop_ref_l_img = cv2.cvtColor(crop_ref_l_img, cv2.COLOR_BGR2RGB)
     img_dims = (int(crop_ref_l_img.shape[1]), int(crop_ref_l_img.shape[0]))
+    crop_ref_l_img = K.enhance.sharpness(crop_ref_l_img, 5.0)
+    crop_ref_l_img = K.enhance.sharpness(crop_ref_l_img, 5.0)
+    crop_ref_l_img = K.enhance.adjust_saturation(crop_ref_l_img, 5.0)
+    crop_ref_l_img = K.enhance.adjust_saturation(crop_ref_l_img, 5.0)
     crop_ref_l_tensor = K.image_to_tensor(crop_ref_l_img).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
     crop_ref_l_tensor = K.color.rgb_to_grayscale(crop_ref_l_tensor) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
     # right camera
-    in_file = source_dir + 'crop_ref_r_img.npy'
-    crop_ref_r_img = np.load(in_file) # (404, 720, 3) RGB uint8
-    #print('crop_ref_r_img.shape: {}'.format(crop_ref_r_img.shape))
+    crop_ref_r_img = source_dir + 'ref_right_img.jpg'
+    crop_ref_r_img = cv2.imread(crop_ref_r_img, cv2.IMREAD_COLOR)
+    crop_ref_r_img = cv2.cvtColor(crop_ref_r_img, cv2.COLOR_BGR2RGB)
+    crop_ref_r_img = K.enhance.sharpness(crop_ref_r_img, 5.0)
+    crop_ref_r_img = K.enhance.sharpness(crop_ref_r_img, 5.0)
+    crop_ref_r_img = K.enhance.adjust_saturation(crop_ref_r_img, 5.0)
+    crop_ref_r_img = K.enhance.adjust_saturation(crop_ref_r_img, 5.0)
     crop_ref_r_tensor = K.image_to_tensor(crop_ref_r_img).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
     crop_ref_r_tensor = K.color.rgb_to_grayscale(crop_ref_r_tensor) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
 
@@ -165,7 +157,7 @@ if __name__ == "__main__":
 
     # evaluation recording
     #accuracy_file = open('canny_accuracy.txt', 'w')
-    accuracy_file = open('endpoints_to_polar_accuracy.txt', 'w')
+    #accuracy_file = open('endpoints_to_polar_accuracy.txt', 'w')
     #accuracy_file = open('endpoint_intensities_only_accuracy.txt', 'w')
     #accuracy_file = open('endpoint_intensities_to_polar_accuracy.txt', 'w')
     #accuracy_file = open('line_intensities_only_accuracy.txt', 'w')
@@ -268,9 +260,9 @@ if __name__ == "__main__":
                                     annotated_img = annotated_left_img,
                                     ref_img = crop_ref_l_img,
                                     ref_tensor = crop_ref_l_tensor,
-                                    crop_ref_lines = crop_ref_lines_l,
+                                    crop_ref_lines = None,
                                     crop_ref_lines_idx = crop_ref_lines_l_idx,
-                                    crop_ref_lines_selected = crop_ref_lines_l_selected,
+                                    crop_ref_lines_selected = None,
                                     model = model,
                                     draw_lines = draw_lines,
                                     canny_params = canny_params,
@@ -281,9 +273,9 @@ if __name__ == "__main__":
                                     annotated_img = annotated_right_img,
                                     ref_img = crop_ref_r_img,
                                     ref_tensor = crop_ref_r_tensor,
-                                    crop_ref_lines = crop_ref_lines_r,
+                                    crop_ref_lines = None,
                                     crop_ref_lines_idx = crop_ref_lines_r_idx,
-                                    crop_ref_lines_selected = crop_ref_lines_r_selected,
+                                    crop_ref_lines_selected = None,
                                     model = model,
                                     draw_lines = draw_lines,
                                     canny_params = canny_params,
