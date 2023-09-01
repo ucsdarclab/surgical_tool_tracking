@@ -42,7 +42,6 @@ source_dir = 'kornia_dev/fei_ref_data/'
 # crop parameters
 in_file = source_dir + 'crop_scale.npy'
 crop_scale = np.load(in_file)
-crop_scale = 1
 print('crop_scale: {}'.format(crop_scale))
 
 # Load kornia model

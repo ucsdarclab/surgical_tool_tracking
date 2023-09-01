@@ -80,6 +80,7 @@ def pointFeatureObs(state, point_detections, robot_arm, joint_angle_readings, ca
     
     # Make association between detected and projected & compute probability
     prob = 1
+
     # len(projected_points) = # of cameras
     # each list in projected points (2x for R/L cameras) is also a list of projected points
     for c_idx, proj_point in enumerate(projected_points):
@@ -88,48 +89,52 @@ def pointFeatureObs(state, point_detections, robot_arm, joint_angle_readings, ca
         #print('proj_point.shape: {}'. format(proj_point.shape))
         #if (c_idx == 1):
             #print('(x, y) tool tip projected point in R camera: {}'.format(proj_point[holdout_point_index, :]))
-        proj_point = np.delete(proj_point, obj = holdout_point_index, axis = 0).copy()
+        if (holdout_point_name):
+            proj_point = np.delete(proj_point, obj = holdout_point_index, axis = 0).copy()
         #print('proj_point: {}'.format(proj_point))
 
         #print('point_detections[c_idx]: {}'.format(point_detections[c_idx]))
         #print('point_detections[c_idx].shape: {}'.format(point_detections[c_idx].shape))
         
-        # Use hungarian algorithm to match projected and detected points
-        C = np.linalg.norm(proj_point[:, None, :] - point_detections[c_idx][None, :,  :], axis=2)
-        row_idx, col_idx = optimize.linear_sum_assignment(C)
-        #print('C: {}'.format(C))
-        #print('C.shape: {}'.format(C.shape))
-        #print('row_idx: {}'.format(row_idx))
-        #print('col_idx: {}'.format(col_idx))
-        
-        # Use threshold to remove outliers
-        idx_to_keep = C[row_idx, col_idx] < association_threshold
-        row_idx = row_idx[idx_to_keep]
-        col_idx = col_idx[idx_to_keep]
-        
-        #print('C: {}'.format(C))
-        #print('C.shape: {}'.format(C.shape))
-        #print('row_idx: {}'.format(row_idx))
-        #print('row_idx.shape: {}'.format(row_idx.shape))
-        #print('col_idx: {}'.format(col_idx))
-        #print('col_idx.shape: {}'.format(col_idx.shape))
-        #try: 
-            #print('holdout point index: {}'.format(list(row_idx).index(holdout_point_index)))
-            #detected_holdout_point_index = list(col_idx)[holdout_point_index]
-            #print('detected_holdout_point_index: {}'.format(detected_holdout_point_index))
-            #detected_holdout_point = point_detections[c_idx][detected_holdout_point_index, :]
-            #print('detected_holdout_point: {}'.format(detected_holdout_point))
-            #print('projected holdout point: {}'.format(proj_point[holdout_point_index, :]))
-        #except ValueError as e:
-            #print(e)
-            #continue
+        try:
+            # Use hungarian algorithm to match projected and detected points
+            C = np.linalg.norm(proj_point[:, None, :] - point_detections[c_idx][None, :,  :], axis=2)
+            row_idx, col_idx = optimize.linear_sum_assignment(C)
+            #print('C: {}'.format(C))
+            #print('C.shape: {}'.format(C.shape))
+            #print('row_idx: {}'.format(row_idx))
+            #print('col_idx: {}'.format(col_idx))
+            
+            # Use threshold to remove outliers
+            idx_to_keep = C[row_idx, col_idx] < association_threshold
+            row_idx = row_idx[idx_to_keep]
+            col_idx = col_idx[idx_to_keep]
+            
+            #print('C: {}'.format(C))
+            #print('C.shape: {}'.format(C.shape))
+            #print('row_idx: {}'.format(row_idx))
+            #print('row_idx.shape: {}'.format(row_idx.shape))
+            #print('col_idx: {}'.format(col_idx))
+            #print('col_idx.shape: {}'.format(col_idx.shape))
+            #try: 
+                #print('holdout point index: {}'.format(list(row_idx).index(holdout_point_index)))
+                #detected_holdout_point_index = list(col_idx)[holdout_point_index]
+                #print('detected_holdout_point_index: {}'.format(detected_holdout_point_index))
+                #detected_holdout_point = point_detections[c_idx][detected_holdout_point_index, :]
+                #print('detected_holdout_point: {}'.format(detected_holdout_point))
+                #print('projected holdout point: {}'.format(proj_point[holdout_point_index, :]))
+            #except ValueError as e:
+                #print(e)
+                #continue
 
-        #print('C[row_idx, col_idx]: {}'.format(C[row_idx, col_idx]))
-        #print('C[row_idx, col_idx].shape: {}'.format(C[row_idx, col_idx].shape))
+            #print('C[row_idx, col_idx]: {}'.format(C[row_idx, col_idx]))
+            #print('C[row_idx, col_idx].shape: {}'.format(C[row_idx, col_idx].shape))
 
-        # Compute observation probability
-        prob *= np.sum(np.exp(-gamma*C[row_idx, col_idx])) \
-                + (proj_point.shape[0] - len(row_idx))*np.exp(-gamma*association_threshold)
+            # Compute observation probability
+            prob *= np.sum(np.exp(-gamma*C[row_idx, col_idx])) \
+                    + (proj_point.shape[0] - len(row_idx))*np.exp(-gamma*association_threshold)
+        except:
+            prob *= 1
         
     return prob
 
@@ -341,7 +346,7 @@ def shaftFeatureObs_kornia(
     #print('shaftfeatureobs projected lines.shape: {}'.format(projected_lines.shape))
 
     # Raise error if number of cameras doesn't line up
-    if len(projected_lines) != len(detected_lines):
+    if (use_lines) and (len(projected_lines) != len(detected_lines)):
         raise ValueError("Length of projected_lines is {} but length of line_detections is {}.\n".format(len(projected_lines), 
                                                                                                             len(detected_lines)) \
                         + "Note that these lengths represent the number of cameras being used.")

@@ -324,6 +324,8 @@ def drawLineSegments(img = None, lines = None, colors = [(0, 0, 0), (255, 255, 2
 # annotate image with pixels
 def drawPoints(img = None, point_clouds = None):
 
+    #print('utils_kornia.drawPoints point_clouds: {}'.format(point_clouds))
+
     for cloud in point_clouds:
         
         # data
@@ -476,6 +478,8 @@ def detectShaftLines(annotated_img = None,
         img_width = non_annotated_img.shape[1]
         #print('img_width: {}'.format(img_width))
         non_annotated_tensor = K.image_to_tensor(non_annotated_img).float() / 255.0  # [0, 1] [3, crop_dims] float32
+        non_annotated_tensor = K.enhance.sharpness(non_annotated_tensor, 5.0)
+        non_annotated_tensor = K.enhance.adjust_saturation(non_annotated_tensor, 5.0)
         non_annotated_tensor = K.color.rgb_to_grayscale(non_annotated_tensor) # [0, 1] [1, crop_dims] float32
         tensors = torch.stack([ref_tensor, non_annotated_tensor], )
         
@@ -532,6 +536,7 @@ def detectShaftLines(annotated_img = None,
 
         # kornia detected endpoints
         detected_endpoints = np.asarray(np.around(np.asarray(matched_lines2), decimals = 0), dtype = int) # [[y, x], [y, x]]
+        #print('utils_kornia detected_endpoints: {}'.format(detected_endpoints))
         # draw endpoints
         annotated_img = drawPoints(annotated_img, detected_endpoints)
 
@@ -599,9 +604,9 @@ def detectShaftLines(annotated_img = None,
                 # draw endpoints
                 annotated_img = drawPoints(annotated_img, detected_endpoints)
 
-                output['new_img'] = annotated_img
-                output['polar_lines_detected_endpoints'] = polar_lines_detected_endpoints
-                return output
+            output['new_img'] = annotated_img
+            output['polar_lines_detected_endpoints'] = polar_lines_detected_endpoints
+            return output
 
         # search region around detected endpoints for all pixels
         # that meet intensity threshold
@@ -658,10 +663,9 @@ def detectShaftLines(annotated_img = None,
                 thresholded_dilated_points = np.asarray(bounded_dilated_points)[intensity_mask]
                 intensity_endpoint_clouds.append(thresholded_dilated_points)
 
+            # draw point clouds
+            annotated_img = drawPoints(annotated_img, intensity_endpoint_clouds)
             if (use_endpoint_intensities_only):
-                # draw point clouds
-                annotated_img = drawPoints(annotated_img, intensity_endpoint_clouds)
-                
                 output['new_img'] = annotated_img
                 output['intensity_endpoint_clouds'] = intensity_endpoint_clouds
                 return output
@@ -719,11 +723,10 @@ def detectShaftLines(annotated_img = None,
 
                 thresholded_dilated_line = np.asarray(bounded_dilated_line)[intensity_mask]
                 intensity_line_clouds.append(thresholded_dilated_line)
-
+            # draw point clouds
+            annotated_img = drawPoints(annotated_img, intensity_line_clouds)
+            
             if (use_line_intensities_only):
-                # draw point clouds
-                annotated_img = drawPoints(annotated_img, intensity_line_clouds)
-                
                 output['new_img'] = annotated_img
                 output['intensity_line_clouds'] = intensity_line_clouds
                 return output

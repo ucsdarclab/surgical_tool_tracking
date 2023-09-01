@@ -67,21 +67,18 @@ if __name__ == "__main__":
     crop_ref_l_img = cv2.imread(crop_ref_l_img, cv2.IMREAD_COLOR)
     crop_ref_l_img = cv2.cvtColor(crop_ref_l_img, cv2.COLOR_BGR2RGB)
     img_dims = (int(crop_ref_l_img.shape[1]), int(crop_ref_l_img.shape[0]))
-    crop_ref_l_img = K.enhance.sharpness(crop_ref_l_img, 5.0)
-    crop_ref_l_img = K.enhance.sharpness(crop_ref_l_img, 5.0)
-    crop_ref_l_img = K.enhance.adjust_saturation(crop_ref_l_img, 5.0)
-    crop_ref_l_img = K.enhance.adjust_saturation(crop_ref_l_img, 5.0)
     crop_ref_l_tensor = K.image_to_tensor(crop_ref_l_img).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
+    crop_ref_l_tensor = K.enhance.sharpness(crop_ref_l_tensor, 5.0)
+    crop_ref_l_tensor = K.enhance.adjust_saturation(crop_ref_l_tensor, 5.0)
     crop_ref_l_tensor = K.color.rgb_to_grayscale(crop_ref_l_tensor) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
+
     # right camera
     crop_ref_r_img = source_dir + 'ref_right_img.jpg'
     crop_ref_r_img = cv2.imread(crop_ref_r_img, cv2.IMREAD_COLOR)
     crop_ref_r_img = cv2.cvtColor(crop_ref_r_img, cv2.COLOR_BGR2RGB)
-    crop_ref_r_img = K.enhance.sharpness(crop_ref_r_img, 5.0)
-    crop_ref_r_img = K.enhance.sharpness(crop_ref_r_img, 5.0)
-    crop_ref_r_img = K.enhance.adjust_saturation(crop_ref_r_img, 5.0)
-    crop_ref_r_img = K.enhance.adjust_saturation(crop_ref_r_img, 5.0)
     crop_ref_r_tensor = K.image_to_tensor(crop_ref_r_img).float() / 255.0 # [0, 1] torch.Size([3, 720, 1080]) torch.float32
+    crop_ref_r_tensor = K.enhance.sharpness(crop_ref_r_tensor, 5.0)
+    crop_ref_r_tensor = K.enhance.adjust_saturation(crop_ref_r_tensor, 5.0)
     crop_ref_r_tensor = K.color.rgb_to_grayscale(crop_ref_r_tensor) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
 
     # Load kornia model
@@ -99,7 +96,7 @@ if __name__ == "__main__":
 
     kornia_params = {
         'use_kornia': True,
-        'endpoints_to_polar': True,
+        'endpoints_to_polar': False,
         'use_endpoint_intensities_only': False,
         'endpoint_intensities_to_polar': False,
         'search_radius': 10.0,
@@ -117,7 +114,7 @@ if __name__ == "__main__":
             'img_dims': img_dims
         },
         'use_line_intensities_only': False,
-        'line_intensities_to_polar': False
+        'line_intensities_to_polar': True
     } 
 
     # output directory for recordings
@@ -156,6 +153,7 @@ if __name__ == "__main__":
     record_particles_counter = 1
 
     # evaluation recording
+    accuracy_file = None
     #accuracy_file = open('canny_accuracy.txt', 'w')
     #accuracy_file = open('endpoints_to_polar_accuracy.txt', 'w')
     #accuracy_file = open('endpoint_intensities_only_accuracy.txt', 'w')
@@ -204,7 +202,7 @@ if __name__ == "__main__":
     #rate = rospy.Rate(30) # 30hz
     prev_joint_angles = None
 
-    bag = rosbag.Bag('../journal_dataset/stationary_camera_2020-06-24-15-49-10.bag')
+    bag = rosbag.Bag('../fei_dataset/volume_4points_t2.bag')
 
     old_l_img_msg = None
     old_r_img_msg = None
@@ -217,6 +215,7 @@ if __name__ == "__main__":
 
     msg_counter = 0
 
+    # write time and cTb and joint angles and x, y accuracies to file with timestamp / frame count
     for topic, msg, t in bag.read_messages(topics=[left_camera_topic, right_camera_topic, robot_joint_topic, robot_gripper_topic]):
 
         if topic == '/stereo/left/image':
@@ -225,9 +224,9 @@ if __name__ == "__main__":
         if topic == '/stereo/right/image':
             old_r_img_msg = copy.deepcopy(r_img_msg)
             r_img_msg = copy.deepcopy(msg)
-        if topic == '/dvrk/PSM1/state_joint_current':
+        if topic == '/dvrk/PSM2/state_joint_current':
             j_msg = copy.deepcopy(msg)
-        if topic == '/dvrk/PSM1/state_jaw_current':
+        if topic == '/dvrk/PSM2/state_jaw_current':
             g_msg = copy.deepcopy(msg)
         
         try: 
@@ -250,6 +249,7 @@ if __name__ == "__main__":
         new_left_img, new_right_img = cam.processImage(new_left_img, new_right_img, crop_scale = crop_scale)
         non_annotated_left_img = new_left_img.copy()
         non_annotated_right_img = new_right_img.copy()
+
         detected_keypoints_l, annotated_left_img  = segmentColorAndGetKeyPoints(non_annotated_left_img,  draw_contours = draw_contours)
         new_detected_keypoints_l = np.copy(detected_keypoints_l)
         detected_keypoints_r, annotated_right_img = segmentColorAndGetKeyPoints(non_annotated_right_img, draw_contours = draw_contours)
@@ -350,7 +350,7 @@ if __name__ == "__main__":
                     
                     #shaftFeatureObs_kornia arguments
                     {
-                        'use_lines': 'detected_endpoint_lines',
+                        'use_lines': 'line_cloud_lines',
                         'use_clouds': False,
                         'detected_lines': {
                             'canny': (new_canny_lines_l, new_canny_lines_r),
@@ -393,6 +393,7 @@ if __name__ == "__main__":
         robot_arm.updateJointAngles(new_joint_angles)
         img_list = projectSkeleton(robot_arm.getSkeletonPoints(), np.dot(cam_T_b, T), [new_left_img, new_right_img], cam.projectPoints, (new_detected_keypoints_l, new_detected_keypoints_r), accuracy_file)
         img_list = drawShaftLines(robot_arm.getShaftFeatures(), cam, np.dot(cam_T_b, T), img_list)
+        #print('ros_tracking_kornia_sequential.py np.dot(cTb, T): {}'.format(np.dot(cam_T_b, T)))
         cv2.imshow("Left Img",  img_list[0])
         cv2.imshow("Right Img", img_list[1])
 
