@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
     # parameters for shaft detection
     canny_params = {
-        'use_canny': False,
+        'use_canny': True,
         'hough_rho_accumulator': 5.0,
         'hough_theta_accumulator': 0.09,
         'hough_vote_threshold': 100,
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     }
 
     kornia_params = {
-        'use_kornia': True,
+        'use_kornia': False,
         'endpoints_to_polar': False,
         'use_endpoint_intensities_only': False,
         'endpoint_intensities_to_polar': False,
@@ -114,7 +114,7 @@ if __name__ == "__main__":
             'img_dims': img_dims
         },
         'use_line_intensities_only': False,
-        'line_intensities_to_polar': True
+        'line_intensities_to_polar': False
     } 
 
     # output directory for recordings
@@ -153,13 +153,21 @@ if __name__ == "__main__":
     record_particles_counter = 1
 
     # evaluation recording
-    accuracy_file = None
-    #accuracy_file = open('canny_accuracy.txt', 'w')
-    #accuracy_file = open('endpoints_to_polar_accuracy.txt', 'w')
-    #accuracy_file = open('endpoint_intensities_only_accuracy.txt', 'w')
-    #accuracy_file = open('endpoint_intensities_to_polar_accuracy.txt', 'w')
-    #accuracy_file = open('line_intensities_only_accuracy.txt', 'w')
-    #accuracy_file = open('line_intensities_to_polar_accuracy.txt', 'w')
+    #accuracy_file = None
+    accuracy_file = open('kornia_dev/fei_ref_data/canny_accuracy.txt', 'w')
+    #accuracy_file = open('kornia_dev/fei_ref_data/endpoints_to_polar_accuracy.txt', 'w')
+    #accuracy_file = open('kornia_dev/fei_ref_data/endpoint_intensities_only_accuracy.txt', 'w')
+    #accuracy_file = open('kornia_dev/fei_ref_data/endpoint_intensities_to_polar_accuracy.txt', 'w')
+    #accuracy_file = open('kornia_dev/fei_ref_data/line_intensities_only_accuracy.txt', 'w')
+    #accuracy_file = open('kornia_dev/fei_ref_data/line_intensities_to_polar_accuracy.txt', 'w')
+
+    #localization_file = None
+    localization_file = open('kornia_dev/fei_ref_data/canny_localization.txt', 'w')
+    #localization_file = open('kornia_dev/fei_ref_data/endpoints_to_polar_localization.txt', 'w')
+    #localization_file = open('kornia_dev/fei_ref_data/endpoint_intensities_only_localization.txt', 'w')
+    #localization_file = open('kornia_dev/fei_ref_data/endpoint_intensities_to_polar_localization.txt', 'w')
+    #localization_file = open('kornia_dev/fei_ref_data/line_intensities_only_localization.txt', 'w')
+    #localization_file = open('kornia_dev/fei_ref_data/line_intensities_to_polar_localization.txt', 'w')
 
     robot_arm = RobotLink(robot_file, use_dh_offset=False) # position / orientation in Meters
     cam = StereoCamera(camera_file, rectify = True, crop_scale = crop_scale, downscale_factor = 2, scale_baseline=1e-3)
@@ -350,7 +358,7 @@ if __name__ == "__main__":
                     
                     #shaftFeatureObs_kornia arguments
                     {
-                        'use_lines': 'line_cloud_lines',
+                        'use_lines': 'canny',
                         'use_clouds': False,
                         'detected_lines': {
                             'canny': (new_canny_lines_l, new_canny_lines_r),
@@ -416,12 +424,19 @@ if __name__ == "__main__":
             out_data = [particles, weights, np.dot(weights, particles)]
             np.save(out_file, out_data)
 
+        text_string = str(t) + ',' + str(msg_counter) + ',' + str(new_joint_angles) + ',' + str(np.dot(cam_T_b, T)) + '\n'
+        print(text_string)
+        if (localization_file):
+            localization_file.write(text_string)
         record_particles_counter += 1
         msg_counter += 1
         print('msg_counter: {}'.format(msg_counter))
         cv2.waitKey(1)
 
-    accuracy_file.close()
+    if (accuracy_file):
+        accuracy_file.close()
+    if (localization_file):
+        localization_file.close()
     print('end of bag, closing bag')
     bag.close()
     print('total number of messages: {}'.format(msg_counter))

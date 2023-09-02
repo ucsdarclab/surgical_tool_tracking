@@ -25,7 +25,7 @@ def mouse_event(event, x, y, flags, params):
         
         text_to_save = [frame_count, x, y]
         print(text_to_save)
-        with open("fei_ref_data/keypoint_labels_v2.csv", "a", newline="") as f:
+        with open("kornia_dev/fei_ref_data/keypoint_labels_v2.csv", "a", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(text_to_save)
 
@@ -136,3 +136,6 @@ for topic, msg, t in bag.read_messages(topics=[left_camera_topic, right_camera_t
     frame_counter += 1
     # show one frame at a time
     cv2.waitKey(0)
+
+print('finished rosbag file')
+bag.close()
