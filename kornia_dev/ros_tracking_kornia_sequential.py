@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
     # parameters for shaft detection
     canny_params = {
-        'use_canny': True,
+        'use_canny': False,
         'hough_rho_accumulator': 5.0,
         'hough_theta_accumulator': 0.09,
         'hough_vote_threshold': 100,
@@ -95,8 +95,8 @@ if __name__ == "__main__":
     }
 
     kornia_params = {
-        'use_kornia': False,
-        'endpoints_to_polar': False,
+        'use_kornia': True,
+        'endpoints_to_polar': True,
         'use_endpoint_intensities_only': False,
         'endpoint_intensities_to_polar': False,
         'search_radius': 10.0,
@@ -117,53 +117,39 @@ if __name__ == "__main__":
         'line_intensities_to_polar': False
     } 
 
-    # output directory for recordings
-    video_out_dir = source_dir + 'video_recordings/'
-    particle_out_dir = source_dir + 'particle_data/'
-    if (canny_params['use_canny']):
-        video_out_dir += 'use_canny/'
-        particle_out_dir += 'use_canny/'
-    elif (kornia_params['use_kornia'] and kornia_params['endpoints_to_polar']):
-        video_out_dir += 'endpoints_to_polar/'
-        particle_out_dir += 'endpoints_to_polar/'
-    elif (kornia_params['use_kornia'] and kornia_params['use_endpoint_intensities_only']):
-        video_out_dir += 'use_endpoint_intensities_only/'
-        particle_out_dir += 'use_endpoint_intensities_only/'
-    elif (kornia_params['use_kornia'] and kornia_params['endpoint_intensities_to_polar']):
-        video_out_dir += 'endpoint_intensities_to_polar/'
-        particle_out_dir += 'endpoint_intensities_to_polar/'
-    elif (kornia_params['use_kornia'] and kornia_params['use_line_intensities_only']):
-        video_out_dir += 'use_line_intensities_only/'
-        particle_out_dir += 'use_line_intensities_only/'
-    elif (kornia_params['use_kornia'] and kornia_params['line_intensities_to_polar']):
-        video_out_dir += 'line_intensities_to_polar/'
-        particle_out_dir += 'line_intensities_to_polar/'
-
     # video recording
     record_video = False
     fps = 30
     if (record_video):
-        out_file = video_out_dir + 'left_video.mp4'
-        left_video_out  = cv2.VideoWriter(out_file,  cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, img_dims)
-        out_file = video_out_dir + 'right_video.mp4'
-        right_video_out = cv2.VideoWriter(out_file, cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, img_dims)
 
-    # particle recording
-    record_particles = False
-    record_particles_counter = 1
+        #out_file = source_dir + 'canny_left_video.mp4'
+        #out_file = source_dir + 'endp2p_left_video.mp4'
+        #out_file = source_dir + 'endpi_left_video.mp4'
+        #out_file = source_dir + 'endpi2p_left_video.mp4'
+        #out_file = source_dir + 'li_left_video.mp4'
+        #out_file = source_dir + 'li2p_left_video.mp4'
+        #left_video_out  = cv2.VideoWriter(out_file,  cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, img_dims)
+
+        #out_file = source_dir + 'canny_right_video.mp4'
+        out_file = source_dir + 'endp2p_right_video.mp4'
+        #out_file = source_dir + 'endpi_right_video.mp4'
+        #out_file = source_dir + 'endpi2p_right_video.mp4'
+        #out_file = source_dir + 'li_right_video.mp4'
+        #out_file = source_dir + 'li2p_right_video.mp4'
+        right_video_out = cv2.VideoWriter(out_file, cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, img_dims)
 
     # evaluation recording
     #accuracy_file = None
-    accuracy_file = open('kornia_dev/fei_ref_data/canny_accuracy.txt', 'w')
-    #accuracy_file = open('kornia_dev/fei_ref_data/endpoints_to_polar_accuracy.txt', 'w')
+    #accuracy_file = open('kornia_dev/fei_ref_data/canny_accuracy.txt', 'w')
+    accuracy_file = open('kornia_dev/fei_ref_data/endpoints_to_polar_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/endpoint_intensities_only_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/endpoint_intensities_to_polar_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/line_intensities_only_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/line_intensities_to_polar_accuracy.txt', 'w')
 
     #localization_file = None
-    localization_file = open('kornia_dev/fei_ref_data/canny_localization.txt', 'w')
-    #localization_file = open('kornia_dev/fei_ref_data/endpoints_to_polar_localization.txt', 'w')
+    #localization_file = open('kornia_dev/fei_ref_data/canny_localization.txt', 'w')
+    localization_file = open('kornia_dev/fei_ref_data/endpoints_to_polar_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/endpoint_intensities_only_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/endpoint_intensities_to_polar_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/line_intensities_only_localization.txt', 'w')
@@ -223,7 +209,6 @@ if __name__ == "__main__":
 
     msg_counter = 0
 
-    # write time and cTb and joint angles and x, y accuracies to file with timestamp / frame count
     for topic, msg, t in bag.read_messages(topics=[left_camera_topic, right_camera_topic, robot_joint_topic, robot_gripper_topic]):
 
         if topic == '/stereo/left/image':
@@ -358,7 +343,7 @@ if __name__ == "__main__":
                     
                     #shaftFeatureObs_kornia arguments
                     {
-                        'use_lines': 'canny',
+                        'use_lines': 'detected_endpoint_lines',
                         'use_clouds': False,
                         'detected_lines': {
                             'canny': (new_canny_lines_l, new_canny_lines_r),
@@ -402,36 +387,24 @@ if __name__ == "__main__":
         img_list = projectSkeleton(robot_arm.getSkeletonPoints(), np.dot(cam_T_b, T), [new_left_img, new_right_img], cam.projectPoints, (new_detected_keypoints_l, new_detected_keypoints_r), accuracy_file)
         img_list = drawShaftLines(robot_arm.getShaftFeatures(), cam, np.dot(cam_T_b, T), img_list)
         #print('ros_tracking_kornia_sequential.py np.dot(cTb, T): {}'.format(np.dot(cam_T_b, T)))
-        cv2.imshow("Left Img",  img_list[0])
-        cv2.imshow("Right Img", img_list[1])
+        #cv2.imshow("Left Img",  img_list[0])
+        #cv2.imshow("Right Img", img_list[1])
 
         # video recording
         if (record_video):
             #print('img_list[0].shape: {}'.format(img_list[0].shape))
             #print('type(img_list[0]): {}'.format(type(img_list[0])))
-            left_video_out.write(img_list[0])
+            #left_video_out.write(img_list[0])
             right_video_out.write(img_list[1])
-
-        # particle recording
-        if (record_particles):
-            out_file = particle_out_dir + str(record_particles_counter) + '.npy'
-            particles = pf._particles.copy()
-            #print('particles: {}'.format(particles))
-            #print('particles.shape: {}'.format(particles.shape))
-            weights = pf._weights.copy()
-            #print('weights: {}'.format(weights))
-            #print('weights.shape: {}'.format(weights.shape))
-            out_data = [particles, weights, np.dot(weights, particles)]
-            np.save(out_file, out_data)
 
         text_string = str(t) + ',' + str(msg_counter) + ',' + str(new_joint_angles) + ',' + str(np.dot(cam_T_b, T)) + '\n'
         print(text_string)
         if (localization_file):
             localization_file.write(text_string)
-        record_particles_counter += 1
+        
         msg_counter += 1
         print('msg_counter: {}'.format(msg_counter))
-        cv2.waitKey(1)
+        #cv2.waitKey(1)
 
     if (accuracy_file):
         accuracy_file.close()
@@ -442,5 +415,5 @@ if __name__ == "__main__":
     print('total number of messages: {}'.format(msg_counter))
     print('Releasing video capture')
     if (record_video):
-        left_video_out.release()
+        #left_video_out.release()
         right_video_out.release()
