@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
     # parameters for shaft detection
     canny_params = {
-        'use_canny': True,
+        'use_canny': False,
         'hough_rho_accumulator': 5.0,
         'hough_theta_accumulator': 0.09,
         'hough_vote_threshold': 100,
@@ -130,7 +130,7 @@ if __name__ == "__main__":
         #out_file = source_dir + 'li2p_left_video.mp4'
         #left_video_out  = cv2.VideoWriter(out_file,  cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, img_dims)
 
-        out_file = source_dir + 'canny_right_video.mp4'
+        #out_file = source_dir + 'canny_right_video.mp4'
         #out_file = source_dir + 'endp2p_right_video.mp4'
         #out_file = source_dir + 'endpi_right_video.mp4'
         #out_file = source_dir + 'endpi2p_right_video.mp4'
@@ -140,7 +140,7 @@ if __name__ == "__main__":
 
     # evaluation recording
     #accuracy_file = None
-    accuracy_file = open('kornia_dev/fei_ref_data/canny_accuracy.txt', 'w')
+    #accuracy_file = open('kornia_dev/fei_ref_data/canny_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/endpoints_to_polar_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/endpoint_intensities_only_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/endpoint_intensities_to_polar_accuracy.txt', 'w')
@@ -148,7 +148,7 @@ if __name__ == "__main__":
     #accuracy_file = open('kornia_dev/fei_ref_data/line_intensities_to_polar_accuracy.txt', 'w')
 
     #localization_file = None
-    localization_file = open('kornia_dev/fei_ref_data/canny_localization.txt', 'w')
+    #localization_file = open('kornia_dev/fei_ref_data/canny_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/endpoints_to_polar_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/endpoint_intensities_only_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/endpoint_intensities_to_polar_localization.txt', 'w')
