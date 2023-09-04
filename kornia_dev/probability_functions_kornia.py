@@ -384,9 +384,9 @@ def shaftFeatureObs_kornia(
         sigma2_y = pixel_probability_params['sigma2_y']
 
         intensity_clouds_l = intensity_clouds[0]
-        print('intensity_clouds_l: {}'.format(intensity_clouds_l))
+        #print('intensity_clouds_l: {}'.format(intensity_clouds_l))
         intensity_clouds_r = intensity_clouds[1]
-        print('intensity_clouds_r: {}'.format(intensity_clouds_r))
+        #print('intensity_clouds_r: {}'.format(intensity_clouds_r))
 
         projected_lines_l = projected_lines[0]
         projected_lines_r = projected_lines[1]
@@ -411,11 +411,7 @@ def shaftFeatureObs_kornia(
         
         # flatten detected clouds to list of x, y points
         max_point_probs_l = []
-        if (intensity_clouds_l.all() == None):
-            max_point_probs_l.append(1)
-        elif (len(intensity_clouds_l) == 0):
-            max_point_probs_l.append(1)
-        elif (len(intensity_clouds_l) >= 1):
+        try:
             intensity_clouds_l = np.vstack(intensity_clouds_l)
             assert(intensity_clouds_l.shape[1] == 2)
             for i in range(intensity_clouds_l.shape[0]):
@@ -432,15 +428,16 @@ def shaftFeatureObs_kornia(
                     if (point_prob > max_point_prob):
                         max_point_prob = point_prob
                 max_point_probs_l.append(max_point_prob)
-                # color pixel to match projected line
+        except:
+            print('exception in probability_functions_kornia line 414')
+            print('intensity_clouds_l: {}'.format(intensity_clouds_l))
+            print('type(intensity_clouds_l): {}'.format(type(intensity_clouds_l)))
+            max_point_probs_l.append(1)
+
         
         # flatten detected clouds to list of x, y points
         max_point_probs_r = []
-        if (intensity_clouds_r.all() == None):
-            max_point_probs_r.append(1)
-        elif (len(intensity_clouds_r) == 0):
-            max_point_probs_r.append(1)
-        elif (len(intensity_clouds_r) >= 1):
+        try:
             intensity_clouds_r = np.vstack(intensity_clouds_r)
             assert(intensity_clouds_r.shape[1] == 2)
             for i in range(intensity_clouds_r.shape[0]):
@@ -457,6 +454,11 @@ def shaftFeatureObs_kornia(
                     if (point_prob > max_point_prob):
                         max_point_prob = point_prob
                 max_point_probs_r.append(max_point_prob)
+        except:
+            print('exception in probability_functions_kornia line 439')
+            print('intensity_clouds_r: {}'.format(intensity_clouds_r))
+            print('type(intensity_clouds_r): {}'.format(type(intensity_clouds_r)))
+            max_point_probs_r.append(1)
         
         # join all pixel probabilities from l/r cameras
         max_point_probs = []
