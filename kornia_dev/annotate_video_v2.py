@@ -20,7 +20,7 @@ labels_file = open('kornia_dev/fei_ref_data/keypoint_labels_v2.csv', 'w')
 # of the points clicked on the image
 def mouse_event(event, x, y, flags, params):
     
-    t = float(params[0])
+    t = params[0]
     msg_count = int(params[1])
     f = params[2]
 
