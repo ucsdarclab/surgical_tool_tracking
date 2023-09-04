@@ -411,7 +411,7 @@ def shaftFeatureObs_kornia(
         
         # flatten detected clouds to list of x, y points
         max_point_probs_l = []
-        if (np.all(intensity_clouds_l) == None):
+        if (intensity_clouds_l.all() == None):
             max_point_probs_l.append(1)
         elif (len(intensity_clouds_l) == 0):
             max_point_probs_l.append(1)
@@ -436,7 +436,7 @@ def shaftFeatureObs_kornia(
         
         # flatten detected clouds to list of x, y points
         max_point_probs_r = []
-        if (np.all(intensity_clouds_r) == None):
+        if (intensity_clouds_r.all() == None):
             max_point_probs_r.append(1)
         elif (len(intensity_clouds_r) == 0):
             max_point_probs_r.append(1)

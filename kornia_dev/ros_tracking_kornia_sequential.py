@@ -95,9 +95,9 @@ if __name__ == "__main__":
     }
 
     kornia_params = {
-        'use_kornia': False,
+        'use_kornia': True,
         'endpoints_to_polar': False,
-        'use_endpoint_intensities_only': False,
+        'use_endpoint_intensities_only': True,
         'endpoint_intensities_to_polar': False,
         'search_radius': 10.0,
         'intensity_params': {
@@ -132,7 +132,7 @@ if __name__ == "__main__":
 
         #out_file = source_dir + 'canny_right_video.mp4'
         #out_file = source_dir + 'endp2p_right_video.mp4'
-        #out_file = source_dir + 'endpi_right_video.mp4'
+        out_file = source_dir + 'endpi_right_video.mp4'
         #out_file = source_dir + 'endpi2p_right_video.mp4'
         #out_file = source_dir + 'li_right_video.mp4'
         #out_file = source_dir + 'li2p_right_video.mp4'
@@ -142,7 +142,7 @@ if __name__ == "__main__":
     #accuracy_file = None
     #accuracy_file = open('kornia_dev/fei_ref_data/canny_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/endpoints_to_polar_accuracy.txt', 'w')
-    #accuracy_file = open('kornia_dev/fei_ref_data/endpoint_intensities_only_accuracy.txt', 'w')
+    accuracy_file = open('kornia_dev/fei_ref_data/endpoint_intensities_only_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/endpoint_intensities_to_polar_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/line_intensities_only_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/line_intensities_to_polar_accuracy.txt', 'w')
@@ -150,7 +150,7 @@ if __name__ == "__main__":
     #localization_file = None
     #localization_file = open('kornia_dev/fei_ref_data/canny_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/endpoints_to_polar_localization.txt', 'w')
-    #localization_file = open('kornia_dev/fei_ref_data/endpoint_intensities_only_localization.txt', 'w')
+    localization_file = open('kornia_dev/fei_ref_data/endpoint_intensities_only_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/endpoint_intensities_to_polar_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/line_intensities_only_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/line_intensities_to_polar_localization.txt', 'w')
@@ -346,8 +346,8 @@ if __name__ == "__main__":
                     
                     #shaftFeatureObs_kornia arguments
                     {
-                        'use_lines': 'canny',
-                        'use_clouds': False,
+                        'use_lines': False,
+                        'use_clouds': 'endpoint_clouds',
                         'detected_lines': {
                             'canny': (new_canny_lines_l, new_canny_lines_r),
                             'detected_endpoint_lines': (new_detected_endpoint_lines_l, new_detected_endpoint_lines_r),
