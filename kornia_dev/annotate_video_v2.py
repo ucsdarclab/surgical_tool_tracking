@@ -14,20 +14,24 @@ import sys
 from sensor_msgs.msg import Image, JointState
 from message_filters import ApproximateTimeSynchronizer, Subscriber
 
+labels_file = open('kornia_dev/fei_ref_data/keypoint_labels_v2.csv', 'w')
+
 # function to display the coordinates of
 # of the points clicked on the image
 def mouse_event(event, x, y, flags, params):
     
-    frame_count = int(params[0])
+    t = float(params[0])
+    msg_count = int(params[1])
+    f = params[2]
 
     # checking for mouse clicks
     if (event == cv2.EVENT_MOUSEMOVE) or (event == cv2.EVENT_LBUTTONDOWN) or (event == cv2.EVENT_RBUTTONDOWN):
         
-        text_to_save = [frame_count, x, y]
+        text_to_save = str(t) + ',' + str(msg_count) + ',' + str(x) + ',' + str(y) + '\n'
         print(text_to_save)
-        with open("kornia_dev/fei_ref_data/keypoint_labels_v2.csv", "a", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(text_to_save)
+        f.write(text_to_save)
+        
+        return True
 
 # set random seed
 np.random.seed(0)
@@ -95,7 +99,7 @@ g_msg = None
 
 bag = rosbag.Bag('../fei_dataset/volume_4points_t2.bag')
 
-frame_counter = 1
+msg_counter = 1
 
 for topic, msg, t in bag.read_messages(topics=[left_camera_topic, right_camera_topic, robot_joint_topic, robot_gripper_topic]):
 
@@ -130,12 +134,11 @@ for topic, msg, t in bag.read_messages(topics=[left_camera_topic, right_camera_t
     non_annotated_right_img = new_right_img.copy()
     
     cv2.imshow('right_img', new_right_img)
-    print(frame_counter)
     # set mouse callback
-    cv2.setMouseCallback('right_img', mouse_event, param = [frame_counter])
-    frame_counter += 1
+    cv2.setMouseCallback('right_img', mouse_event, param = [t, msg_counter, labels_file])
+    msg_counter += 1
     # show one frame at a time
-    cv2.waitKey(0)
+    cv2.waitKey(1)
 
 print('finished rosbag file')
 bag.close()

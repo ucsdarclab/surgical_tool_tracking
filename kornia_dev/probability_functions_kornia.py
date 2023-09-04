@@ -50,7 +50,6 @@ def lumpedErrorMotionModel(state, std_pos, std_ori, robot_arm, std_j, nb):
 # State is: [pos_x, pos_y, pos_z, ori_x, ori_y, ori_z, e_nb, ..., e_n]
 # where pos, ori is position and axis/angle rep of lumped error
 # e_nb+1, ..., e_n are the errors of the tracked joint angles
-@timeit
 def pointFeatureObs(state, point_detections, robot_arm, joint_angle_readings, cam, cam_T_b, gamma, association_threshold=20):
     # Get lumped error
     T = poseToMatrix(state[:6])
@@ -141,7 +140,6 @@ def pointFeatureObs(state, point_detections, robot_arm, joint_angle_readings, ca
 # State is: [pos_x, pos_y, pos_z, ori_x, ori_y, ori_z, e_nb, ..., e_n]
 # where pos, ori is position and axis/angle rep of lumped error
 # e_nb+1, ..., e_n are the errors of the tracked joint angles
-@timeit
 def pointFeatureObsRightLumpedError(state, point_detections, robot_arm, cam, 
                                     cam_T_b, joint_angle_readings, gamma, association_threshold=20):
     # Get lumped error
@@ -182,7 +180,6 @@ def pointFeatureObsRightLumpedError(state, point_detections, robot_arm, cam,
         
     return prob
 
-@timeit
 def shaftFeatureObs(state, detected_lines, robot_arm, cam, cam_T_b, joint_angle_readings, gamma_rho, gamma_theta, rho_thresh, theta_thresh):
     #print('in shaftFeatureObs')
     #print('state: {}'.format(state))
@@ -257,7 +254,6 @@ def shaftFeatureObs(state, detected_lines, robot_arm, cam, cam_T_b, joint_angle_
         
     return prob
 
-@timeit
 def shaftFeatureObs_kornia(
         state, 
         use_lines = None, 
@@ -388,7 +384,9 @@ def shaftFeatureObs_kornia(
         sigma2_y = pixel_probability_params['sigma2_y']
 
         intensity_clouds_l = intensity_clouds[0]
+        print('intensity_clouds_l: {}'.format(intensity_clouds_l))
         intensity_clouds_r = intensity_clouds[1]
+        print('intensity_clouds_r: {}'.format(intensity_clouds_r))
 
         projected_lines_l = projected_lines[0]
         projected_lines_r = projected_lines[1]
@@ -412,45 +410,53 @@ def shaftFeatureObs_kornia(
             distributions_r.append(distribution)
         
         # flatten detected clouds to list of x, y points
-        intensity_clouds_l = np.vstack(intensity_clouds_l)
-        assert(intensity_clouds_l.shape[1] == 2)
-        
         max_point_probs_l = []
-        for i in range(intensity_clouds_l.shape[0]):
-            y = intensity_clouds_l[i, 0]
-            x = intensity_clouds_l[i, 1]
-            max_point_prob = -99
-            for distribution in distributions_l:
-                rho = distribution[0]
-                theta = distribution[1]
-                mean = distribution[2]
-                var = distribution[3]
-                rv = x * np.cos(theta) + y * np.sin(theta) - rho
-                point_prob = normpdf(rv, mean, np.sqrt(var))
-                if (point_prob > max_point_prob):
-                    max_point_prob = point_prob
-            max_point_probs_l.append(max_point_prob)
-            # color pixel to match projected line
+        if (np.all(intensity_clouds_l) == None):
+            max_point_probs_l.append(1)
+        elif (len(intensity_clouds_l) == 0):
+            max_point_probs_l.append(1)
+        elif (len(intensity_clouds_l) >= 1):
+            intensity_clouds_l = np.vstack(intensity_clouds_l)
+            assert(intensity_clouds_l.shape[1] == 2)
+            for i in range(intensity_clouds_l.shape[0]):
+                y = intensity_clouds_l[i, 0]
+                x = intensity_clouds_l[i, 1]
+                max_point_prob = -99
+                for distribution in distributions_l:
+                    rho = distribution[0]
+                    theta = distribution[1]
+                    mean = distribution[2]
+                    var = distribution[3]
+                    rv = x * np.cos(theta) + y * np.sin(theta) - rho
+                    point_prob = normpdf(rv, mean, np.sqrt(var))
+                    if (point_prob > max_point_prob):
+                        max_point_prob = point_prob
+                max_point_probs_l.append(max_point_prob)
+                # color pixel to match projected line
         
         # flatten detected clouds to list of x, y points
-        intensity_clouds_r = np.vstack(intensity_clouds_r)
-        assert(intensity_clouds_r.shape[1] == 2)
-        
         max_point_probs_r = []
-        for i in range(intensity_clouds_r.shape[0]):
-            y = intensity_clouds_r[i, 0]
-            x = intensity_clouds_r[i, 1]
-            max_point_prob = -99
-            for distribution in distributions_r:
-                rho = distribution[0]
-                theta = distribution[1]
-                mean = distribution[2]
-                var = distribution[3]
-                rv = x * np.cos(theta) + y * np.sin(theta) - rho
-                point_prob = normpdf(rv, mean, np.sqrt(var))
-                if (point_prob > max_point_prob):
-                    max_point_prob = point_prob
-            max_point_probs_r.append(max_point_prob)
+        if (np.all(intensity_clouds_r) == None):
+            max_point_probs_r.append(1)
+        elif (len(intensity_clouds_r) == 0):
+            max_point_probs_r.append(1)
+        elif (len(intensity_clouds_r) >= 1):
+            intensity_clouds_r = np.vstack(intensity_clouds_r)
+            assert(intensity_clouds_r.shape[1] == 2)
+            for i in range(intensity_clouds_r.shape[0]):
+                y = intensity_clouds_r[i, 0]
+                x = intensity_clouds_r[i, 1]
+                max_point_prob = -99
+                for distribution in distributions_r:
+                    rho = distribution[0]
+                    theta = distribution[1]
+                    mean = distribution[2]
+                    var = distribution[3]
+                    rv = x * np.cos(theta) + y * np.sin(theta) - rho
+                    point_prob = normpdf(rv, mean, np.sqrt(var))
+                    if (point_prob > max_point_prob):
+                        max_point_prob = point_prob
+                max_point_probs_r.append(max_point_prob)
         
         # join all pixel probabilities from l/r cameras
         max_point_probs = []

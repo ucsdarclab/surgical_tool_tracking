@@ -149,3 +149,4 @@
 /kornia_dev/ref_data/contour/video_recordings/use_line_intensities_only/*
 
 !/kornia_dev/fei_ref_data/
+/kornia_dev/fei_ref_data/*.mp4

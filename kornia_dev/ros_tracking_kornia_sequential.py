@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
     # parameters for shaft detection
     canny_params = {
-        'use_canny': True,
+        'use_canny': False,
         'hough_rho_accumulator': 5.0,
         'hough_theta_accumulator': 0.09,
         'hough_vote_threshold': 100,
@@ -95,9 +95,9 @@ if __name__ == "__main__":
     }
 
     kornia_params = {
-        'use_kornia': False,
+        'use_kornia': True,
         'endpoints_to_polar': False,
-        'use_endpoint_intensities_only': False,
+        'use_endpoint_intensities_only': True,
         'endpoint_intensities_to_polar': False,
         'search_radius': 10.0,
         'intensity_params': {
@@ -130,9 +130,9 @@ if __name__ == "__main__":
         #out_file = source_dir + 'li2p_left_video.mp4'
         #left_video_out  = cv2.VideoWriter(out_file,  cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, img_dims)
 
-        out_file = source_dir + 'canny_right_video.mp4'
+        #out_file = source_dir + 'canny_right_video.mp4'
         #out_file = source_dir + 'endp2p_right_video.mp4'
-        #out_file = source_dir + 'endpi_right_video.mp4'
+        out_file = source_dir + 'endpi_right_video.mp4'
         #out_file = source_dir + 'endpi2p_right_video.mp4'
         #out_file = source_dir + 'li_right_video.mp4'
         #out_file = source_dir + 'li2p_right_video.mp4'
@@ -140,17 +140,17 @@ if __name__ == "__main__":
 
     # evaluation recording
     #accuracy_file = None
-    accuracy_file = open('kornia_dev/fei_ref_data/canny_accuracy.txt', 'w')
+    #accuracy_file = open('kornia_dev/fei_ref_data/canny_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/endpoints_to_polar_accuracy.txt', 'w')
-    #accuracy_file = open('kornia_dev/fei_ref_data/endpoint_intensities_only_accuracy.txt', 'w')
+    accuracy_file = open('kornia_dev/fei_ref_data/endpoint_intensities_only_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/endpoint_intensities_to_polar_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/line_intensities_only_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/line_intensities_to_polar_accuracy.txt', 'w')
 
     #localization_file = None
-    localization_file = open('kornia_dev/fei_ref_data/canny_localization.txt', 'w')
+    #localization_file = open('kornia_dev/fei_ref_data/canny_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/endpoints_to_polar_localization.txt', 'w')
-    #localization_file = open('kornia_dev/fei_ref_data/endpoint_intensities_only_localization.txt', 'w')
+    localization_file = open('kornia_dev/fei_ref_data/endpoint_intensities_only_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/endpoint_intensities_to_polar_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/line_intensities_only_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/line_intensities_to_polar_localization.txt', 'w')
@@ -207,7 +207,7 @@ if __name__ == "__main__":
     j_msg = None
     g_msg = None
 
-    msg_counter = 0
+    msg_counter = 1
 
     for topic, msg, t in bag.read_messages(topics=[left_camera_topic, right_camera_topic, robot_joint_topic, robot_gripper_topic]):
 
@@ -231,7 +231,10 @@ if __name__ == "__main__":
                 continue
         except:
             continue
-
+        
+        #if (msg_counter < 3725):
+            #msg_counter += 1
+            #continue
         start_t = time.time()
 
         # copy l/r images so not overwritten by callback
@@ -343,8 +346,8 @@ if __name__ == "__main__":
                     
                     #shaftFeatureObs_kornia arguments
                     {
-                        'use_lines': 'canny',
-                        'use_clouds': False,
+                        'use_lines': False,
+                        'use_clouds': 'endpoint_clouds',
                         'detected_lines': {
                             'canny': (new_canny_lines_l, new_canny_lines_r),
                             'detected_endpoint_lines': (new_detected_endpoint_lines_l, new_detected_endpoint_lines_r),
@@ -384,7 +387,7 @@ if __name__ == "__main__":
         if correction_estimation.shape[0] > 6:
             new_joint_angles[-(correction_estimation.shape[0]-6):] += correction_estimation[6:]
         robot_arm.updateJointAngles(new_joint_angles)
-        img_list = projectSkeleton(robot_arm.getSkeletonPoints(), np.dot(cam_T_b, T), [new_left_img, new_right_img], cam.projectPoints, (new_detected_keypoints_l, new_detected_keypoints_r), accuracy_file)
+        img_list = projectSkeleton(robot_arm.getSkeletonPoints(), np.dot(cam_T_b, T), [new_left_img, new_right_img], cam.projectPoints, (new_detected_keypoints_l, new_detected_keypoints_r), accuracy_file, t, msg_counter)
         img_list = drawShaftLines(robot_arm.getShaftFeatures(), cam, np.dot(cam_T_b, T), img_list)
         #print('ros_tracking_kornia_sequential.py np.dot(cTb, T): {}'.format(np.dot(cam_T_b, T)))
         #cv2.imshow("Left Img",  img_list[0])
