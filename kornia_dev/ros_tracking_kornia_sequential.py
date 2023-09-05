@@ -366,7 +366,7 @@ if __name__ == "__main__":
                     #shaftFeatureObs_kornia arguments
                     {
                         'use_lines': False,
-                        'use_clouds': 'line_clouds',
+                        'use_clouds': 'endpoint_clouds',
                         'detected_lines': {
                             'canny': (new_canny_lines_l, new_canny_lines_r),
                             'detected_endpoint_lines': (new_detected_endpoint_lines_l, new_detected_endpoint_lines_r),

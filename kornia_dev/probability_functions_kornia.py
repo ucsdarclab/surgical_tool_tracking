@@ -270,12 +270,13 @@ def shaftFeatureObs_kornia(
     
     # determine metric
     if (use_lines):
+        #print('using lines')
         algo = use_lines
         detected_lines = detected_lines[algo]
         #print('shaftfeatureobs detected_lines: {}'.format(detected_lines))
-        #print('shaftfeatureobs detected_lines.shape: {}'.format(detected_lines.shape))
         
     elif (use_clouds):
+        #print('using clouds')
         algo = use_clouds
         intensity_clouds = intensity_clouds[algo]
         #print('shaftfeatureobs intensity_clouds: {}'.format(intensity_clouds))
