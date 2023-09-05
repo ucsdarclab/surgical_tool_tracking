@@ -58,9 +58,28 @@ if __name__ == "__main__":
     # ref line indices
     in_file = source_dir + 'crop_ref_lines_l_idx.npy'
     crop_ref_lines_l_idx = np.load(in_file) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
+    
     in_file = source_dir + 'crop_ref_lines_r_idx.npy'
     crop_ref_lines_r_idx = np.load(in_file) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
 
+    # ref lines
+    in_file = source_dir + 'crop_ref_lines_l.npy'
+    crop_ref_lines_l = np.load(in_file)
+    crop_ref_lines_l = torch.tensor(crop_ref_lines_l)
+
+    in_file = source_dir + 'crop_ref_lines_r.npy'
+    crop_ref_lines_r = np.load(in_file)
+    crop_ref_lines_r = torch.tensor(crop_ref_lines_r)
+    
+    # line descriptors
+    in_file = source_dir + 'crop_ref_desc_l.npy'
+    crop_ref_desc_l = np.load(in_file)
+    crop_ref_desc_l = torch.tensor(crop_ref_desc_l)
+
+    in_file = source_dir + 'crop_ref_desc_r.npy'
+    crop_ref_desc_r = np.load(in_file)
+    crop_ref_desc_r = torch.tensor(crop_ref_desc_r)
+    
     # reference images
     # left camera
     crop_ref_l_img = source_dir + 'ref_left_img.jpg'
@@ -232,7 +251,7 @@ if __name__ == "__main__":
         except:
             continue
         
-        #if (msg_counter < 3725):
+        #if (msg_counter < 8338):
             #msg_counter += 1
             #continue
         start_t = time.time()
@@ -256,9 +275,9 @@ if __name__ == "__main__":
                                     annotated_img = annotated_left_img,
                                     ref_img = crop_ref_l_img,
                                     ref_tensor = crop_ref_l_tensor,
-                                    crop_ref_lines = None,
+                                    crop_ref_lines = crop_ref_lines_l,
                                     crop_ref_lines_idx = crop_ref_lines_l_idx,
-                                    crop_ref_lines_selected = None,
+                                    crop_ref_desc = crop_ref_desc_l,
                                     model = model,
                                     draw_lines = draw_lines,
                                     canny_params = canny_params,
@@ -269,9 +288,9 @@ if __name__ == "__main__":
                                     annotated_img = annotated_right_img,
                                     ref_img = crop_ref_r_img,
                                     ref_tensor = crop_ref_r_tensor,
-                                    crop_ref_lines = None,
+                                    crop_ref_lines = crop_ref_lines_r,
                                     crop_ref_lines_idx = crop_ref_lines_r_idx,
-                                    crop_ref_lines_selected = None,
+                                    crop_ref_desc = crop_ref_desc_r,
                                     model = model,
                                     draw_lines = draw_lines,
                                     canny_params = canny_params,
@@ -347,7 +366,7 @@ if __name__ == "__main__":
                     #shaftFeatureObs_kornia arguments
                     {
                         'use_lines': False,
-                        'use_clouds': 'endpoint_clouds',
+                        'use_clouds': 'line_clouds',
                         'detected_lines': {
                             'canny': (new_canny_lines_l, new_canny_lines_r),
                             'detected_endpoint_lines': (new_detected_endpoint_lines_l, new_detected_endpoint_lines_r),

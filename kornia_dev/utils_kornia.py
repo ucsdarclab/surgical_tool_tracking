@@ -418,7 +418,7 @@ def detectShaftLines(annotated_img = None,
                     ref_tensor = None,
                     crop_ref_lines = None,
                     crop_ref_lines_idx = None,
-                    crop_ref_lines_selected = None,
+                    crop_ref_desc = None,
                     model = None, 
                     draw_lines = None,
                     canny_params = {},
@@ -481,32 +481,41 @@ def detectShaftLines(annotated_img = None,
         non_annotated_tensor = K.enhance.sharpness(non_annotated_tensor, 5.0)
         non_annotated_tensor = K.enhance.adjust_saturation(non_annotated_tensor, 5.0)
         non_annotated_tensor = K.color.rgb_to_grayscale(non_annotated_tensor) # [0, 1] [1, crop_dims] float32
-        tensors = torch.stack([ref_tensor, non_annotated_tensor], )
-        
-        # line detection
-        start_time = time.perf_counter()
-        with torch.inference_mode():
-            outputs = model(tensors)
-        end_time = time.perf_counter()
-        total_time = end_time - start_time
-        print(f'sold2 line detection took {total_time:.4f} seconds')
-        
-        # detect line segments
-        line_seg1 = outputs["line_segments"][0]
-        line_seg2 = outputs["line_segments"][1]
-        desc1 = outputs["dense_desc"][0]
-        desc2 = outputs["dense_desc"][1]
-        line_heatmap1 = np.asarray(outputs['line_heatmap'][0])
-        line_heatmap2 = np.asarray(outputs['line_heatmap'][1])
+        #tensors = torch.stack([ref_tensor, non_annotated_tensor], )
+        tensors = torch.stack([non_annotated_tensor], )
+        try: 
+            # line detection
+            start_time = time.perf_counter()
+            with torch.inference_mode():
+                outputs = model(tensors)
+            end_time = time.perf_counter()
+            total_time = end_time - start_time
+            print(f'sold2 line detection took {total_time:.4f} seconds')
+            
+            # detect line segments
+            #line_seg1 = outputs["line_segments"][0]
+            #line_seg2 = outputs["line_segments"][1]
+            #desc1 = outputs["dense_desc"][0]
+            #desc2 = outputs["dense_desc"][1]
+            #line_heatmap1 = np.asarray(outputs['line_heatmap'][0])
+            #line_heatmap2 = np.asarray(outputs['line_heatmap'][1])
 
-        # perform association between All line segments 
-        # in ref_img and new_img
-        start_time = time.perf_counter()
-        with torch.inference_mode():
-            matches = model.match(line_seg1, line_seg2, desc1[None], desc2[None])
-        end_time = time.perf_counter()
-        total_time = end_time - start_time
-        print(f'sold2 line matching took {total_time:.4f} seconds')
+            line_seg2 = outputs["line_segments"][0]
+            desc2 = outputs["dense_desc"][0]
+            line_heatmap2 = np.asarray(outputs['line_heatmap'][0])
+            
+
+            # perform association between All line segments 
+            # in ref_img and new_img
+            start_time = time.perf_counter()
+            with torch.inference_mode():
+                matches = model.match(crop_ref_lines, line_seg2, crop_ref_desc[None], desc2[None])
+            end_time = time.perf_counter()
+            total_time = end_time - start_time
+            print(f'sold2 line matching took {total_time:.4f} seconds')
+        except:
+            print('exception in utils_kornia line 517 sold2 inference')
+            return output
         valid_matches = matches != -1
 
         # match by reference line index
@@ -517,11 +526,11 @@ def detectShaftLines(annotated_img = None,
         ref_line2_idx = crop_ref_lines_idx[1]
         if (valid_matches[ref_line1_idx]):
             ref_matches_indices.append(matches.numpy()[ref_line1_idx])
-            matched_lines1.append(line_seg1[ref_line1_idx, :, :])
+            matched_lines1.append(crop_ref_lines[ref_line1_idx, :, :])
             
         if (valid_matches[ref_line2_idx]):
             ref_matches_indices.append(matches.numpy()[ref_line2_idx])
-            matched_lines1.append(line_seg1[ref_line2_idx, :, :])
+            matched_lines1.append(crop_ref_lines[ref_line2_idx, :, :])
 
         if (matched_lines1):
             matched_lines1 = torch.stack(matched_lines1)
