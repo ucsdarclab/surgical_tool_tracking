@@ -28,15 +28,20 @@ from probability_functions_kornia import *
 from utils_kornia import *
 
 # File inputs
-robot_file    = script_path + '/../../fei_dataset/LND.json'
-camera_file   = script_path + '/../../fei_dataset/camera_calibration.yaml'
-hand_eye_file = script_path + '/../../fei_dataset/handeye.yaml'
+#robot_file    = script_path + '/../../fei_dataset/LND.json'
+#camera_file   = script_path + '/../../fei_dataset/camera_calibration.yaml'
+#hand_eye_file = script_path + '/../../fei_dataset/handeye.yaml'
+robot_file    = script_path + '/../../journal_dataset/LND.json'
+camera_file   = script_path + '/../../journal_dataset/camera_calibration.yaml'
+hand_eye_file = script_path + '/../../journal_dataset/handeye.yaml'
 
 # ROS Topics
 left_camera_topic  = '/stereo/left/image'
 right_camera_topic = '/stereo/right/image'
-robot_joint_topic  = '/dvrk/PSM2/state_joint_current'
-robot_gripper_topic = '/dvrk/PSM2/state_jaw_current'
+#robot_joint_topic  = '/dvrk/PSM2/state_joint_current'
+#robot_gripper_topic = '/dvrk/PSM2/state_jaw_current'
+robot_joint_topic  = '/dvrk/PSM1/state_joint_current'
+robot_gripper_topic = '/dvrk/PSM1/state_jaw_current'
 
 # main function
 if __name__ == "__main__":
@@ -44,7 +49,8 @@ if __name__ == "__main__":
     #rospy.init_node('robot_tool_tracking', anonymous=True)
     
     # reference image directory
-    source_dir = 'kornia_dev/fei_ref_data/'
+    #source_dir = 'kornia_dev/fei_ref_data/'
+    source_dir = 'kornia_dev/ref_data/no_contours/'
     draw_contours = False
 
     # annotate output with detected lines
