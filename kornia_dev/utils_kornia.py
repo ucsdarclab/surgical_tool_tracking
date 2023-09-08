@@ -478,8 +478,8 @@ def detectShaftLines(annotated_img = None,
         img_width = non_annotated_img.shape[1]
         #print('img_width: {}'.format(img_width))
         non_annotated_tensor = K.image_to_tensor(non_annotated_img).float() / 255.0  # [0, 1] [3, crop_dims] float32
-        non_annotated_tensor = K.enhance.sharpness(non_annotated_tensor, 5.0)
-        non_annotated_tensor = K.enhance.adjust_saturation(non_annotated_tensor, 5.0)
+        #non_annotated_tensor = K.enhance.sharpness(non_annotated_tensor, 5.0)
+        #non_annotated_tensor = K.enhance.adjust_saturation(non_annotated_tensor, 5.0)
         non_annotated_tensor = K.color.rgb_to_grayscale(non_annotated_tensor) # [0, 1] [1, crop_dims] float32
         #tensors = torch.stack([ref_tensor, non_annotated_tensor], )
         tensors = torch.stack([non_annotated_tensor], )
