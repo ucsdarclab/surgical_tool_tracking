@@ -405,8 +405,8 @@ if __name__ == "__main__":
                             'theta_thresh': 0.5
                         },
                         'pixel_probability_params': {
-                            'sigma2_x': 0.5,
-                            'sigma2_y': 0.5,
+                            'sigma2_x': 5.0, #0.5
+                            'sigma2_y': 5.0, #0.5
                         }
                     }
         ]
