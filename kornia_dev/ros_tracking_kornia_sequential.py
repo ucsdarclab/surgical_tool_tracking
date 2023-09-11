@@ -138,7 +138,7 @@ if __name__ == "__main__":
         'use_kornia': True,
         'endpoints_to_polar': False,
         'use_endpoint_intensities_only': False,
-        'endpoint_intensities_to_polar': False,
+        'endpoint_intensities_to_polar': True,
         'search_radius': 10.0,
         'intensity_params': {
             'use_metric': 'pct',
@@ -153,7 +153,7 @@ if __name__ == "__main__":
             'max_trials': 100,
             'img_dims': img_dims
         },
-        'use_line_intensities_only': True,
+        'use_line_intensities_only': False,
         'line_intensities_to_polar': False
     } 
 
@@ -171,15 +171,15 @@ if __name__ == "__main__":
         #left_video_out  = cv2.VideoWriter(out_file,  cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, img_dims)
 
         #out_file = source_dir + 'canny_right_video.mp4'
-        #out_file = source_dir + 'endp2p_right_video.mp4'
-        out_file = source_dir + 'endpi_right_video.mp4'
+        out_file = source_dir + 'endp2p_right_video.mp4'
+        #out_file = source_dir + 'endpi_right_video.mp4'
         #out_file = source_dir + 'endpi2p_right_video.mp4'
         #out_file = source_dir + 'li_right_video.mp4'
         #out_file = source_dir + 'li2p_right_video.mp4'
         right_video_out = cv2.VideoWriter(out_file, cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, img_dims)
 
     # evaluation recording
-    accuracy_file = None
+    #accuracy_file = None
     #accuracy_file = open('kornia_dev/fei_ref_data/canny_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/endpoints_to_polar_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/endpoint_intensities_only_accuracy.txt', 'w')
@@ -187,9 +187,15 @@ if __name__ == "__main__":
     #accuracy_file = open('kornia_dev/fei_ref_data/line_intensities_only_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/line_intensities_to_polar_accuracy.txt', 'w')
 
+    #accuracy_file = open('kornia_dev/ref_data/no_contour/canny_accuracy.txt', 'w')
+    #accuracy_file = open('kornia_dev/ref_data/no_contour/endpoints_to_polar_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/ref_data/no_contour/endpoint_intensities_only_accuracy.txt', 'w')
-
-    localization_file = None
+    accuracy_file = open('kornia_dev/ref_data/no_contour/endpoint_intensities_to_polar_accuracy.txt', 'w')
+    #accuracy_file = open('kornia_dev/ref_data/no_contour/line_intensities_only_accuracy.txt', 'w')
+    #accuracy_file = open('kornia_dev/ref_data/no_contour/line_intensities_to_polar_accuracy.txt', 'w')
+    
+    
+    #localization_file = None
     #localization_file = open('kornia_dev/fei_ref_data/canny_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/endpoints_to_polar_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/endpoint_intensities_only_localization.txt', 'w')
@@ -197,7 +203,12 @@ if __name__ == "__main__":
     #localization_file = open('kornia_dev/fei_ref_data/line_intensities_only_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/line_intensities_to_polar_localization.txt', 'w')
 
+    #localization_file = open('kornia_dev/ref_data/no_contour/canny_localization.txt', 'w')
+    #localization_file = open('kornia_dev/ref_data/no_contour/endpoints_to_polar_localization.txt', 'w')
     #localization_file = open('kornia_dev/ref_data/no_contour/endpoint_intensities_only_localization.txt', 'w')
+    localization_file = open('kornia_dev/ref_data/no_contour/endpoint_intensities_to_polar_localization.txt', 'w')
+    #localization_file = open('kornia_dev/ref_data/no_contour/line_intensities_only_localization.txt', 'w')
+    #localization_file = open('kornia_dev/ref_data/no_contour/line_intensities_to_polar_localization.txt', 'w')
 
     robot_arm = RobotLink(robot_file, use_dh_offset=False) # position / orientation in Meters
     cam = StereoCamera(camera_file, rectify = True, crop_scale = crop_scale, downscale_factor = 2, scale_baseline=1e-3)
@@ -283,9 +294,10 @@ if __name__ == "__main__":
         except:
             continue
         
-        #if (msg_counter < 8338):
+        if (msg_counter > 1600):
             #msg_counter += 1
             #continue
+            break
         start_t = time.time()
         print('start_t: {}'.format(start_t))
 
@@ -400,8 +412,8 @@ if __name__ == "__main__":
                     
                     #shaftFeatureObs_kornia arguments
                     {
-                        'use_lines': False,
-                        'use_clouds': 'line_clouds',
+                        'use_lines': 'endpoint_cloud_lines',
+                        'use_clouds': False,
                         'detected_lines': {
                             'canny': (new_canny_lines_l, new_canny_lines_r),
                             'detected_endpoint_lines': (new_detected_endpoint_lines_l, new_detected_endpoint_lines_r),
@@ -417,14 +429,14 @@ if __name__ == "__main__":
                         'cam_T_b': cam_T_b,
                         'joint_angle_readings': new_joint_angles,
                         'cost_assoc_params': {
-                            'gamma_rho': 0.05,  # THIS IS A MAIN TUNING PARAMETER FOR FILTER PERFORMANCE https://github.com/ucsdarclab/dvrk_particle_filter/blob/master/config/ex_vivo_dataset_configure_filter.json
-                            'gamma_theta': 7.5, # THIS IS A MAIN TUNING PARAMETER FOR FILTER PERFORMANCE https://github.com/ucsdarclab/dvrk_particle_filter/blob/master/config/ex_vivo_dataset_configure_filter.json
+                            'gamma_rho': 0.075, #0.05,  # THIS IS A MAIN TUNING PARAMETER FOR FILTER PERFORMANCE https://github.com/ucsdarclab/dvrk_particle_filter/blob/master/config/ex_vivo_dataset_configure_filter.json
+                            'gamma_theta': 9.0, #7.5, # THIS IS A MAIN TUNING PARAMETER FOR FILTER PERFORMANCE https://github.com/ucsdarclab/dvrk_particle_filter/blob/master/config/ex_vivo_dataset_configure_filter.json
                             'rho_thresh': 75,
                             'theta_thresh': 0.5
                         },
                         'pixel_probability_params': {
-                            'sigma2_x': 5.0, #0.5
-                            'sigma2_y': 5.0, #0.5
+                            'sigma2_x': 10.0, #0.5
+                            'sigma2_y': 10.0, #0.5
                         }
                     }
         ]

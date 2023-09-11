@@ -415,6 +415,9 @@ def shaftFeatureObs_kornia(
         try:
             intensity_clouds_l = np.vstack(intensity_clouds_l)
             assert(intensity_clouds_l.shape[1] == 2)
+            sample_num = min(100, intensity_clouds_l.shape[0])
+            intensity_clouds_l = intensity_clouds_l[np.random.choice(intensity_clouds_l.shape[0], sample_num, replace = False), :].copy()
+            assert(intensity_clouds_l.shape[1] == 2)
             for i in range(intensity_clouds_l.shape[0]):
                 y = intensity_clouds_l[i, 0]
                 x = intensity_clouds_l[i, 1]
@@ -440,6 +443,9 @@ def shaftFeatureObs_kornia(
         max_point_probs_r = []
         try:
             intensity_clouds_r = np.vstack(intensity_clouds_r)
+            assert(intensity_clouds_r.shape[1] == 2)
+            sample_num = min(100, intensity_clouds_l.shape[0])
+            intensity_clouds_r = intensity_clouds_r[np.random.choice(intensity_clouds_l.shape[0], sample_num, replace = False), :].copy()
             assert(intensity_clouds_r.shape[1] == 2)
             for i in range(intensity_clouds_r.shape[0]):
                 y = intensity_clouds_r[i, 0]
