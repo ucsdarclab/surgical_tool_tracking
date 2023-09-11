@@ -63,8 +63,9 @@ def pointFeatureObs(state, point_detections, robot_arm, joint_angle_readings, ca
     p_b, point_featuresNames = robot_arm.getPointFeatures()
     #print('robot_arm.getPointFeatures()[1]: {}'.format(point_featuresNames))
     #print('robot_arm.getPointFeatures()[0]: {}'.format(p_b))
-    holdout_point_name = 'yaw_1'
-    holdout_point_index = point_featuresNames.index(holdout_point_name)
+    #holdout_point_name = 'yaw_1'
+    #holdout_point_index = point_featuresNames.index(holdout_point_name)
+    holdout_point_name = False
 
     p_c = np.dot(np.dot(cam_T_b, T), np.transpose(np.concatenate((p_b, np.ones((p_b.shape[0], 1))), axis=1)))
     p_c = np.transpose(p_c)[:, :-1]

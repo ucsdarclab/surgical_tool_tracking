@@ -51,7 +51,7 @@ if __name__ == "__main__":
     # reference image directory
     source_dir = 'kornia_dev/fei_ref_data/'
     #source_dir = 'kornia_dev/ref_data/no_contour/'
-    draw_contours = False
+    draw_contours = True
 
     # annotate output with detected lines
     draw_lines = True
@@ -124,9 +124,9 @@ if __name__ == "__main__":
         'endpoints_to_polar': False,
         'use_endpoint_intensities_only': False,
         'endpoint_intensities_to_polar': False,
-        'search_radius': 10.0,
+        'search_radius': 20.0,
         'intensity_params': {
-            'use_metric': 'pct',
+            'use_metric': 'mean',
             'mean': 0,
             'std': 1.0,
             'pct': 10.0
@@ -143,7 +143,7 @@ if __name__ == "__main__":
     } 
 
     # video recording
-    record_video = True
+    record_video = False
     fps = 30
     if (record_video):
 
@@ -164,22 +164,22 @@ if __name__ == "__main__":
         right_video_out = cv2.VideoWriter(out_file, cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, img_dims)
 
     # evaluation recording
-    #accuracy_file = None
+    accuracy_file = None
     #accuracy_file = open('kornia_dev/fei_ref_data/canny_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/endpoints_to_polar_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/endpoint_intensities_only_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/endpoint_intensities_to_polar_accuracy.txt', 'w')
-    accuracy_file = open('kornia_dev/fei_ref_data/line_intensities_only_accuracy.txt', 'w')
+    #accuracy_file = open('kornia_dev/fei_ref_data/line_intensities_only_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/line_intensities_to_polar_accuracy.txt', 'w')
 
     #accuracy_file = open('kornia_dev/ref_data/no_contour/endpoint_intensities_only_accuracy.txt', 'w')
 
-    #localization_file = None
+    localization_file = None
     #localization_file = open('kornia_dev/fei_ref_data/canny_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/endpoints_to_polar_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/endpoint_intensities_only_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/endpoint_intensities_to_polar_localization.txt', 'w')
-    localization_file = open('kornia_dev/fei_ref_data/line_intensities_only_localization.txt', 'w')
+    #localization_file = open('kornia_dev/fei_ref_data/line_intensities_only_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/line_intensities_to_polar_localization.txt', 'w')
 
     #localization_file = open('kornia_dev/ref_data/no_contour/endpoint_intensities_only_localization.txt', 'w')
@@ -426,8 +426,8 @@ if __name__ == "__main__":
         img_list = projectSkeleton(robot_arm.getSkeletonPoints(), np.dot(cam_T_b, T), [new_left_img, new_right_img], cam.projectPoints, (new_detected_keypoints_l, new_detected_keypoints_r), accuracy_file, t, msg_counter)
         img_list = drawShaftLines(robot_arm.getShaftFeatures(), cam, np.dot(cam_T_b, T), img_list)
         #print('ros_tracking_kornia_sequential.py np.dot(cTb, T): {}'.format(np.dot(cam_T_b, T)))
-        #cv2.imshow("Left Img",  img_list[0])
-        #cv2.imshow("Right Img", img_list[1])
+        cv2.imshow("Left Img",  img_list[0])
+        cv2.imshow("Right Img", img_list[1])
 
         # video recording
         if (record_video):
@@ -443,7 +443,7 @@ if __name__ == "__main__":
         
         msg_counter += 1
         print('msg_counter: {}'.format(msg_counter))
-        #cv2.waitKey(1)
+        cv2.waitKey(1)
 
     if (accuracy_file):
         accuracy_file.close()
