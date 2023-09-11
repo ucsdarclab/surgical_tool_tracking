@@ -388,8 +388,8 @@ if __name__ == "__main__":
                             
                             #shaftFeatureObs_kornia arguments
                             {
-                                'use_lines': 'canny',
-                                'use_clouds': None,
+                                'use_lines': False,
+                                'use_clouds': 'endpoint_clouds',
                                 'detected_lines': {
                                     'canny': (new_canny_lines_l, new_canny_lines_r),
                                     'detected_endpoint_lines': (new_detected_endpoint_lines_l, new_detected_endpoint_lines_r),
@@ -411,8 +411,8 @@ if __name__ == "__main__":
                                     'theta_thresh': 0.5
                                 },
                                 'pixel_probability_params': {
-                                    'sigma2_x': 0.5,
-                                    'sigma2_y': 0.5,
+                                    'sigma2_x': 5.0, #0.5
+                                    'sigma2_y': 5.0, #0.5
                                 }
                             }
                 ]

@@ -430,9 +430,9 @@ def shaftFeatureObs_kornia(
                         max_point_prob = point_prob
                 max_point_probs_l.append(max_point_prob)
         except:
-            print('exception in probability_functions_kornia line 414')
-            print('intensity_clouds_l: {}'.format(intensity_clouds_l))
-            print('type(intensity_clouds_l): {}'.format(type(intensity_clouds_l)))
+            #print('exception in probability_functions_kornia line 414')
+            #print('intensity_clouds_l: {}'.format(intensity_clouds_l))
+            #print('type(intensity_clouds_l): {}'.format(type(intensity_clouds_l)))
             max_point_probs_l.append(1)
 
         
@@ -456,9 +456,9 @@ def shaftFeatureObs_kornia(
                         max_point_prob = point_prob
                 max_point_probs_r.append(max_point_prob)
         except:
-            print('exception in probability_functions_kornia line 439')
-            print('intensity_clouds_r: {}'.format(intensity_clouds_r))
-            print('type(intensity_clouds_r): {}'.format(type(intensity_clouds_r)))
+            #print('exception in probability_functions_kornia line 439')
+            #print('intensity_clouds_r: {}'.format(intensity_clouds_r))
+            #print('type(intensity_clouds_r): {}'.format(type(intensity_clouds_r)))
             max_point_probs_r.append(1)
         
         # join all pixel probabilities from l/r cameras
@@ -466,6 +466,7 @@ def shaftFeatureObs_kornia(
         max_point_probs.extend(max_point_probs_l)
         max_point_probs.extend(max_point_probs_r)
         max_point_probs = np.asarray(max_point_probs)
-        prob *= np.prod(max_point_probs)
+        #prob *= np.prod(max_point_probs)
+        prob += np.sum(max_point_probs)
 
     return prob

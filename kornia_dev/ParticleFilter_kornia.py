@@ -1,5 +1,18 @@
 import numpy as np
 import warnings
+from functools import wraps
+import time
+
+def timeit(func):
+    @wraps(func)
+    def timeit_wrapper(*args, **kwargs):
+        start_time = time.perf_counter()
+        result = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        total_time = end_time - start_time
+        print(f'Function {func.__name__} Took {total_time:.4f} seconds')
+        return result
+    return timeit_wrapper
         
 class ParticleFilter:
     def __init__(self, num_states, initialDistributionFunc, motionModelFunc, obsModelFunc, 
@@ -21,16 +34,19 @@ class ParticleFilter:
             except Warning as e:
                 self._weights = np.ones(self._particles.shape[0])/float(self._particles.shape[0])
 
+    @timeit
     def initializeFilter(self, **kwargs):
         # Initialize particles here, the kwargs is passed to initialDistributionFunc
         for p_idx, _ in enumerate(self._particles):
             self._particles[p_idx], _ = self._initialDistributionFunc(**kwargs)
     
+    @timeit
     def predictionStep(self, **kwargs):
         # Predict particles here, the kwargs is passed to motionModelFunc
         for p_idx, particle in enumerate(self._particles):
             self._particles[p_idx], _ = self._motionModelFunc(particle, **kwargs)
-            
+
+    @timeit   
     def updateStep(self, args):
         for obsModelFunc_idx in range(len(self._obsModelFunc)):
             obsModelFunc = self._obsModelFunc[obsModelFunc_idx]

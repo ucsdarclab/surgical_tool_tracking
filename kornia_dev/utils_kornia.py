@@ -419,7 +419,8 @@ def detectShaftLines(annotated_img = None,
                     crop_ref_lines = None,
                     crop_ref_lines_idx = None,
                     crop_ref_desc = None,
-                    model = None, 
+                    model = None,
+                    device = None,
                     draw_lines = None,
                     canny_params = {},
                     kornia_params = {}):
@@ -483,6 +484,7 @@ def detectShaftLines(annotated_img = None,
         non_annotated_tensor = K.color.rgb_to_grayscale(non_annotated_tensor) # [0, 1] [1, crop_dims] float32
         #tensors = torch.stack([ref_tensor, non_annotated_tensor], )
         tensors = torch.stack([non_annotated_tensor], )
+        tensors = tensors.to(device)
         try: 
             # line detection
             start_time = time.perf_counter()
@@ -491,6 +493,9 @@ def detectShaftLines(annotated_img = None,
             end_time = time.perf_counter()
             total_time = end_time - start_time
             print(f'sold2 line detection took {total_time:.4f} seconds')
+        except Exception as e: 
+            print('exception in utils line 401 sold2 line detection: {}'.format(e))
+            return output
             
             # detect line segments
             #line_seg1 = outputs["line_segments"][0]
@@ -499,24 +504,33 @@ def detectShaftLines(annotated_img = None,
             #desc2 = outputs["dense_desc"][1]
             #line_heatmap1 = np.asarray(outputs['line_heatmap'][0])
             #line_heatmap2 = np.asarray(outputs['line_heatmap'][1])
-
+        try:
             line_seg2 = outputs["line_segments"][0]
+            line_seg2 = line_seg2.to(device)
             desc2 = outputs["dense_desc"][0]
-            line_heatmap2 = np.asarray(outputs['line_heatmap'][0])
+            desc2 = desc2.to(device)
+            line_heatmap2 = outputs['line_heatmap'][0].cpu()
+        except Exception as e: 
+            print('exception in utils line 508 sold2 line detection outputs: {}'.format(e))
+            return output
+
             
 
             # perform association between All line segments 
             # in ref_img and new_img
+        try:
             start_time = time.perf_counter()
             with torch.inference_mode():
                 matches = model.match(crop_ref_lines, line_seg2, crop_ref_desc[None], desc2[None])
+                matches = matches.cpu()
             end_time = time.perf_counter()
             total_time = end_time - start_time
             print(f'sold2 line matching took {total_time:.4f} seconds')
-        except:
-            print('exception in utils_kornia line 517 sold2 inference')
+        except Exception as e: 
+            print('exception in utils line 520 sold2 line matching: {}'.format(e))
             return output
         valid_matches = matches != -1
+        #print(valid_matches)
 
         # match by reference line index
         ref_matches_indices = []
@@ -534,7 +548,7 @@ def detectShaftLines(annotated_img = None,
 
         if (matched_lines1):
             matched_lines1 = torch.stack(matched_lines1)
-            matched_lines2 = line_seg2[ref_matches_indices]
+            matched_lines2 = line_seg2.cpu()[ref_matches_indices]
         # no matches found
         else:
             return output
@@ -676,7 +690,7 @@ def detectShaftLines(annotated_img = None,
             annotated_img = drawPoints(annotated_img, intensity_endpoint_clouds)
             if (use_endpoint_intensities_only):
                 output['new_img'] = annotated_img
-                output['intensity_endpoint_clouds'] = intensity_endpoint_clouds
+                output['intensity_endpoint_clouds'] = np.asarray(intensity_endpoint_clouds, dtype = object)
                 return output
             
             elif (endpoint_intensities_to_polar):
@@ -737,7 +751,7 @@ def detectShaftLines(annotated_img = None,
             
             if (use_line_intensities_only):
                 output['new_img'] = annotated_img
-                output['intensity_line_clouds'] = intensity_line_clouds
+                output['intensity_line_clouds'] = np.asarray(intensity_line_clouds, dtype = object)
                 return output
             
             elif (line_intensities_to_polar):

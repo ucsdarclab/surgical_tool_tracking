@@ -28,20 +28,24 @@ from probability_functions_kornia import *
 from utils_kornia import *
 
 # File inputs
-robot_file    = script_path + '/../../fei_dataset/LND.json'
-camera_file   = script_path + '/../../fei_dataset/camera_calibration.yaml'
-hand_eye_file = script_path + '/../../fei_dataset/handeye.yaml'
-#robot_file    = script_path + '/../../journal_dataset/LND.json'
-#camera_file   = script_path + '/../../journal_dataset/camera_calibration.yaml'
-#hand_eye_file = script_path + '/../../journal_dataset/handeye.yaml'
+#robot_file    = script_path + '/../../fei_dataset/LND.json'
+#camera_file   = script_path + '/../../fei_dataset/camera_calibration.yaml'
+#hand_eye_file = script_path + '/../../fei_dataset/handeye.yaml'
+robot_file    = script_path + '/../../journal_dataset/LND.json'
+camera_file   = script_path + '/../../journal_dataset/camera_calibration.yaml'
+hand_eye_file = script_path + '/../../journal_dataset/handeye.yaml'
 
 # ROS Topics
 left_camera_topic  = '/stereo/left/image'
 right_camera_topic = '/stereo/right/image'
-robot_joint_topic  = '/dvrk/PSM2/state_joint_current'
-robot_gripper_topic = '/dvrk/PSM2/state_jaw_current'
-#robot_joint_topic  = '/dvrk/PSM1/state_joint_current'
-#robot_gripper_topic = '/dvrk/PSM1/state_jaw_current'
+#robot_joint_topic  = '/dvrk/PSM2/state_joint_current'
+#robot_gripper_topic = '/dvrk/PSM2/state_jaw_current'
+robot_joint_topic  = '/dvrk/PSM1/state_joint_current'
+robot_gripper_topic = '/dvrk/PSM1/state_jaw_current'
+
+# gpu support
+device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+print('Using device:', device)
 
 # main function
 if __name__ == "__main__":
@@ -49,8 +53,8 @@ if __name__ == "__main__":
     #rospy.init_node('robot_tool_tracking', anonymous=True)
     
     # reference image directory
-    source_dir = 'kornia_dev/fei_ref_data/'
-    #source_dir = 'kornia_dev/ref_data/no_contour/'
+    #source_dir = 'kornia_dev/fei_ref_data/'
+    source_dir = 'kornia_dev/ref_data/no_contour/'
     draw_contours = False
 
     # annotate output with detected lines
@@ -64,28 +68,36 @@ if __name__ == "__main__":
     # ref line indices
     in_file = source_dir + 'crop_ref_lines_l_idx.npy'
     crop_ref_lines_l_idx = np.load(in_file) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
-    
+    #crop_ref_lines_l_idx = torch.from_numpy(crop_ref_lines_l_idx)
+    #crop_ref_lines_l_idx.to(device)
+
     in_file = source_dir + 'crop_ref_lines_r_idx.npy'
     crop_ref_lines_r_idx = np.load(in_file) # torch.Size([2, 2, 2]) # endpoints per line: [y, x] [y, x]
+    #crop_ref_lines_r_idx = torch.from_numpy(crop_ref_lines_r_idx)
+    #crop_ref_lines_r_idx.to(device)
 
     # ref lines
     in_file = source_dir + 'crop_ref_lines_l.npy'
     crop_ref_lines_l = np.load(in_file)
     crop_ref_lines_l = torch.tensor(crop_ref_lines_l)
+    crop_ref_lines_l = crop_ref_lines_l.to(device)
 
     in_file = source_dir + 'crop_ref_lines_r.npy'
     crop_ref_lines_r = np.load(in_file)
     crop_ref_lines_r = torch.tensor(crop_ref_lines_r)
+    crop_ref_lines_r = crop_ref_lines_r.to(device)
     
     # line descriptors
     in_file = source_dir + 'crop_ref_desc_l.npy'
     crop_ref_desc_l = np.load(in_file)
     crop_ref_desc_l = torch.tensor(crop_ref_desc_l)
+    crop_ref_desc_l = crop_ref_desc_l.to(device)
 
     in_file = source_dir + 'crop_ref_desc_r.npy'
     crop_ref_desc_r = np.load(in_file)
     crop_ref_desc_r = torch.tensor(crop_ref_desc_r)
-    
+    crop_ref_desc_r = crop_ref_desc_r.to(device)
+
     # reference images
     # left camera
     crop_ref_l_img = source_dir + 'ref_left_img.jpg'
@@ -96,6 +108,7 @@ if __name__ == "__main__":
     crop_ref_l_tensor = K.enhance.sharpness(crop_ref_l_tensor, 5.0)
     crop_ref_l_tensor = K.enhance.adjust_saturation(crop_ref_l_tensor, 5.0)
     crop_ref_l_tensor = K.color.rgb_to_grayscale(crop_ref_l_tensor) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
+    crop_ref_l_tensor = crop_ref_l_tensor.to(device)
 
     # right camera
     crop_ref_r_img = source_dir + 'ref_right_img.jpg'
@@ -105,9 +118,11 @@ if __name__ == "__main__":
     crop_ref_r_tensor = K.enhance.sharpness(crop_ref_r_tensor, 5.0)
     crop_ref_r_tensor = K.enhance.adjust_saturation(crop_ref_r_tensor, 5.0)
     crop_ref_r_tensor = K.color.rgb_to_grayscale(crop_ref_r_tensor) # [0, 1] torch.Size([1, 720, 1080]) torch.float32
+    crop_ref_r_rensor = crop_ref_r_tensor.to(device)
 
     # Load kornia model
     model = KF.SOLD2(pretrained=True, config=None)
+    model.to(device)
 
     # parameters for shaft detection
     canny_params = {
@@ -143,7 +158,7 @@ if __name__ == "__main__":
     } 
 
     # video recording
-    record_video = True
+    record_video = False
     fps = 30
     if (record_video):
 
@@ -157,29 +172,29 @@ if __name__ == "__main__":
 
         #out_file = source_dir + 'canny_right_video.mp4'
         #out_file = source_dir + 'endp2p_right_video.mp4'
-        #out_file = source_dir + 'endpi_right_video.mp4'
+        out_file = source_dir + 'endpi_right_video.mp4'
         #out_file = source_dir + 'endpi2p_right_video.mp4'
-        out_file = source_dir + 'li_right_video.mp4'
+        #out_file = source_dir + 'li_right_video.mp4'
         #out_file = source_dir + 'li2p_right_video.mp4'
         right_video_out = cv2.VideoWriter(out_file, cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, img_dims)
 
     # evaluation recording
-    #accuracy_file = None
+    accuracy_file = None
     #accuracy_file = open('kornia_dev/fei_ref_data/canny_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/endpoints_to_polar_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/endpoint_intensities_only_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/endpoint_intensities_to_polar_accuracy.txt', 'w')
-    accuracy_file = open('kornia_dev/fei_ref_data/line_intensities_only_accuracy.txt', 'w')
+    #accuracy_file = open('kornia_dev/fei_ref_data/line_intensities_only_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/line_intensities_to_polar_accuracy.txt', 'w')
 
     #accuracy_file = open('kornia_dev/ref_data/no_contour/endpoint_intensities_only_accuracy.txt', 'w')
 
-    #localization_file = None
+    localization_file = None
     #localization_file = open('kornia_dev/fei_ref_data/canny_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/endpoints_to_polar_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/endpoint_intensities_only_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/endpoint_intensities_to_polar_localization.txt', 'w')
-    localization_file = open('kornia_dev/fei_ref_data/line_intensities_only_localization.txt', 'w')
+    #localization_file = open('kornia_dev/fei_ref_data/line_intensities_only_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/line_intensities_to_polar_localization.txt', 'w')
 
     #localization_file = open('kornia_dev/ref_data/no_contour/endpoint_intensities_only_localization.txt', 'w')
@@ -193,10 +208,10 @@ if __name__ == "__main__":
     hand_eye_data = yaml.load(f, Loader=yaml.FullLoader)
 
     cam_T_b = np.eye(4)
-    cam_T_b[:-1, -1] = np.array(hand_eye_data['PSM2_tvec'])/1000.0 # convert to mm
-    cam_T_b[:-1, :-1] = axisAngleToRotationMatrix(hand_eye_data['PSM2_rvec'])
-    #cam_T_b[:-1, -1] = np.array(hand_eye_data['PSM1_tvec'])/1000.0 # convert to mm
-    #cam_T_b[:-1, :-1] = axisAngleToRotationMatrix(hand_eye_data['PSM1_rvec'])
+    #cam_T_b[:-1, -1] = np.array(hand_eye_data['PSM2_tvec'])/1000.0 # convert to mm
+    #cam_T_b[:-1, :-1] = axisAngleToRotationMatrix(hand_eye_data['PSM2_rvec'])
+    cam_T_b[:-1, -1] = np.array(hand_eye_data['PSM1_tvec'])/1000.0 # convert to mm
+    cam_T_b[:-1, :-1] = axisAngleToRotationMatrix(hand_eye_data['PSM1_rvec'])
 
     # Initialize filter
     pf = ParticleFilter(num_states=6, # originally 9 (6 for lumped error + 3 for endowrist pitch/yaw/squeeze) -> 6 for just lumped error
@@ -227,8 +242,8 @@ if __name__ == "__main__":
     #rate = rospy.Rate(30) # 30hz
     prev_joint_angles = None
 
-    bag = rosbag.Bag('../fei_dataset/volume_4points_t2.bag')
-    #bag = rosbag.Bag('../journal_dataset/stationary_camera_2020-06-24-15-49-10.bag')
+    #bag = rosbag.Bag('../fei_dataset/volume_4points_t2.bag')
+    bag = rosbag.Bag('../journal_dataset/stationary_camera_2020-06-24-15-49-10.bag')
 
     old_l_img_msg = None
     old_r_img_msg = None
@@ -249,14 +264,14 @@ if __name__ == "__main__":
         if topic == '/stereo/right/image':
             old_r_img_msg = copy.deepcopy(r_img_msg)
             r_img_msg = copy.deepcopy(msg)
-        if topic == '/dvrk/PSM2/state_joint_current':
-            j_msg = copy.deepcopy(msg)
-        if topic == '/dvrk/PSM2/state_jaw_current':
-            g_msg = copy.deepcopy(msg)
-        #if topic == '/dvrk/PSM1/state_joint_current':
+        #if topic == '/dvrk/PSM2/state_joint_current':
             #j_msg = copy.deepcopy(msg)
-        #if topic == '/dvrk/PSM1/state_jaw_current':
+        #if topic == '/dvrk/PSM2/state_jaw_current':
             #g_msg = copy.deepcopy(msg)
+        if topic == '/dvrk/PSM1/state_joint_current':
+            j_msg = copy.deepcopy(msg)
+        if topic == '/dvrk/PSM1/state_jaw_current':
+            g_msg = copy.deepcopy(msg)
         
         try: 
             if ((l_img_msg != None) and (r_img_msg != None)) and ((l_img_msg != old_l_img_msg) or (r_img_msg != old_r_img_msg)) and (j_msg) and (g_msg):
@@ -272,6 +287,7 @@ if __name__ == "__main__":
             #msg_counter += 1
             #continue
         start_t = time.time()
+        print('start_t: {}'.format(start_t))
 
         # copy l/r images so not overwritten by callback
         new_left_img = _cb_left_img.copy()
@@ -296,6 +312,7 @@ if __name__ == "__main__":
                                     crop_ref_lines_idx = crop_ref_lines_l_idx,
                                     crop_ref_desc = crop_ref_desc_l,
                                     model = model,
+                                    device = device,
                                     draw_lines = draw_lines,
                                     canny_params = canny_params,
                                     kornia_params = kornia_params
@@ -309,6 +326,7 @@ if __name__ == "__main__":
                                     crop_ref_lines_idx = crop_ref_lines_r_idx,
                                     crop_ref_desc = crop_ref_desc_r,
                                     model = model,
+                                    device = device,
                                     draw_lines = draw_lines,
                                     canny_params = canny_params,
                                     kornia_params = kornia_params
@@ -411,6 +429,7 @@ if __name__ == "__main__":
                     }
         ]
 
+        
         pf.updateStep(upd_args)
         prev_joint_angles = new_joint_angles
 
