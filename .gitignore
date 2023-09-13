@@ -4,8 +4,6 @@
 !*.py
 !*.ipynb
 !*.gitignore
-!*.yml
-!*.yaml
 !*.txt
 !*.png
 !*.jpg

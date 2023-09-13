@@ -14,7 +14,8 @@ import sys
 from sensor_msgs.msg import Image, JointState
 from message_filters import ApproximateTimeSynchronizer, Subscriber
 
-labels_file = open('kornia_dev/fei_ref_data/keypoint_labels_v2.csv', 'w')
+#labels_file = open('kornia_dev/fei_ref_data/keypoint_labels_v3.csv', 'w')
+#labels_file = open('kornia_dev/ref_data/no_contour/keypoint_labels_v3.csv', 'w')
 
 # function to display the coordinates of
 # of the points clicked on the image
@@ -50,18 +51,24 @@ from probability_functions_kornia import *
 from utils_kornia import *
 
 # File inputs
-robot_file    = script_path + '/../../fei_dataset/LND.json'
-camera_file   = script_path + '/../../fei_dataset/camera_calibration.yaml'
-hand_eye_file = script_path + '/../../fei_dataset/handeye.yaml'
+#robot_file    = script_path + '/../../fei_dataset/LND.json'
+#camera_file   = script_path + '/../../fei_dataset/camera_calibration.yaml'
+#hand_eye_file = script_path + '/../../fei_dataset/handeye.yaml'
+robot_file    = script_path + '/../../journal_dataset/LND.json'
+camera_file   = script_path + '/../../journal_dataset/camera_calibration.yaml'
+hand_eye_file = script_path + '/../../journal_dataset/handeye.yaml'
 
 # ROS Topics
 left_camera_topic  = '/stereo/left/image'
 right_camera_topic = '/stereo/right/image'
-robot_joint_topic  = '/dvrk/PSM2/state_joint_current'
-robot_gripper_topic = '/dvrk/PSM2/state_jaw_current'
+#robot_joint_topic  = '/dvrk/PSM2/state_joint_current'
+#robot_gripper_topic = '/dvrk/PSM2/state_jaw_current'
+robot_joint_topic  = '/dvrk/PSM1/state_joint_current'
+robot_gripper_topic = '/dvrk/PSM1/state_jaw_current'
 
 # reference image directory
-source_dir = 'kornia_dev/fei_ref_data/'
+#source_dir = 'kornia_dev/fei_ref_data/'
+source_dir = 'kornia_dev/ref_data/no_contour/'
 draw_contours = False
 
 # annotate output with detected lines
@@ -81,8 +88,10 @@ f = open(hand_eye_file)
 hand_eye_data = yaml.load(f, Loader=yaml.FullLoader)
 
 cam_T_b = np.eye(4)
-cam_T_b[:-1, -1] = np.array(hand_eye_data['PSM2_tvec'])/1000.0 # convert to mm
-cam_T_b[:-1, :-1] = axisAngleToRotationMatrix(hand_eye_data['PSM2_rvec'])
+#cam_T_b[:-1, -1] = np.array(hand_eye_data['PSM2_tvec'])/1000.0 # convert to mm
+#cam_T_b[:-1, :-1] = axisAngleToRotationMatrix(hand_eye_data['PSM2_rvec'])
+cam_T_b[:-1, -1] = np.array(hand_eye_data['PSM1_tvec'])/1000.0 # convert to mm
+cam_T_b[:-1, :-1] = axisAngleToRotationMatrix(hand_eye_data['PSM1_rvec'])
 
 # Main loop:
 #rate = rospy.Rate(30) # 30hz
@@ -97,7 +106,9 @@ r_img_msg = None
 j_msg = None
 g_msg = None
 
-bag = rosbag.Bag('../fei_dataset/volume_4points_t2.bag')
+#bag_file = script_path + '/../../fei_dataset/volume_4points_t2.bag'
+bag_file = script_path + '/../../journal_dataset/stationary_camera_2020-06-24-15-49-10.bag'
+bag = rosbag.Bag(bag_file)
 
 msg_counter = 1
 
@@ -109,20 +120,27 @@ for topic, msg, t in bag.read_messages(topics=[left_camera_topic, right_camera_t
     if topic == '/stereo/right/image':
         old_r_img_msg = copy.deepcopy(r_img_msg)
         r_img_msg = copy.deepcopy(msg)
-    if topic == '/dvrk/PSM2/state_joint_current':
+    # if topic == '/dvrk/PSM2/state_joint_current':
+    #     j_msg = copy.deepcopy(msg)
+    # if topic == '/dvrk/PSM2/state_jaw_current':
+    #     g_msg = copy.deepcopy(msg)
+    if topic == '/dvrk/PSM1/state_joint_current':
         j_msg = copy.deepcopy(msg)
-    if topic == '/dvrk/PSM2/state_jaw_current':
+    if topic == '/dvrk/PSM1/state_jaw_current':
         g_msg = copy.deepcopy(msg)
     
-    try: 
-        if ((l_img_msg != None) and (r_img_msg != None)) and ((l_img_msg != old_l_img_msg) or (r_img_msg != old_r_img_msg)) and (j_msg) and (g_msg):
+    if ((l_img_msg != None) and (r_img_msg != None)) and ((l_img_msg != old_l_img_msg) and (r_img_msg != old_r_img_msg)) and (j_msg) and (g_msg):
+        try:
             _cb_left_img  = np.ndarray(shape=(l_img_msg.height, l_img_msg.width, 3), dtype=np.uint8, buffer=l_img_msg.data)
             _cb_right_img = np.ndarray(shape=(r_img_msg.height, r_img_msg.width, 3), dtype=np.uint8, buffer=r_img_msg.data)
             cb_joint_angles = np.array(j_msg.position + g_msg.position)
-        else:
+        except:
             continue
-    except:
+    else:
         continue
+
+    old_l_img_msg = copy.deepcopy(l_img_msg)
+    old_r_img_msg = copy.deepcopy(r_img_msg)
 
     # copy l/r images so not overwritten by callback
     new_left_img = _cb_left_img.copy()
@@ -138,7 +156,10 @@ for topic, msg, t in bag.read_messages(topics=[left_camera_topic, right_camera_t
     cv2.setMouseCallback('right_img', mouse_event, param = [t, msg_counter, labels_file])
     msg_counter += 1
     # show one frame at a time
-    cv2.waitKey(1)
+    #wait_interval = int(1)
+    #wait_interval = int(5)
+    wait_interval = int(0)
+    cv2.waitKey(wait_interval)
 
 print('finished rosbag file')
 bag.close()

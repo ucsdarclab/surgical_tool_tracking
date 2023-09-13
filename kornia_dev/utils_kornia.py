@@ -66,7 +66,7 @@ def associatePoint(projected_point, cam_idx, point_detections, association_thres
     return associated_point
 
 @timeit
-def projectSkeleton(skeletonPts3D, cam_T_b, img_list, project_point_function, point_detections, accuracy_file, t, msg_counter):
+def projectSkeleton(skeletonPts3D, cam_T_b, img_list, project_point_function, point_detections = None, accuracy_file = None, t = None, msg_counter = None):
     # skeletonPts3D should be in the same format as getSkeletonPoints from RobotLink
     # img_list
     for skeletonPairs in skeletonPts3D:
@@ -98,7 +98,8 @@ def projectSkeleton(skeletonPts3D, cam_T_b, img_list, project_point_function, po
                     else:
                         text_string = str(t) + ',' + str(msg_counter) + ',' + str(int(proj_pts[1,0])) + ',' + str(int(proj_pts[1,1])) + ',' + ',' + '\n'
                         print('text_string: {}'.format(text_string))
-                    accuracy_file.write(text_string)
+                    if (accuracy_file is not None):
+                        accuracy_file.write(text_string)
 
             except:
                 continue

@@ -126,7 +126,7 @@ if __name__ == "__main__":
 
     # parameters for shaft detection
     canny_params = {
-        'use_canny': False,
+        'use_canny': False, # IF THIS IS TRUE -> CHANGE kornia_params['use_kornia']: FALSE
         'hough_rho_accumulator': 5.0,
         'hough_theta_accumulator': 0.09,
         'hough_vote_threshold': 100,
@@ -139,7 +139,7 @@ if __name__ == "__main__":
         'endpoints_to_polar': False,
         'use_endpoint_intensities_only': False,
         'endpoint_intensities_to_polar': True,
-        'search_radius': 10.0,
+        'search_radius': 3.0,
         'intensity_params': {
             'use_metric': 'pct',
             'mean': 0,
@@ -160,6 +160,7 @@ if __name__ == "__main__":
     # video recording
     record_video = False
     fps = 30
+    out_file = None
     if (record_video):
 
         #out_file = source_dir + 'canny_left_video.mp4'
@@ -171,7 +172,7 @@ if __name__ == "__main__":
         #left_video_out  = cv2.VideoWriter(out_file,  cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, img_dims)
 
         #out_file = source_dir + 'canny_right_video.mp4'
-        out_file = source_dir + 'endp2p_right_video.mp4'
+        #out_file = source_dir + 'endp2p_right_video.mp4'
         #out_file = source_dir + 'endpi_right_video.mp4'
         #out_file = source_dir + 'endpi2p_right_video.mp4'
         #out_file = source_dir + 'li_right_video.mp4'
@@ -284,22 +285,25 @@ if __name__ == "__main__":
         if topic == '/dvrk/PSM1/state_jaw_current':
             g_msg = copy.deepcopy(msg)
         
-        try: 
-            if ((l_img_msg != None) and (r_img_msg != None)) and ((l_img_msg != old_l_img_msg) or (r_img_msg != old_r_img_msg)) and (j_msg) and (g_msg):
+        
+        if ((l_img_msg != None) and (r_img_msg != None)) and ((l_img_msg != old_l_img_msg) and (r_img_msg != old_r_img_msg)) and (j_msg) and (g_msg):
+            try:
                 _cb_left_img  = np.ndarray(shape=(l_img_msg.height, l_img_msg.width, 3), dtype=np.uint8, buffer=l_img_msg.data)
                 _cb_right_img = np.ndarray(shape=(r_img_msg.height, r_img_msg.width, 3), dtype=np.uint8, buffer=r_img_msg.data)
                 cb_joint_angles = np.array(j_msg.position + g_msg.position)
-            else:
+            except:
                 continue
-        except:
+        else:
             continue
+
+        old_l_img_msg = copy.deepcopy(l_img_msg)
+        old_r_img_msg = copy.deepcopy(r_img_msg)
         
-        if (msg_counter > 1600):
+        if (msg_counter > 1800):
             #msg_counter += 1
             #continue
             break
         start_t = time.time()
-        print('start_t: {}'.format(start_t))
 
         # copy l/r images so not overwritten by callback
         new_left_img = _cb_left_img.copy()
