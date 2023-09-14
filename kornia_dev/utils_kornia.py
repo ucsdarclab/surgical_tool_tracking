@@ -202,15 +202,59 @@ def detectCannyShaftLines(img = None,
 
     # pre-processing
     grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(grey, ksize=(25,25), sigmaX=0)
-    thresh, mask = cv2.threshold(blur, thresh = 150, maxval = 175, type = cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    edges = cv2.Canny(blur, threshold1 = 200, threshold2 = 255, apertureSize = 5, L2gradient = True)
+    #blur = cv2.GaussianBlur(grey, ksize=(25,25), sigmaX=0) # tuned
+    blur = cv2.GaussianBlur(grey, ksize=(5,5), sigmaX=0) # original params
+    #thresh, mask = cv2.threshold(blur, thresh = 150, maxval = 175, type = cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU) # tuned
+    thresh, mask = cv2.threshold(blur, thresh = 0, maxval = 255, type = cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU) #orig
+    #edges = cv2.Canny(blur, threshold1 = 200, threshold2 = 255, apertureSize = 5, L2gradient = True) # tuned
+    edges = cv2.Canny(blur, threshold1 = 3000, threshold2 = 6000, apertureSize = 7, L2gradient = False) # orig
     edges_and_mask = cv2.bitwise_and(edges, mask)
 
    # detect lines
-    lines = cv2.HoughLinesWithAccumulator(edges_and_mask, rho = hough_rho_accumulator, theta = hough_theta_accumulator, threshold = hough_vote_threshold) 
+    #lines = cv2.HoughLinesWithAccumulator(edges_and_mask, rho = hough_rho_accumulator, theta = hough_theta_accumulator, threshold = hough_vote_threshold) # tuned
+    lines = cv2.HoughLinesWithAccumulator(edges_and_mask, rho = 1, theta = 0.01, threshold = 100) # orig
+
     if (lines is None):
         return [], img
+    
+    # original untuned code
+    lines = np.squeeze(lines)
+    lines = np.reshape(lines, (-1, 3))
+    thresh_rho = 20
+    thresh_theta = 0.1
+    aggregated_rhos = []
+    aggregated_thetas = []
+    checked = []
+    for i in range(lines.shape[0]):
+        average_rhos = []
+        average_thetas = []
+        if i in checked:
+            continue
+        rho = lines[i][0]
+        theta = lines[i][1]
+        average_rhos.append(rho)
+        average_thetas.append(theta)
+        for j in range((i+1), lines.shape[0]):
+            if j in checked:
+                continue
+            test_rho = lines[j][0]
+            test_theta = lines[j][1]
+            if (np.abs(test_rho - rho) < thresh_rho) and (np.abs(test_theta - theta) < thresh_theta):
+                average_rhos.append(test_rho)
+                average_thetas.append(test_theta)
+                checked.append(j)
+        aggregated_rhos.append(np.mean(average_rhos))
+        aggregated_thetas.append(np.mean(average_thetas))
+    lines = np.asarray(list(zip(aggregated_rhos, aggregated_thetas))).copy()
+
+    # draw all detected and clustered edges
+    # (B, G, R)
+    if (draw_lines):
+        img = drawPolarLines(img, lines, color = (0, 0, 255))
+
+    # returns Nx2 array of # N detected lines x [rho, theta], img with lines drawn, edges and mask
+    return lines, img
+        
     #print(lines.shape)
     lines = np.squeeze(lines)
     # sort by max votes
@@ -221,7 +265,7 @@ def detectCannyShaftLines(img = None,
     lines = np.reshape(lines, (-1, 3))
     #print('lines: {}'.format(lines))
     #print('lines.shape: {}'.format(lines.shape))
-    sorted_lines = lines[(-lines[:, 2]).argsort()]
+    #sorted_lines = lines[(-lines[:, 2]).argsort()]
     #print('sorted_lines: {}'.format(sorted_lines))
     #print('sorted_lines.shape: {}'.format(sorted_lines.shape))
 

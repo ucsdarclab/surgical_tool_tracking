@@ -28,20 +28,20 @@ from probability_functions_kornia import *
 from utils_kornia import *
 
 # File inputs
-#robot_file    = script_path + '/../../fei_dataset/LND.json'
-#camera_file   = script_path + '/../../fei_dataset/camera_calibration.yaml'
-#hand_eye_file = script_path + '/../../fei_dataset/handeye.yaml'
-robot_file    = script_path + '/../../journal_dataset/LND.json'
-camera_file   = script_path + '/../../journal_dataset/camera_calibration.yaml'
-hand_eye_file = script_path + '/../../journal_dataset/handeye.yaml'
+robot_file    = script_path + '/../../fei_dataset/LND.json'
+camera_file   = script_path + '/../../fei_dataset/camera_calibration.yaml'
+hand_eye_file = script_path + '/../../fei_dataset/handeye.yaml'
+#robot_file    = script_path + '/../../journal_dataset/LND.json'
+#camera_file   = script_path + '/../../journal_dataset/camera_calibration.yaml'
+#hand_eye_file = script_path + '/../../journal_dataset/handeye.yaml'
 
 # ROS Topics
 left_camera_topic  = '/stereo/left/image'
 right_camera_topic = '/stereo/right/image'
-#robot_joint_topic  = '/dvrk/PSM2/state_joint_current'
-#robot_gripper_topic = '/dvrk/PSM2/state_jaw_current'
-robot_joint_topic  = '/dvrk/PSM1/state_joint_current'
-robot_gripper_topic = '/dvrk/PSM1/state_jaw_current'
+robot_joint_topic  = '/dvrk/PSM2/state_joint_current'
+robot_gripper_topic = '/dvrk/PSM2/state_jaw_current'
+#robot_joint_topic  = '/dvrk/PSM1/state_joint_current'
+#robot_gripper_topic = '/dvrk/PSM1/state_jaw_current'
 
 # gpu support
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -53,8 +53,8 @@ if __name__ == "__main__":
     #rospy.init_node('robot_tool_tracking', anonymous=True)
     
     # reference image directory
-    #source_dir = 'kornia_dev/fei_ref_data/'
-    source_dir = 'kornia_dev/ref_data/no_contour/'
+    source_dir = 'kornia_dev/fei_ref_data/'
+    #source_dir = 'kornia_dev/ref_data/no_contour/'
     draw_contours = False
 
     # annotate output with detected lines
@@ -126,7 +126,7 @@ if __name__ == "__main__":
 
     # parameters for shaft detection
     canny_params = {
-        'use_canny': False, # IF THIS IS TRUE -> CHANGE kornia_params['use_kornia']: FALSE
+        'use_canny': True, # IF THIS IS TRUE -> CHANGE kornia_params['use_kornia']: FALSE
         'hough_rho_accumulator': 5.0,
         'hough_theta_accumulator': 0.09,
         'hough_vote_threshold': 100,
@@ -135,10 +135,10 @@ if __name__ == "__main__":
     }
 
     kornia_params = {
-        'use_kornia': True,
+        'use_kornia': False,
         'endpoints_to_polar': False,
         'use_endpoint_intensities_only': False,
-        'endpoint_intensities_to_polar': True,
+        'endpoint_intensities_to_polar': False,
         'search_radius': 3.0,
         'intensity_params': {
             'use_metric': 'pct',
@@ -158,7 +158,7 @@ if __name__ == "__main__":
     } 
 
     # video recording
-    record_video = False
+    record_video = True
     fps = 30
     out_file = None
     if (record_video):
@@ -171,7 +171,7 @@ if __name__ == "__main__":
         #out_file = source_dir + 'li2p_left_video.mp4'
         #left_video_out  = cv2.VideoWriter(out_file,  cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, img_dims)
 
-        #out_file = source_dir + 'canny_right_video.mp4'
+        out_file = source_dir + 'canny_right_video.mp4'
         #out_file = source_dir + 'endp2p_right_video.mp4'
         #out_file = source_dir + 'endpi_right_video.mp4'
         #out_file = source_dir + 'endpi2p_right_video.mp4'
@@ -180,7 +180,7 @@ if __name__ == "__main__":
         right_video_out = cv2.VideoWriter(out_file, cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, img_dims)
 
     # evaluation recording
-    #accuracy_file = None
+    accuracy_file = None
     #accuracy_file = open('kornia_dev/fei_ref_data/canny_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/endpoints_to_polar_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/fei_ref_data/endpoint_intensities_only_accuracy.txt', 'w')
@@ -191,12 +191,12 @@ if __name__ == "__main__":
     #accuracy_file = open('kornia_dev/ref_data/no_contour/canny_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/ref_data/no_contour/endpoints_to_polar_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/ref_data/no_contour/endpoint_intensities_only_accuracy.txt', 'w')
-    accuracy_file = open('kornia_dev/ref_data/no_contour/endpoint_intensities_to_polar_accuracy.txt', 'w')
+    #accuracy_file = open('kornia_dev/ref_data/no_contour/endpoint_intensities_to_polar_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/ref_data/no_contour/line_intensities_only_accuracy.txt', 'w')
     #accuracy_file = open('kornia_dev/ref_data/no_contour/line_intensities_to_polar_accuracy.txt', 'w')
     
     
-    #localization_file = None
+    localization_file = None
     #localization_file = open('kornia_dev/fei_ref_data/canny_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/endpoints_to_polar_localization.txt', 'w')
     #localization_file = open('kornia_dev/fei_ref_data/endpoint_intensities_only_localization.txt', 'w')
@@ -207,7 +207,7 @@ if __name__ == "__main__":
     #localization_file = open('kornia_dev/ref_data/no_contour/canny_localization.txt', 'w')
     #localization_file = open('kornia_dev/ref_data/no_contour/endpoints_to_polar_localization.txt', 'w')
     #localization_file = open('kornia_dev/ref_data/no_contour/endpoint_intensities_only_localization.txt', 'w')
-    localization_file = open('kornia_dev/ref_data/no_contour/endpoint_intensities_to_polar_localization.txt', 'w')
+    #localization_file = open('kornia_dev/ref_data/no_contour/endpoint_intensities_to_polar_localization.txt', 'w')
     #localization_file = open('kornia_dev/ref_data/no_contour/line_intensities_only_localization.txt', 'w')
     #localization_file = open('kornia_dev/ref_data/no_contour/line_intensities_to_polar_localization.txt', 'w')
 
@@ -220,10 +220,18 @@ if __name__ == "__main__":
     hand_eye_data = yaml.load(f, Loader=yaml.FullLoader)
 
     cam_T_b = np.eye(4)
-    #cam_T_b[:-1, -1] = np.array(hand_eye_data['PSM2_tvec'])/1000.0 # convert to mm
-    #cam_T_b[:-1, :-1] = axisAngleToRotationMatrix(hand_eye_data['PSM2_rvec'])
-    cam_T_b[:-1, -1] = np.array(hand_eye_data['PSM1_tvec'])/1000.0 # convert to mm
-    cam_T_b[:-1, :-1] = axisAngleToRotationMatrix(hand_eye_data['PSM1_rvec'])
+    cam_T_b[:-1, -1] = np.array(hand_eye_data['PSM2_tvec'])/1000.0 # convert to mm
+    cam_T_b[:-1, :-1] = axisAngleToRotationMatrix(hand_eye_data['PSM2_rvec'])
+    # cam_T_b[:-1, -1] = np.array(hand_eye_data['PSM1_tvec'])/1000.0 # convert to mm
+    # cam_T_b[:-1, :-1] = axisAngleToRotationMatrix(hand_eye_data['PSM1_rvec'])
+    if (source_dir == 'kornia_dev/fei_ref_data/'):
+        cam_T_b = np.asarray([
+            [-0.76304683, 0.6372871, 0.10781795, -0.05953122],
+            [0.55504649, 0.73155852, -0.39591103, -0.06275844],
+            [-0.33118412, -0.2422547, -0.91193735, 0.05295889],
+            [ 0.0, 0.0, 0.0, 1.0]
+        ])
+
 
     # Initialize filter
     pf = ParticleFilter(num_states=6, # originally 9 (6 for lumped error + 3 for endowrist pitch/yaw/squeeze) -> 6 for just lumped error
@@ -254,8 +262,8 @@ if __name__ == "__main__":
     #rate = rospy.Rate(30) # 30hz
     prev_joint_angles = None
 
-    #bag = rosbag.Bag('../fei_dataset/volume_4points_t2.bag')
-    bag = rosbag.Bag('../journal_dataset/stationary_camera_2020-06-24-15-49-10.bag')
+    bag = rosbag.Bag('../fei_dataset/volume_4points_t2.bag')
+    #bag = rosbag.Bag('../journal_dataset/stationary_camera_2020-06-24-15-49-10.bag')
 
     old_l_img_msg = None
     old_r_img_msg = None
@@ -276,14 +284,14 @@ if __name__ == "__main__":
         if topic == '/stereo/right/image':
             old_r_img_msg = copy.deepcopy(r_img_msg)
             r_img_msg = copy.deepcopy(msg)
-        #if topic == '/dvrk/PSM2/state_joint_current':
-            #j_msg = copy.deepcopy(msg)
-        #if topic == '/dvrk/PSM2/state_jaw_current':
-            #g_msg = copy.deepcopy(msg)
-        if topic == '/dvrk/PSM1/state_joint_current':
+        if topic == '/dvrk/PSM2/state_joint_current':
             j_msg = copy.deepcopy(msg)
-        if topic == '/dvrk/PSM1/state_jaw_current':
+        if topic == '/dvrk/PSM2/state_jaw_current':
             g_msg = copy.deepcopy(msg)
+        # if topic == '/dvrk/PSM1/state_joint_current':
+        #     j_msg = copy.deepcopy(msg)
+        # if topic == '/dvrk/PSM1/state_jaw_current':
+        #     g_msg = copy.deepcopy(msg)
         
         
         if ((l_img_msg != None) and (r_img_msg != None)) and ((l_img_msg != old_l_img_msg) and (r_img_msg != old_r_img_msg)) and (j_msg) and (g_msg):
@@ -299,10 +307,10 @@ if __name__ == "__main__":
         old_l_img_msg = copy.deepcopy(l_img_msg)
         old_r_img_msg = copy.deepcopy(r_img_msg)
         
-        if (msg_counter > 1800):
+        #if (msg_counter > 1800):
             #msg_counter += 1
             #continue
-            break
+            #break
         start_t = time.time()
 
         # copy l/r images so not overwritten by callback
@@ -416,8 +424,8 @@ if __name__ == "__main__":
                     
                     #shaftFeatureObs_kornia arguments
                     {
-                        'use_lines': 'endpoint_cloud_lines',
-                        'use_clouds': False,
+                        'use_lines': False,
+                        'use_clouds': 'endpoint_clouds',
                         'detected_lines': {
                             'canny': (new_canny_lines_l, new_canny_lines_r),
                             'detected_endpoint_lines': (new_detected_endpoint_lines_l, new_detected_endpoint_lines_r),
@@ -433,8 +441,8 @@ if __name__ == "__main__":
                         'cam_T_b': cam_T_b,
                         'joint_angle_readings': new_joint_angles,
                         'cost_assoc_params': {
-                            'gamma_rho': 0.075, #0.05,  # THIS IS A MAIN TUNING PARAMETER FOR FILTER PERFORMANCE https://github.com/ucsdarclab/dvrk_particle_filter/blob/master/config/ex_vivo_dataset_configure_filter.json
-                            'gamma_theta': 9.0, #7.5, # THIS IS A MAIN TUNING PARAMETER FOR FILTER PERFORMANCE https://github.com/ucsdarclab/dvrk_particle_filter/blob/master/config/ex_vivo_dataset_configure_filter.json
+                            'gamma_rho': 0.1, #0.05,  # THIS IS A MAIN TUNING PARAMETER FOR FILTER PERFORMANCE https://github.com/ucsdarclab/dvrk_particle_filter/blob/master/config/ex_vivo_dataset_configure_filter.json
+                            'gamma_theta': 15.0, #7.5, # THIS IS A MAIN TUNING PARAMETER FOR FILTER PERFORMANCE https://github.com/ucsdarclab/dvrk_particle_filter/blob/master/config/ex_vivo_dataset_configure_filter.json
                             'rho_thresh': 75,
                             'theta_thresh': 0.5
                         },
@@ -481,13 +489,18 @@ if __name__ == "__main__":
         #cv2.waitKey(1)
 
     if (accuracy_file):
+        print(accuracy_file)
         accuracy_file.close()
     if (localization_file):
+        print(localization_file)
         localization_file.close()
     print('end of bag, closing bag')
     bag.close()
     print('total number of messages: {}'.format(msg_counter))
     print('Releasing video capture')
+    print(canny_params)
+    print(kornia_params)
+    print(upd_args)
     if (record_video):
         #left_video_out.release()
         right_video_out.release()
