@@ -33,7 +33,9 @@
 
 !/kornia_dev/ref_data/no_contour/
 /kornia_dev/ref_data/no_contour/*
-!/kornia_dev/ref_data/no_contour/*.npy
+/kornia_dev/ref_data/no_contour/*.npy
+!/kornia_dev/ref_data/no_contour/*.png
+!/kornia_dev/ref_data/no_contour/*.jpg
 
 !/kornia_dev/ref_data/no_contour/particle_data/
 /kornia_dev/ref_data/no_contour/particle_data/*
