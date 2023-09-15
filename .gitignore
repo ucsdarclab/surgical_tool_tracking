@@ -20,6 +20,9 @@
 !/kornia_dev/*.ipynb
 !/kornia_dev/*.jpg
 !/kornia_dev/*.jpeg
+!/kornia_dev/*.png
+!/kornia_dev/*.pdf
+!/kornia_dev/*.svg
 
 !/kornia_dev/__pycache__/
 /kornia_dev/__pycache__/*
