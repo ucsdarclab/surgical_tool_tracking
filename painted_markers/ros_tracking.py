@@ -24,19 +24,14 @@ from core.utils import *
 import pdb
 
 # File inputs
-robot_file    = script_path + '/journal_dataset/LND.json'
-#robot_file    = 'parameters/LND.json'
-camera_file   = script_path + '/journal_dataset/camera_calibration.yaml'
-#camera_file   = 'parameters/camera_calibration_fei.yaml'
-hand_eye_file = script_path + '/journal_dataset/handeye.yaml'
-#hand_eye_file = 'parameters/LND_handeye.yaml'
+robot_file    = '../journal_dataset/LND.json'
+camera_file   = '../journal_dataset/camera_calibration.yaml'
+hand_eye_file = '../journal_dataset/handeye.yaml'
 
 # ROS Topics
-left_camera_topic  = '/stereo/left/image'
-#left_camera_topic  = '/stereo/left/rectified_downscaled_image'
-right_camera_topic = '/stereo/right/image'
-#right_camera_topic  = '/stereo/right/rectified_downscaled_image'
-robot_joint_topic  = '/dvrk/PSM1/state_joint_current'
+left_camera_topic   = '/stereo/left/image'
+right_camera_topic  = '/stereo/right/image'
+robot_joint_topic   = '/dvrk/PSM1/state_joint_current'
 robot_gripper_topic = '/dvrk/PSM1/state_jaw_current'
 
 # Globals for callback function
@@ -85,7 +80,7 @@ if __name__ == "__main__":
 
 
     robot_arm = RobotLink(robot_file)
-    cam = StereoCamera(camera_file, rectify=False, downscale_factor=1) 
+    cam = StereoCamera(camera_file, rectify=True, downscale_factor=2) 
 
     # Load hand-eye transform 
     f = open(hand_eye_file)
@@ -96,20 +91,19 @@ if __name__ == "__main__":
     cam_T_b[:-1, :-1] = axisAngleToRotationMatrix(hand_eye_data['PSM1_rvec'])
 
     # Initialize filter
-    pf = ParticleFilter(num_states=9, 
+    pf = ParticleFilter(num_states=6,
                         initialDistributionFunc=sampleNormalDistribution,
-                        #motionModelFunc=additiveGaussianNoise, \
-                        motionModelFunc=lumpedErrorMotionModel,
+                        motionModelFunc=additiveGaussianNoise,
                         obsModelFunc=pointFeatureObs,
                         num_particles=200)
 
 
     init_kwargs = {
-                    "std": np.array([1.0e-3, 1.0e-3, 1.0e-3, # pos
-                                    1.0e-2, 1.0e-2, 1.0e-2, # ori
-                                    #5.0e-3, 5.0e-3, 0.02
-                                    0.0, 0.0, 0.0])   # joints
-                  }
+                "std": np.array([1.0e-3, 1.0e-3, 1.0e-3, # pos
+                                 1.0e-2, 1.0e-2, 1.0e-2, # ori
+                                ])
+              }
+
 
     pf.initializeFilter(**init_kwargs)
     
@@ -136,18 +130,9 @@ if __name__ == "__main__":
                 prev_joint_angles = new_joint_angles
             
             # Predict Particle Filter
-            robot_arm.updateJointAngles(new_joint_angles)
-            j_change = new_joint_angles - prev_joint_angles
-
-            std_j = np.abs(j_change)*0.01
-            std_j[-3:] = 0.0
-
             pred_kwargs = {
-                            "std_pos": 2.5e-5, 
-                            "std_ori": 1.0e-4,
-                            "robot_arm": robot_arm, 
-                            "std_j": std_j,
-                            "nb": 4
+                            "std": np.array([2.5e-5, 2.5e-5, 2.5e-5, 
+                                             1.0e-4, 1.0e-4, 1.0e-4])
                           }
             pf.predictionStep(**pred_kwargs) 
             
@@ -169,8 +154,7 @@ if __name__ == "__main__":
             rospy.loginfo("Time to predict & update {}".format(time.time() - start_t))
 
             # Project skeleton
-            T = poseToMatrix(correction_estimation[:6])  
-            new_joint_angles[-(correction_estimation.shape[0]-6):] += correction_estimation[6:]
+            T = poseToMatrix(correction_estimation)  
             robot_arm.updateJointAngles(new_joint_angles) 
 
             img_list = projectSkeleton(robot_arm.getSkeletonPoints(), np.dot(cam_T_b, T),

@@ -16,37 +16,11 @@ def sampleNormalDistribution(std):
 def additiveGaussianNoise(state, std):
     sample, prob = sampleNormalDistribution(std)
     return state + sample, prob
-
-# Create "Lumped Error" Motion model that:
-#   1. Includes uncertainty from hand-eye transform
-#   2. Distributes uncertainty from joint angles
-#   3. sate is [pos_x, pos_y, pos_z, ori_x, ori_y, ori_z, e_nb, ..., e_n]
-#       where pos, ori is position and axis/angle rep of lumped error
-#       e_nb+1, ..., e_n are the errors of the tracked joint angles
-#       For more details check: https://arxiv.org/pdf/2102.06235.pdf
-#   4. robot_arm is RobotLink that is being tracked
-def lumpedErrorMotionModel(state, std_pos, std_ori, robot_arm, std_j, nb):
-    # Gaussian uncertainty in hand-eye transform and joint angles
-    std = np.concatenate((np.array([std_pos, std_pos, std_pos, std_ori, std_ori, std_ori]), std_j))
-    sample, prob = sampleNormalDistribution(std)
-    T = poseToMatrix(sample[:6] + state[:6])
     
-    # propogate joint error from lumped error which is only up to nb jonts
-    T = np.dot(T, robot_arm.propogateJointErrorToLumpedError(sample[6:nb+6]))
-
-    # Return the new state (with added uncertainty on the tracked joint angles)
-    return np.concatenate((matrixToPose(T), sample[nb+6:] + state[6:])), prob
-    
-# State is: [pos_x, pos_y, pos_z, ori_x, ori_y, ori_z, e_nb, ..., e_n]
-# where pos, ori is position and axis/angle rep of lumped error
-# e_nb+1, ..., e_n are the errors of the tracked joint angles
+# State is: [pos_x, pos_y, pos_z, ori_x, ori_y, ori_z]
 def pointFeatureObs(state, point_detections, robot_arm, joint_angle_readings, cam, cam_T_b, gamma, association_threshold=20):
     # Get lumped error
-    T = poseToMatrix(state[:6])
-
-    # Add estimated joint errors to the robot link
-    joint_angle_readings[-(state.shape[0]-6):] += state[6:]
-    robot_arm.updateJointAngles(joint_angle_readings)
+    T = poseToMatrix(state)
 
     # Project points
     p_b,_ = robot_arm.getPointFeatures()

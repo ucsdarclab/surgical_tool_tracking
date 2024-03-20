@@ -1,3 +1,7 @@
+*.bag
+*.mp4
+journal_dataset/*
+
 painted_markers/journal_dataset/*
 aruco/aruco_marker/*
 .vscode/*

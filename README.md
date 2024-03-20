@@ -32,14 +32,14 @@ This demo reads directly from the rosbag dataset so simply open and run the Jupy
 1. Open a new terminal and run `roscore`
 2. Open a new terminal and run:
 ```
-cd <root-directory>/surgical_tool_tracking/
+cd <root-directory>/surgical_tool_tracking/painted_markers/
 conda activate <conda_env>
 python ros_tracking
 ```
 3. Open a new terminal and run:
 ```
 cd <root-directory>/surgical_tool_tracking/journal_dataset/
-rosbag play *.bag*
+rosbag play *.bag -r 0.05
 ```
     
 ## Citation: ##
